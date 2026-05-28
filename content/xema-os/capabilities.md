@@ -159,7 +159,7 @@ Every cross-service call in the Xema OS layer (`xema-capability-router`,
 The model is uniform:
 
 - At boot, each service registers itself with the **Xema Identity Service** via
-  `IdentityBootstrapService` (`@neuralchowder/identity-client`). The identity service
+  `IdentityBootstrapService` (`@xemahq/identity-client`). The identity service
   provisions a Keycloak OAuth2 client (one per service) and returns the
   `client_id` + `client_secret` + `token_endpoint`.
 - On every outbound call, the service requests an access token via the
