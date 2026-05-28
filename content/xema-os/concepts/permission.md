@@ -1,0 +1,20 @@
+---
+slug: permission
+title: Permission
+summary: The "may this subject invoke this capability?" half of Xema authorization. Permissions are issued through capability grants, scoped to subjects (users, audiences, service accounts), and resolved by `authorization-api` on every capability call.
+relatedCommands: ["xema why-denied"]
+relatedCapabilities: ["xema-shell:audit.read@1"]
+relatedZones: ["org"]
+stability: stable
+---
+
+Permissions answer the *who* of a capability invocation; the
+[execution-environment](./execution-environment.md) answers the *where*. A subject
+holds permission to call a [capability](./capability.md) by virtue of
+one or more `capability-grant` [objects](./object.md) — granted
+directly, via an [audience](./audience.md), or via membership in a
+[profile](./profile.md). Every denial is recorded by
+`audit-log-api` and can be explained with the `xema why-denied`
+command. Permissions are immutable per grant; revocation produces a
+new grant with a `revoked` state — no in-place mutation. See plan
+§17 and §29 for the full authorization model.
