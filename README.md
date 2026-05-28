@@ -1,28 +1,26 @@
 # xema-docs
 
-Public documentation for the Xema OS platform. Apache-2.0 licensed.
+Public Xema OS documentation (Astro + MDX), deployed to GitHub Pages.
 
-## Layout
+Part of [Xema OS](https://github.com/xema-dev) — the control plane lives at [xema-dev/xema-monorepo](https://github.com/xema-dev/xema-monorepo).
 
-- `content/` — the actual documentation tree (Markdown).
-  Top-level sections: `xema-os/`, `workflows/`, `workspaces/`,
-  `workspace-manifests/`, `biomes/`, `interactive-sessions/`, `dsl/`,
-  `deliverables/`, `databases/`, `apis/`, `notifications/`, `templates/`,
-  `use-cases/`.
-- `astro.config.mjs` + `src/pages/` + `package.json` — minimal Astro
-  scaffold. Carved from the monorepo in §K.3 slice 8 of the
-  xema-os-plan v4.3. Full Astro content-collection wiring lands per
-  the public-docs sweep follow-up.
-- `.github/workflows/deploy-pages.yaml` — GitHub Pages deploy on push
-  to `main`.
+## Quick start
 
-## Local development
+### Develop
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Contributing
+### Build
 
-See `CONTRIBUTING.md`.
+```bash
+npm run build
+```
+
+Site builds to `dist/` and deploys to GitHub Pages via `.github/workflows/deploy-pages.yaml`.
+
+## License
+
+Apache-2.0
