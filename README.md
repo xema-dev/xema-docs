@@ -1,26 +1,35 @@
 # xema-docs
 
-Public Xema OS documentation (Astro + MDX), deployed to GitHub Pages.
+Public documentation site for Xema OS — built with Astro + MDX and published
+at [xema-dev.github.io/xema-docs](https://xema-dev.github.io/xema-docs/).
 
-Part of [Xema OS](https://github.com/xema-dev) — the control plane lives at [xema-dev/xema-monorepo](https://github.com/xema-dev/xema-monorepo).
-
-## Quick start
-
-### Develop
+## Develop
 
 ```bash
 npm install
 npm run dev
 ```
 
-### Build
+Open <http://localhost:4321>.
+
+## Build
 
 ```bash
 npm run build
 ```
 
-Site builds to `dist/` and deploys to GitHub Pages via `.github/workflows/deploy-pages.yaml`.
+The site is built to `dist/` and deployed to GitHub Pages by the
+`deploy-pages` workflow on every push to `main`.
+
+## Content
+
+Pages live under `content/`. New page? Drop an `.mdx` file in the right
+collection and the sidebar picks it up.
 
 ## License
 
 Apache-2.0
+
+## Status
+
+Beta.
