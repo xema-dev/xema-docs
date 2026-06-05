@@ -6,7 +6,7 @@ A biome contributes to the host frontend through three declarative surfaces:
 - **RouteContributions** — top-level routes the biome adds to the host's router;
 - **Nav registry entries** — sidebar / topbar items the host renders.
 
-All three are declared in `xema-biome.json` and resolved at host boot. The host shell is the React app under `submodules/code-guilds-web`; the kernel contract lives in `@xemahq/biome-registry-web`.
+All three are declared in `xema-biome.json` and resolved at host boot. The host shell is the React app under `submodules/code-guilds-web`; the kernel contract lives in `@xemahq/ui-kernel/registry`.
 
 ---
 
