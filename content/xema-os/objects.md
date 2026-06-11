@@ -12,7 +12,7 @@ Every object carries the same shape:
 interface XemaObject<TKind extends XemaObjectKind, TPayload> {
   readonly ref: XemaObjectRef;
   readonly kind: TKind;
-  readonly scope: ScopeRef;            // 5-tier: system / plugin / org / project / user
+  readonly scope: ScopeRef;            // 5-tier: system / biome / org / project / user
   readonly owner: SubjectRef;
   readonly version: SemverVersion;
   readonly lifecycle: ObjectLifecycle; // draft | published | archived
@@ -66,7 +66,7 @@ Three orthogonal axes describe every object.
 `ScopeRef` mirrors the 5-tier scope used by `SkillScope` and `CompositionScope`:
 
 ```
-User > Project > Org > Plugin > System
+User > Project > Org > Biome > System
 ```
 
 Precedence is "most specific wins". A user-authored agent shadows a project-authored agent of the same slug; a project-authored agent shadows the org's; the org's shadows a biome-shipped one; biome-shipped shadows kernel-shipped.

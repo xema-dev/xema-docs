@@ -14,7 +14,7 @@ everything else is mounted as-is into the agent workspace at
 (recursive sub-skills), multi-resource, and sourced from a biome's
 `skills/` folder, the Agent Studio, or a registered git repository.
 They are owned by `skill-registry-api` and addressed as
-`XemaObjectKind.Skill`. The 5-tier scope (system / plugin / org /
+`XemaObjectKind.Skill`. The 5-tier scope (system / biome / org /
 project / user) determines availability — more-specific wins. The
 bundle authoring contract lives at `docs/skill-bundle-format.md` in
 the platform repository; the resolution model is documented in

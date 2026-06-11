@@ -37,12 +37,12 @@ Every skill has a scope that determines who owns it and who can see it. More-spe
 | Scope | Owner | Visibility |
 |---|---|---|
 | `System` | Platform-shipped (immutable) | All orgs, all users |
-| `Plugin` | Contributed by an installed biome's `skills/` folder | The org where the biome is installed |
+| `Biome` | Contributed by an installed biome's `skills/` folder | The org where the biome is installed |
 | `Org` | Authored in Agent Studio for the org | All members of that org |
 | `Project` | Scoped to a single project | Members of that project |
 | `User` | Authored by a single user | That user only |
 
-`System > Plugin > Org > Project > User` in specificity. When a `Project`-scoped `code-review` and an `Org`-scoped `code-review` both exist, the project-scoped version is mounted.
+`System > Biome > Org > Project > User` in specificity. When a `Project`-scoped `code-review` and an `Org`-scoped `code-review` both exist, the project-scoped version is mounted.
 
 ---
 
@@ -63,7 +63,7 @@ Every skill has a scope that determines who owns it and who can see it. More-spe
 
 | Source | Who creates it | How |
 |---|---|---|
-| `plugin` | A biome's `skills/` folder | Seeded automatically when the biome is installed |
+| `biome` | A biome's `skills/` folder | Seeded automatically when the biome is installed |
 | `authored` | A user or org admin in Agent Studio | Manual authoring via the UI |
 | `git_repo` | A registered git repository | The platform ingests `SKILL.md` (and sibling files) from the repo at a pinned git ref |
 

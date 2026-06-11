@@ -35,7 +35,7 @@ Manifests compile into agent compositions, and agent compositions follow a five-
 | `user` | A single user, authored in the Agent Studio | Highest — overrides all |
 | `project` | Project owner | Overrides org, biome, and system |
 | `org` | Org owner | Overrides biome and system |
-| `plugin` | Biome author, seeded at install | Overrides system |
+| `biome` | Biome author, seeded at install | Overrides system |
 | `system` | Xema platform (kernel-shipped) | Lowest |
 
 The same ladder applies to skills, tools, and agent definitions — a single ownership model across all four runtime primitives. To customise a system or biome manifest for your org, author an org-scoped agent composition in the Agent Studio (or ship an org-scoped biome) with the same slug; the higher-tier row takes precedence immediately — no redeployment needed.
@@ -45,7 +45,7 @@ The same ladder applies to skills, tools, and agent definitions — a single own
 ## How Manifests Are Applied
 
 1. The session or workflow job references an environment by `slug` (or `slug@version`) — either via the `workspace-manifest@v1` DSL contract or directly as an agent composition via `agent-composition@v1`.
-2. The platform resolves the composition through the five-tier scope ladder (user → project → org → plugin → system).
+2. The platform resolves the composition through the five-tier scope ladder (user → project → org → biome → system).
 3. Variable bindings (`${input.x}`) are substituted with the caller-supplied inputs.
 4. A typed workspace mount plan is compiled from the composition spec.
 5. The mount plan is applied to the agent's worker before any prompt is sent.
