@@ -123,15 +123,15 @@ spec:
     - kind: provider
       providerKind: catalog
       resourceId: default-dev-tools
-    # A single tool from a plugin workflow
+    # A single tool from a biome workflow
     - kind: tool
-      providerKind: plugin_workflow_tools
-      resourceId: ${{ plugin.installations['imap-fetcher'].id }}
+      providerKind: biome_workflow_tools
+      resourceId: ${{ biome.installations['imap-fetcher'].id }}
       toolName: search-archive
-    # A single tool shipped as plugin handler code
+    # A single tool shipped as biome handler code
     - kind: tool
-      providerKind: plugin_code_tools
-      resourceId: ${{ plugin.installations['stripe-tools'].id }}
+      providerKind: biome_code_tools
+      resourceId: ${{ biome.installations['stripe-tools'].id }}
       toolName: customer-lookup
 ```
 
@@ -141,8 +141,8 @@ Closed-set `providerKind` values:
 |---|---|
 | `mcp_server` | An org-registered (or system-shipped) MCP server. |
 | `catalog` | A named, reusable selection of tools curated at the org. |
-| `plugin_workflow_tools` | A plugin manifest declaring `xema.mcpWorkflowTools[]`. |
-| `plugin_code_tools` | A plugin shipping typed handler functions as tools. |
+| `biome_workflow_tools` | A biome manifest declaring `xema.mcpWorkflowTools[]`. |
+| `biome_code_tools` | A biome shipping typed handler functions as tools. |
 
 Sessions may override this list per-instance via `PATCH /sessions/:id/tools`.
 At boot, every entry resolves through the platform's tool resolver into

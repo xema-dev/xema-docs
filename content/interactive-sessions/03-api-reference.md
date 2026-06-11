@@ -553,14 +553,14 @@ Each `ToolSelectionEntry` is one of:
 // A single tool from a provider
 {
   "kind": "tool",
-  "providerKind": "plugin_workflow_tools",
+  "providerKind": "biome_workflow_tools",
   "resourceId": "<installation-id>",
   "toolName": "search-archive"
 }
 ```
 
 Closed-set `providerKind` values: `mcp_server`, `catalog`,
-`plugin_workflow_tools`, `plugin_code_tools`.
+`biome_workflow_tools`, `biome_code_tools`.
 
 Each entry's `resourceId` is validated against the session's
 `(orgId, projectId)` scope at PATCH time. Cross-org references are

@@ -191,7 +191,7 @@ Run the same call twice to assert idempotency — the host may retry a failed tr
 
 ## End-to-end against a sandbox
 
-The cheapest path to a real end-to-end run is to install the biome into a sandbox environment via the existing platform install flow (today: `POST /plugins/install`; Phase 5+: `xema biome install ./your-biome --environment sandbox`). Sandbox runs have no production credentials and no production data; the gateway denies any call that asks for them.
+The cheapest path to a real end-to-end run is to install the biome into a sandbox environment via the existing platform install flow (today: `POST /biomes/install`; Phase 5+: `xema biome install ./your-biome --environment sandbox`). Sandbox runs have no production credentials and no production data; the gateway denies any call that asks for them.
 
 The platform's own test-suite (`test-suite/`) gives a working local stack. See the test-suite README for the docker-compose stand-up.
 
