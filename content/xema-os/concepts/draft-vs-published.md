@@ -20,5 +20,5 @@ ref by `slug` gets that exact version. To change behaviour you publish
 live behaviour. The one exception across Xema OS is
 [capability](./capability.md) refs, which auto-version like syscalls
 (`@1`, `@2` coexist indefinitely); see the
-[Versioning page](../versioning.md) for the full rule. See
-[lifecycle](./lifecycle.md) and `.claude/rules/skills-and-composition.md`.
+[Versioning page](../versioning.md) for the full rule. See also
+[lifecycle](./lifecycle.md).

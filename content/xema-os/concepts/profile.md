@@ -16,4 +16,4 @@ subject. Compared to an [audience](./audience.md), which is a typed
 *role* assigned to one subject at a time. Profiles compose with
 audiences — a subject may be in multiple audiences and hold multiple
 profiles. Profiles are first-class [objects](./object.md) of kind
-`profile`. See plan §29 for the role/profile model.
+`profile`.

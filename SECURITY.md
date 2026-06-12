@@ -1,3 +1,3 @@
 # Security Policy
 
-Please report security issues privately to security@xema.dev (mailbox pending). Detailed policy lands per plan §K.4 / §20.
+Please report security issues privately to security@xema.dev. Do not open public issues for security vulnerabilities.

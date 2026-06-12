@@ -18,5 +18,5 @@ publishes a complete projection via the
 `xema.object-registry.projection.published.v1` CloudEvent. Consumers
 read refs through `object-registry-api`. Objects move through the
 [lifecycle](./lifecycle.md) `draft → published → archived`; only
-`published` versions can be resolved. See plan §3.1, §6 and the kernel
+`published` versions can be resolved. See the kernel
 package `@xemahq/xema-object-contracts`.

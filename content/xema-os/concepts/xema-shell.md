@@ -17,5 +17,4 @@ shipped by `xema-shell-api`; biome-contributed commands are declared
 through the [contribution](./contribution.md) protocol. The agent-
 facing capability `xema-shell:run@1` takes a structured `argv: string[]`
 and always returns JSON — the same path the human shell uses, with
-`--json` forced on. See plan §31.4 (built-in commands), §31.5
-(descriptors), and §31.6 (`xema-shell:run@1`).
+`--json` forced on.

@@ -16,5 +16,4 @@ directly, via an [audience](./audience.md), or via membership in a
 [profile](./profile.md). Every denial is recorded by
 `audit-log-api` and can be explained with the `xema why-denied`
 command. Permissions are immutable per grant; revocation produces a
-new grant with a `revoked` state — no in-place mutation. See plan
-§17 and §29 for the full authorization model.
+new grant with a `revoked` state — no in-place mutation.

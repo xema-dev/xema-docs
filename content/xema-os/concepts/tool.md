@@ -16,5 +16,4 @@ definition or attached at an [composition](./composition.md) node. The
 brokers the actual transport with authentication and audit. Like every
 other primitive, tools are scoped through the 5-tier
 [object](./object.md) model and may be shipped by biomes via
-[contribution](./contribution.md). See plan §6 and
-`.claude/rules/skills-and-composition.md`.
+[contribution](./contribution.md).

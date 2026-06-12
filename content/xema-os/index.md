@@ -1,5 +1,3 @@
-<!-- PHASE-N: full body — Zone vocabulary replaced by Environment+Space+Context+Policy per v4.3 §2 -->
-
 # Xema OS
 
 **Xema OS** is the system layer that turns Xema into an AI-native operating system for organizations. It defines the typed objects, the capability-mediated invocation plane, the execution environments, and the installable software bundles (biomes) that humans, agents, workflows, and external apps all share.

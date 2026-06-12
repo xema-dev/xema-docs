@@ -272,7 +272,7 @@ Every event a subscriber may receive over the unified realtime stream. Materiali
 | `workload.lifecycle.ready` | INTERNAL | workload-runtime-api | Workload is healthy and discoverable. Carries endpoint or connection info. |
 | `workload.lifecycle.scheduled` | INTERNAL | workload-runtime-api | Workload accepted by the scheduler — backend objects are being created. |
 | `workspace-git.conflict.dispatch-requested` | PROJECT | workspace-git-api | A publish-to-production attempt hit a remote-fast-forward conflict;  |
-| `xema.biome.installation.lifecycle.changed.v1` | PROJECT | biome-host-api | A BiomeInstallation traversed a capability-gated lifecycle transition (plan §4.2). |
+| `xema.biome.installation.lifecycle.changed.v1` | PROJECT | biome-host-api | A BiomeInstallation traversed a capability-gated lifecycle transition. |
 | `xema.composition.published.v1` | PROJECT | llm-registry-api | A draft Agent Composition was published as a new immutable version.  |
 | `xema.kernel.released` | INTERNAL | workspace-orchestrator-api | Kernel image released — triggers an immediate SyncSystemTemplates run. |
 | `xema.store.install.created.v1` | PROJECT | xema-store-api | A new StoreInstall row was committed. biome-host-api consumes this to materialize the install runtime. |

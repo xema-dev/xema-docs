@@ -16,6 +16,4 @@ based on the agent, skill, project, and (optionally) workflow phase.
 An agent is usable two ways: as a sub-agent inside an
 [composition](./composition.md), or as the root of an interactive
 session. The set of agents is open and extensible — biomes ship their
-own through [contributions](./contribution.md). See plan §6 and
-`.claude/rules/skills-and-composition.md` for the runtime model and
-the four-primitive contract.
+own through [contributions](./contribution.md).

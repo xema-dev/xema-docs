@@ -1,8 +1,6 @@
 # Spaces
 
-A **Space** is the answer to "where does this *thing* live?" in Xema OS — who owns it, who can reach it, and what data-classification floor applies. Every typed object (a knowledge-base page, an artifact, a session, a biome installation, a stored memory) is anchored to exactly one Space.
-
-Spaces replaced the older "Scope" concept. "Scope" was overloaded with OAuth scopes — **Space** is unambiguous and explicit about hierarchy.
+A **Space** is the answer to "where does this *thing* live?" in Xema OS — who owns it, who can reach it, and what data-classification floor applies. Every typed object (a knowledge-base page, an artifact, a session, a biome installation, a stored memory) is anchored to exactly one Space. A Space is unambiguous and explicit about hierarchy.
 
 ---
 
@@ -92,7 +90,7 @@ Spaces are first-class in every product surface:
 - **Memory** — memory chunks are scoped by `SpaceRef`; `xema memory recall` filters to the calling subject's reachable Spaces.
 - **Knowledge Base** — pages live in a Space; cross-Space reads are policy-mediated.
 - **Artifacts** — every artifact version stamps its emitting Space.
-- **Skills** — `SkillSpace` (formerly `SkillScope`) names the owning Space; resolution precedence is most-specific-wins.
+- **Skills** — `SkillSpace` names the owning Space; resolution precedence is most-specific-wins.
 - **Compositions** — `CompositionSpace` mirrors the Skill model.
 - **Frontend routing** — the product URL grammar is `/spaces/orgs/:org/projects/:project/...`, mirroring the SpaceRef path.
 

@@ -18,4 +18,4 @@ self-describing: they declare required [capabilities](./capability.md),
 [zones](./execution-environment.md), and any companion resources. They are
 also the lockfile substrate — the [lockfile](./lockfile.md) pins exact
 versions of every contribution at install time so subsequent boots are
-deterministic. See plan §31.1 and §31.5.
+deterministic.

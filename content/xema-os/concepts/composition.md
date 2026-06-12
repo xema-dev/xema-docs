@@ -18,7 +18,5 @@ are themselves compositions. Compositions move through the
 resolved. The Model Resolution Matrix resolves the model per node at
 invocation boundaries (start, sub-agent spawn, `/skill` launch) and
 never mid-turn. Publishing a composition is a dedicated capability
-call (`composition:publish@1`); the Phase 9 Agent Builder dispatches
-the publish through the [Xema Shell](./xema-shell.md) until the
-dedicated endpoint lands. See `@xemahq/agent-composition-contracts`
-and `.claude/rules/skills-and-composition.md`.
+call (`composition:publish@1`), dispatched through the
+[Xema Shell](./xema-shell.md).

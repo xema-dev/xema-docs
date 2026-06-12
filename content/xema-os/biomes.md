@@ -1,10 +1,8 @@
-<!-- PHASE-N: full body — Zone vocabulary replaced by Environment+Space+Context+Policy per v4.3 §2 -->
-
 # Biomes
 
 A **biome** is the Xema OS unit of distribution. Where a traditional extension model extends one surface, a biome may ship agents, skills, tools, workflows, deliverable specs, document templates and themes, mount sources, artifact types, connector bindings, frontend slot contributions, optional backend services, controllers, and storage schemas — all through one declarative manifest and one lifecycle.
 
-A biome is *installed* into an organization, *zoned* into one or more execution zones, *versioned* under the user-controlled lifecycle, and *governed* by the two-stage permission model. Biome semantics have replaced the older plugin model across the platform — same source folders, same install flow, new vocabulary, and a fully-specified state machine.
+A biome is *installed* into an organization, *zoned* into one or more execution zones, *versioned* under the user-controlled lifecycle, and *governed* by the two-stage permission model, backed by a fully-specified state machine.
 
 ---
 
@@ -80,7 +78,7 @@ The biome never holds raw credentials. The gateway resolves the binding for the 
 
 ## What lives in a biome
 
-The on-disk layout (still rooted under `plugins/<id>/` — the source-tree directory rename to `biomes/<id>/` is a follow-up):
+The on-disk layout (rooted under `biomes/<id>/`):
 
 ```
 xema-biome.json                ← manifest
@@ -151,11 +149,11 @@ See [SDK / Storage](./sdk/storage.md).
 
 ---
 
-## Packaging — current and target
+## Packaging
 
-**Today (v1 pilot).** Biomes are installed from local `plugins/<id>/` source folders through the existing fetcher. The manifest (`xema-biome.json`) carries the additive `contributes[]` / `requiresCapabilities[]` / `exposesCapabilities[]` / `lifecycle` / `ships` / `storage` blocks; the rest is incremental.
+Biomes are installed from `biomes/<id>/` source folders through the fetcher. The manifest (`xema-biome.json`) carries the `contributes[]` / `requiresCapabilities[]` / `exposesCapabilities[]` / `lifecycle` / `ships` / `storage` blocks.
 
-**Target.** Biomes are packaged and distributed as **OCI artifacts** through the same registry that holds Docker images. Signing (`cosign`), provenance (`SLSA`), and SBOM attachment ride the standard OCI flows. The OCI packaging plan is tracked separately — see [SDK / Publishing](./sdk/publishing.md).
+Biomes are packaged and distributed as **OCI artifacts** through the same registry that holds Docker images. Signing (`cosign`), provenance (`SLSA`), and SBOM attachment ride the standard OCI flows. See [SDK / Publishing](./sdk/publishing.md).
 
 ---
 

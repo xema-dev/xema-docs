@@ -12,8 +12,7 @@ A connector is the *type* of integration; a `connector-binding` is the
 concrete instance with credentials and target. Connectors are
 contributed by biomes and addressed as `XemaObjectKind.Connector`;
 bindings are addressed as `XemaObjectKind.ConnectorBinding`. Inbound
-webhooks always enter through `connector-gateway-api` (Phase 1B renamed
-the service from `integration-adapters-api`); outbound calls go through
+webhooks always enter through `connector-gateway-api`; outbound calls go through
 the shared `@xemahq/connector-sdks` package. A connector binding is
 what a [workflow](./workflow.md) or [agent](./agent.md) names when it
 needs to talk to an external service on behalf of an org. See the

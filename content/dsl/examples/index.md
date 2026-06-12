@@ -6,7 +6,7 @@ Ready-to-use workflow examples organized by topic. Each example is complete and 
 
 | Section | Contents |
 |---------|----------|
-| [Basic Patterns](./basic.md) | Hello world, triggers, matrix, error handling |
+| [General Patterns](./general.md) | Hello world, triggers, matrix, error handling |
 | [Interactive Sessions](./agent-sessions.md) | Human + agent collaboration patterns |
 | [Pipeline Integration](./pipeline-integration.md) | Multi-job pipelines, data flow, conditional branching |
 

@@ -29,5 +29,4 @@ served at `GET /sessions/:id/lockfile`), and workflow-run start
 as a `REPLACE`-versioned artifact). The shared
 `@xemahq/lockfile-sources-nest` package provides the cross-service
 source layer. See the [Versioning page](../versioning.md#lockfile-shape)
-for the lockfile shape and `.claude/plans/xema-os-plan.md` §31.1 / §31.2
-for the resolver contract.
+for the lockfile shape.

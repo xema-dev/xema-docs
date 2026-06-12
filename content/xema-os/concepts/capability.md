@@ -18,5 +18,4 @@ and the `outputSchema` makes the agent-facing surface deterministic
 (see [xema-shell](./xema-shell.md)). Capabilities are first-class
 [objects](./object.md) of kind `capability` — they appear in
 [XVFS](./xvfs.md) at `/system/capability/<owner>/<verb>` and can be
-read, listed, and audited. See plan §6 and §17 for the capability and
-environment model.
+read, listed, and audited.

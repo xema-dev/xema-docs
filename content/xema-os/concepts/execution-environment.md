@@ -15,6 +15,5 @@ invocation time. Built-in zones include `host` (trusted kernel plane),
 `org` (tenant-scoped), `sandbox` (isolated, no external network),
 and `store-review` (used by the biome publishing pipeline). Zones are
 the second half of the authorization model: [permission](./permission.md)
-asks *who* may call, the environment asks *where* the call may run. See plan
-§17 for the full environment-grant matrix and §31.4 (`xema zones explain`) for
-the inspection surface.
+asks *who* may call, the environment asks *where* the call may run. Use
+`xema zones explain` to inspect the resolved environment grants.

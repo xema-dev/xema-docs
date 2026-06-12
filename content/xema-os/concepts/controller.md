@@ -17,5 +17,4 @@ forget. Controllers may be shipped by platform services (`apps/`) or
 by biome [manifests](./manifest.md) via the `controller`
 [contribution](./contribution.md) kind. Each controller declares the
 kinds it watches, the events it emits, and the [environment](./execution-environment.md)
-it runs in. See plan §13 for the controller model and §31.1 for
-manifest-declared controllers.
+it runs in.

@@ -41,7 +41,7 @@ jobs:
 ## Table of Contents
 
 - [Language Reference](./01-reference.md) — Complete syntax guide
-- [Examples](./examples.md) — Common workflow patterns
+- [Examples](./examples/index.md) — Common workflow patterns
 - [Best Practices](./02-best-practices.md) — Tips and conventions
 - [Troubleshooting](./03-troubleshooting.md) — Debug workflow issues
 - [Decision Gate](./04-decision-gate.md) — `xema/decision-gate` reference (humans / agents / endpoints, M-of-N policy)
@@ -159,7 +159,7 @@ Invalid workflows are **rejected with clear errors**. No silent failures.
 ## Next Steps
 
 1. **[Language Reference](./01-reference.md)** — Learn complete syntax
-2. **[Examples](./examples.md)** — See real-world patterns
+2. **[Examples](./examples/index.md)** — See real-world patterns
 3. **[Best Practices](./02-best-practices.md)** — Follow conventions
 
 ## FAQ

@@ -47,7 +47,7 @@ spec:
 
 A manifest may inherit from a base template by setting `extends` to a
 `xema://manifest/<slug>@<version>` reference. Resolution happens at
-compile time: the base is fetched (user → project → org → plugin →
+compile time: the base is fetched (user → project → org → biome →
 system precedence — the standard five-tier ladder), merged into the
 child, and the resulting effective shape is what the runtime consumes.
 

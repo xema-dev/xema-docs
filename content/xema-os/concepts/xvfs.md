@@ -17,5 +17,4 @@ entities, `/orgs/<id>/...` for tenant-scoped, `/users/<id>/...` for
 user-scoped. The [xema-shell](./xema-shell.md) `explain`, `inspect`,
 and `ls` commands all walk XVFS. Resolution is delegated to the Object
 Registry — XVFS does not store anything itself; it is a typed view over
-the registry plus the kernel's built-in object kinds. See plan §3 and
-§31 for the XSI / XVFS layering.
+the registry plus the kernel's built-in object kinds.

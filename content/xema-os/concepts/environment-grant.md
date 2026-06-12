@@ -10,11 +10,10 @@ stability: stable
 
 A environment grant is a typed authorization row that says "subject S may
 execute capabilities in environment Z." Every [capability](./capability.md)
-declares the [execution-zones](./execution-environment.md) it tolerates;
+declares the [execution environments](./execution-environment.md) it tolerates;
 authorization-api checks that the caller holds a environment-grant for at
 least one of them before dispatching. Environment grants are revocable,
 auditable, and can be issued at any scope tier
 ([object scope](./object.md)). They are the mechanism that lets Xema
 trust biomes incrementally — a third-party biome may default to the
-`sandbox` environment and require an explicit grant to run in `org`. See plan
-§17 for the environment-grant matrix.
+`sandbox` environment and require an explicit grant to run in `org`.

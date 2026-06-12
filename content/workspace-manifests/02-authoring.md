@@ -175,7 +175,7 @@ spec:
 | `content` | Either | Inline Handlebars or literal string |
 | `vars` | No | Variables passed to the Handlebars template |
 
-Template names are skill-bundle resources served by the Skill Registry — each biome ships its templates under `templates/*.hbs` (declared in the biome manifest's `workspaceManifestTemplates` field) and the platform resolves them at seed-render time through the same five-tier scope ladder as every other Skills-First primitive (user → project → org → plugin → system).
+Template names are skill-bundle resources served by the Skill Registry — each biome ships its templates under `templates/*.hbs` (declared in the biome manifest's `workspaceManifestTemplates` field) and the platform resolves them at seed-render time through the same five-tier scope ladder as every other Skills-First primitive (user → project → org → biome → system).
 
 ---
 

@@ -2,7 +2,7 @@
 
 A **Briefcase** is the run-scoped bundle of extra context a caller attaches when starting a workflow run — uploaded files, pointers to existing platform content, key/value facts, and optional tools. It travels with the run from dispatch to completion, and every job can draw on it.
 
-The Briefcase replaces the older habit of declaring `uploads`/`references` fields inside each workflow's own input schema. Instead of every workflow re-inventing how it accepts attachments, callers pass one consistent Briefcase and the runtime delivers it everywhere.
+The Briefcase gives every workflow one consistent way to accept attachments. Rather than each workflow declaring its own `uploads`/`references` input fields, callers pass a single Briefcase and the runtime delivers it everywhere.
 
 ---
 

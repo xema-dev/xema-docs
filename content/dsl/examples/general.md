@@ -532,4 +532,4 @@ jobs:
 
 ---
 
-**Next**: Read [Best Practices](./02-best-practices.md) for conventions and tips.
+**Next**: Read [Best Practices](../02-best-practices.md) for conventions and tips.

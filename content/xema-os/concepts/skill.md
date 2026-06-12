@@ -15,7 +15,6 @@ everything else is mounted as-is into the agent workspace at
 `skills/` folder, the Agent Studio, or a registered git repository.
 They are owned by `skill-registry-api` and addressed as
 `XemaObjectKind.Skill`. The 5-tier scope (system / biome / org /
-project / user) determines availability — more-specific wins. The
-bundle authoring contract lives at `docs/skill-bundle-format.md` in
-the platform repository; the resolution model is documented in
-`.claude/rules/skills-and-composition.md`.
+project / user) determines availability — more-specific wins. See
+[Skills / Authoring](../skills/02-authoring.md) for the bundle authoring
+contract and the resolution model.

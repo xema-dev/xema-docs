@@ -15,6 +15,6 @@ and executed on the Xema Workflow Runtime. Each job in the workflow may call an
 [artifacts](#), pass through a gate, or branch on matrix outputs.
 Phases are structural — they sequence jobs and stamp `phaseKey` on
 emitted artifacts — but they are not a config-resolution dimension on
-their own (see `.claude/rules/skills-and-composition.md`). Workflows
+their own. Workflows
 are first-class [objects](./object.md) (`XemaObjectKind.Workflow`) and
 biomes ship them through [contributions](./contribution.md).

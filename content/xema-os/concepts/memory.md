@@ -13,7 +13,5 @@ without re-uploading every prompt. Each memory node is typed, scoped
 to a [tier](./object.md) (system / org / project / user), and carries
 provenance (`writtenBy`, `writtenAt`, `digest`). Agents recall memory
 through the `memory:recall@1` capability — never through raw blob
-reads — so every recall is audited and gated. Memory v2 introduces
-digest gates: a maintenance pass on an unchanged node consumes zero
-tokens. See plan §10 and the per-write skip invariant documented in
-`apps/memory-api/`.
+reads — so every recall is audited and gated. Digest gates keep writes
+cheap: a maintenance pass on an unchanged node consumes zero tokens.

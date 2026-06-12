@@ -11,44 +11,44 @@ This directory contains comprehensive technical documentation for Xema Workflows
 Main workflows documentation covering features, integration, and concepts:
 
 - **[index.md](./workflows/index.md)** — Overview and navigation
-- **[concepts.md](./workflows/concepts.md)** — Core concepts (DSL, compilation, templates, phases)
-- **[features.md](./workflows/features.md)** — All available features and capabilities
-- **[integration-guide.md](./workflows/integration-guide.md)** — External system integration patterns
-- **[expressions.md](./workflows/expressions.md)** — Inputs, outputs, data flow, and expressions
-- **[templates-guide.md](./workflows/templates-guide.md)** — Template system and customization
-- **[api-reference.md](./workflows/api-reference.md)** — REST API endpoints
+- **[concepts.md](./workflows/01-concepts.md)** — Core concepts (DSL, compilation, templates, phases)
+- **[features.md](./workflows/02-features.md)** — All available features and capabilities
+- **[integration-guide.md](./workflows/05-integration-guide.md)** — External system integration patterns
+- **[expressions.md](./workflows/03-expressions.md)** — Inputs, outputs, data flow, and expressions
+- **[templates-guide.md](./workflows/06-templates-guide.md)** — Template system and customization
+- **[api-reference.md](./workflows/07-api-reference.md)** — REST API endpoints
 
 ### `/dsl/` — Domain-Specific Language Reference
 
 Complete DSL specification and language guide:
 
 - **[index.md](./dsl/index.md)** — DSL overview and quick start
-- **[reference.md](./dsl/reference.md)** — Complete syntax specification
-- **[examples.md](./dsl/examples.md)** — Real-world workflow examples
-- **[best-practices.md](./dsl/best-practices.md)** — Conventions and guidelines
-- **[troubleshooting.md](./dsl/troubleshooting.md)** — Debugging and common issues
+- **[reference.md](./dsl/01-reference.md)** — Complete syntax specification
+- **[examples.md](./dsl/examples/index.md)** — Real-world workflow examples
+- **[best-practices.md](./dsl/02-best-practices.md)** — Conventions and guidelines
+- **[troubleshooting.md](./dsl/03-troubleshooting.md)** — Debugging and common issues
 
 ## 🎯 Where to Start
 
 ### For Product Managers & Business Users
-1. Start with [Workflows: Features & Capabilities](./workflows/features.md) to understand what's possible
-2. Read [Integration Guide](./workflows/integration-guide.md) to see how external systems connect
+1. Start with [Workflows: Features & Capabilities](./workflows/02-features.md) to understand what's possible
+2. Read [Integration Guide](./workflows/05-integration-guide.md) to see how external systems connect
 
 ### For Developers & Technical Integrators
-1. Begin with [Concepts & Fundamentals](./workflows/concepts.md) for architecture overview
-2. Learn the DSL with [Language Reference](./dsl/reference.md) and [Examples](./dsl/examples.md)
-3. Dive into [Integration Guide](./workflows/integration-guide.md) and [Expressions](./workflows/expressions.md)
+1. Begin with [Concepts & Fundamentals](./workflows/01-concepts.md) for architecture overview
+2. Learn the DSL with [Language Reference](./dsl/01-reference.md) and [Examples](./dsl/examples/index.md)
+3. Dive into [Integration Guide](./workflows/05-integration-guide.md) and [Expressions](./workflows/03-expressions.md)
 
 ### For DevOps & Platform Engineers
-1. Read [Concepts](./workflows/concepts.md) for architecture and execution model
-2. Reference [DSL Specification](./dsl/reference.md) for validation requirements
-3. Check [Best Practices](./dsl/best-practices.md) for operational guidelines
+1. Read [Concepts](./workflows/01-concepts.md) for architecture and execution model
+2. Reference [DSL Specification](./dsl/01-reference.md) for validation requirements
+3. Check [Best Practices](./dsl/02-best-practices.md) for operational guidelines
 
 ### For Anyone Building Workflows
 1. Quick start with [DSL Overview](./dsl/index.md)
-2. Find patterns in [Examples](./dsl/examples.md)
-3. Follow [Best Practices](./dsl/best-practices.md)
-4. Use [Troubleshooting](./dsl/troubleshooting.md) when needed
+2. Find patterns in [Examples](./dsl/examples/index.md)
+3. Follow [Best Practices](./dsl/02-best-practices.md)
+4. Use [Troubleshooting](./dsl/03-troubleshooting.md) when needed
 
 ## 📖 Documentation Map
 
@@ -196,7 +196,7 @@ All external webhooks flow through a **single normalized adapter** ensuring:
 ## 🔗 Internal Linking
 
 Documentation uses relative links for seamless navigation:
-- Links follow structure: `./workflows/concepts.md`, `./dsl/examples.md`
+- Links follow structure: `./workflows/01-concepts.md`, `./dsl/examples/index.md`
 - Cross-references between workflows and DSL documentation
 - "Next" and "Previous" navigation between sections
 

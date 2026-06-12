@@ -16,6 +16,4 @@ the platform validate refs cheaply, route capabilities deterministically,
 and project each owning service's slice into the registry without
 collisions. To introduce a new kind: add the enum value, define the
 producer service that owns the projection, define the kind-specific
-payload schema, and ship a [contribution](./contribution.md) entry. See
-`packages/kernel/xema-object-contracts/src/lib/xema-object-kind.ts` and
-plan §3.1.
+payload schema, and ship a [contribution](./contribution.md) entry.
