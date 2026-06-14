@@ -11,12 +11,15 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Overview](./overview.md) | What Xema OS is, the six-layer model, the four primitives + Agent Composition |
 | [Objects](./objects.md) | `XemaObject`, the typed universe, XVFS read path |
 | [Capabilities](./capabilities.md) | Capability refs, the gateway, two-stage permission model |
+| [Connectors](./connectors.md) | Typed integration points, bindings, wallet credentials, OAuth flow |
 | [Biomes](./biomes.md) | The installable software bundle, the seven-state lifecycle, the install flow |
 | [Execution Environments](./environments.md) | The eight built-in environments, enforcement, environment grants |
 | [Spaces](./spaces.md) | The seven-level SpaceRef hierarchy, URI grammar, data classification |
 | [Execution Contexts](./execution-contexts.md) | The per-invocation envelope; what flows where |
 | [Policy](./policy.md) | PolicyDecision shape, obligations, route hints, approval flow |
+| [Profiles](./profiles.md) | Named grant bundles attached to subjects (experimental) |
 | [Runners](./runners.md) | Embedded, local-module, and remote runners; attestation; push vs pull |
+| [Controllers](./controllers.md) | Reconciliation loops, desired vs observed state, error categories |
 | [Service Registry](./service-registry.md) | Service discovery + `@InjectService(name)` |
 | [MCP and Capabilities](./mcp-and-capabilities.md) | The three meta-tools + external MCP federation |
 | [Developer Annotations](./developer-annotations.md) | `@XemaResource` / `@XemaRoute` + convention inference |

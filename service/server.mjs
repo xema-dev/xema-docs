@@ -7,12 +7,14 @@
 // (e.g. xema-shell-api's concept registry).
 //
 // Endpoints (all public, read-only):
-//   GET /api/docs                       -> Swagger UI (API_STANDARDS §1)
-//   GET /api/openapi.json               -> OpenAPI 3 spec
-//   GET /api/docs/tree                  -> DocTreeNode[]
-//   GET /api/docs/content?path=<slug>   -> { content, path, frontmatter }
-//   GET /health/live                    -> { status: 'ok' }
-//   GET /health/ready                   -> { status: 'ok' } | 503
+//   GET /api/docs                  -> Swagger UI (API_STANDARDS §1: /api is Swagger-only)
+//   GET /api/openapi.json          -> OpenAPI 3 spec
+//   GET /tree                      -> DocTreeNode[]
+//   GET /content?path=<slug>       -> { content, path, frontmatter }
+//   GET /health/live               -> { status: 'ok' }
+//   GET /health/ready              -> { status: 'ok' } | 503
+// (Transitional: /api/docs/tree + /api/docs/content still answer until host-web
+//  and xema-shell-api move to /tree + /content, then they're removed.)
 //
 // Intentionally ZERO npm dependencies — the job is "read markdown, return
 // JSON", so it runs on Node built-ins only. No framework, no platform
@@ -205,7 +207,7 @@ const OPENAPI_SPEC = {
     { name: 'health', description: 'Kubernetes liveness/readiness probes.' },
   ],
   paths: {
-    '/api/docs/tree': {
+    '/tree': {
       get: {
         tags: ['docs'],
         operationId: 'docs_getTree',
@@ -245,7 +247,7 @@ const OPENAPI_SPEC = {
         },
       },
     },
-    '/api/docs/content': {
+    '/content': {
       get: {
         tags: ['docs'],
         operationId: 'docs_getContent',
@@ -525,12 +527,16 @@ async function handle(req, res) {
     return sendHtml(res, 200, SWAGGER_UI_HTML);
   }
 
-  if (path === '/api/docs/tree') {
+  // Content routes live OFF the `/api` prefix (API_STANDARDS §1 line 9 reserves
+  // `/api` for Swagger only). The `/api/docs/*` forms are accepted transitionally
+  // while host-web + xema-shell-api migrate to `/tree` + `/content`; remove once
+  // both consumers are on the new routes.
+  if (path === '/tree' || path === '/api/docs/tree') {
     const tree = await buildTree(DOCS_SOURCE_DIR);
     return send(res, 200, tree);
   }
 
-  if (path === '/api/docs/content') {
+  if (path === '/content' || path === '/api/docs/content') {
     try {
       const result = await getContent(url.searchParams.get('path') ?? '');
       return send(res, 200, result);
