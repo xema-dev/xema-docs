@@ -43,6 +43,8 @@ Endpoints (all public, read-only):
 
 | Route | Returns |
 | --- | --- |
+| `GET /api/docs` | Swagger UI (per API_STANDARDS §1) |
+| `GET /api/openapi.json` | OpenAPI 3 spec |
 | `GET /api/docs/tree` | the full doc tree (`DocTreeNode[]`) |
 | `GET /api/docs/content?path=<slug>` | `{ content, path, frontmatter }` — `content` is the display body with any YAML frontmatter stripped; `frontmatter` is the raw frontmatter text (empty when none) for metadata consumers |
 | `GET /health/live` / `GET /health/ready` | k8s probes |

@@ -7,8 +7,10 @@
 // (e.g. xema-shell-api's concept registry).
 //
 // Endpoints (all public, read-only):
+//   GET /api/docs                       -> Swagger UI (API_STANDARDS §1)
+//   GET /api/openapi.json               -> OpenAPI 3 spec
 //   GET /api/docs/tree                  -> DocTreeNode[]
-//   GET /api/docs/content?path=<slug>   -> { content, path }
+//   GET /api/docs/content?path=<slug>   -> { content, path, frontmatter }
 //   GET /health/live                    -> { status: 'ok' }
 //   GET /health/ready                   -> { status: 'ok' } | 503
 //
@@ -176,6 +178,285 @@ function isMissingFileError(err) {
   return code === 'ENOENT' || code === 'EISDIR' || code === 'ENOTDIR';
 }
 
+// ── OpenAPI / Swagger ─────────────────────────────────────────────────────────
+// API_STANDARDS.md §1 requires Swagger at /api/docs + the spec at
+// /api/openapi.json for every service. docs-api is not a NestJS service (the
+// Nest-plugin / Orval codegen sub-rules don't apply — its frontend client is
+// hand-written), so the spec is authored here by hand and kept in sync with the
+// handlers above.
+
+const OPENAPI_SPEC = {
+  openapi: '3.0.3',
+  info: {
+    title: 'Docs API',
+    version: '1.0.0',
+    description:
+      'Serves the Xema public documentation — the Markdown under `content/` in ' +
+      'the xema-docs repo (the single source of truth for public docs) — as ' +
+      'JSON. Consumed by the host-web docs viewer at xema.dev/docs and by ' +
+      'xema-shell-api (concept registry). Read-only and unauthenticated.',
+  },
+  servers: [
+    { url: 'https://docs-api.xema.dev', description: 'Production' },
+    { url: 'http://localhost:3000', description: 'Local' },
+  ],
+  tags: [
+    { name: 'docs', description: 'Documentation tree and page content.' },
+    { name: 'health', description: 'Kubernetes liveness/readiness probes.' },
+  ],
+  paths: {
+    '/api/docs/tree': {
+      get: {
+        tags: ['docs'],
+        operationId: 'docs_getTree',
+        summary: 'Get the documentation navigation tree',
+        description:
+          'Returns the full documentation tree derived from the `content/` ' +
+          'directory layout. Directories become `dir` nodes (with `children`); ' +
+          'Markdown files become `file` nodes. `README.md` files are excluded, ' +
+          "and a directory's `index.md` sorts first.",
+        responses: {
+          200: {
+            description: 'The documentation tree.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/DocTreeNode' },
+                },
+                example: [
+                  { name: 'Overview', slug: 'index', type: 'file' },
+                  {
+                    name: 'Databases',
+                    slug: 'databases',
+                    type: 'dir',
+                    children: [
+                      {
+                        name: 'Concepts',
+                        slug: 'databases/01-concepts',
+                        type: 'file',
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/docs/content': {
+      get: {
+        tags: ['docs'],
+        operationId: 'docs_getContent',
+        summary: 'Get a documentation page by slug',
+        description:
+          'Returns the Markdown body for a page. The slug is the path under ' +
+          '`content/` without the `.md` extension (e.g. `databases/01-concepts`, ' +
+          'or `index` for the home page). Any YAML frontmatter is separated: ' +
+          '`content` is the display body, `frontmatter` is the raw frontmatter ' +
+          'text (empty when none). Paths that escape the docs root are rejected.',
+        parameters: [
+          {
+            name: 'path',
+            in: 'query',
+            required: true,
+            description: 'Page slug — path under `content/` without `.md`.',
+            schema: { type: 'string', example: 'databases/01-concepts' },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'The page content.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DocContent' },
+                example: {
+                  content: '# Concepts\n\nOrg-managed relational databases…',
+                  path: 'databases/01-concepts',
+                  frontmatter: '',
+                },
+              },
+            },
+          },
+          400: {
+            description: 'Missing/invalid `path`, or a path escaping the docs root.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Query param "path" is required.' },
+              },
+            },
+          },
+          404: {
+            description: 'No page exists for the slug.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Doc not found: nope/nope' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/health/live': {
+      get: {
+        tags: ['health'],
+        operationId: 'health_live',
+        summary: 'Liveness probe',
+        description: 'Returns 200 while the process is running.',
+        responses: {
+          200: {
+            description: 'Alive.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/HealthStatus' },
+                example: { status: 'ok' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/health/ready': {
+      get: {
+        tags: ['health'],
+        operationId: 'health_ready',
+        summary: 'Readiness probe',
+        description:
+          'Returns 200 when the docs source directory is readable, else 503.',
+        responses: {
+          200: {
+            description: 'Ready.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/HealthStatus' },
+                example: { status: 'ok' },
+              },
+            },
+          },
+          503: {
+            description: 'Docs source directory not accessible.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/HealthStatus' },
+                example: {
+                  status: 'unavailable',
+                  reason: 'docs source dir not accessible: /app/content',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  components: {
+    schemas: {
+      DocNodeType: {
+        type: 'string',
+        enum: ['file', 'dir'],
+        description: 'Whether a tree node is a Markdown file or a directory.',
+      },
+      DocTreeNode: {
+        type: 'object',
+        required: ['name', 'slug', 'type'],
+        properties: {
+          name: {
+            type: 'string',
+            description:
+              'Display label (numeric prefix stripped, title-cased; `index` → "Overview").',
+            example: 'Concepts',
+          },
+          slug: {
+            type: 'string',
+            description:
+              'Path under `content/` without `.md`; used as `path` for the content endpoint.',
+            example: 'databases/01-concepts',
+          },
+          type: { $ref: '#/components/schemas/DocNodeType' },
+          children: {
+            type: 'array',
+            description: 'Child nodes (present on `dir` nodes only).',
+            items: { $ref: '#/components/schemas/DocTreeNode' },
+          },
+        },
+      },
+      DocContent: {
+        type: 'object',
+        required: ['content', 'path', 'frontmatter'],
+        properties: {
+          content: {
+            type: 'string',
+            description: 'Markdown body with any YAML frontmatter removed.',
+            example: '# Concepts\n\nOrg-managed relational databases…',
+          },
+          path: {
+            type: 'string',
+            description: 'The requested slug.',
+            example: 'databases/01-concepts',
+          },
+          frontmatter: {
+            type: 'string',
+            description:
+              'Raw YAML frontmatter text (no fences); empty string when the page has none.',
+            example: '',
+          },
+        },
+      },
+      HealthStatus: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Probe status (`ok` or `unavailable`).',
+            example: 'ok',
+          },
+          reason: {
+            type: 'string',
+            description: 'Failure detail (readiness 503 only).',
+            example: 'docs source dir not accessible: /app/content',
+          },
+        },
+      },
+      ErrorResponse: {
+        type: 'object',
+        required: ['error'],
+        properties: {
+          error: {
+            type: 'string',
+            description: 'Human-readable error message.',
+            example: 'Doc not found: nope/nope',
+          },
+        },
+      },
+    },
+  },
+};
+
+// Swagger UI is a single HTML page that loads swagger-ui-dist from a CDN —
+// keeps docs-api dependency-free while satisfying "/api/docs renders the API".
+const SWAGGER_UI_HTML = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs API — API reference</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+    <script>
+      window.onload = function () {
+        window.ui = SwaggerUIBundle({ url: '/api/openapi.json', dom_id: '#swagger-ui' });
+      };
+    </script>
+  </body>
+</html>`;
+
 // ── http ─────────────────────────────────────────────────────────────────────
 
 function send(res, status, body) {
@@ -190,6 +471,15 @@ function send(res, status, body) {
     'cache-control': 'public, max-age=60',
   });
   res.end(payload);
+}
+
+function sendHtml(res, status, html) {
+  res.writeHead(status, {
+    'content-type': 'text/html; charset=utf-8',
+    'access-control-allow-origin': '*',
+    'cache-control': 'public, max-age=300',
+  });
+  res.end(html);
 }
 
 const server = createServer((req, res) => {
@@ -226,6 +516,13 @@ async function handle(req, res) {
       });
     }
     return send(res, 200, { status: 'ok' });
+  }
+
+  if (path === '/api/openapi.json') {
+    return send(res, 200, OPENAPI_SPEC);
+  }
+  if (path === '/api/docs') {
+    return sendHtml(res, 200, SWAGGER_UI_HTML);
   }
 
   if (path === '/api/docs/tree') {
