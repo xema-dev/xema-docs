@@ -113,6 +113,28 @@ class BadRequestError extends Error {}
 class NotFoundError extends Error {}
 
 /**
+ * Split optional leading YAML frontmatter from a markdown body. Some pages
+ * (e.g. xema-os/concepts/*) carry `--- … ---` frontmatter that downstream
+ * services parse; the docs viewer must NOT render it. We return the body for
+ * display plus the raw frontmatter text (no fences) so a metadata consumer
+ * can parse it. Zero-dep: pure string slicing, no YAML parser here.
+ */
+function separateFrontmatter(raw) {
+  const normalized = raw.replace(/^﻿/, '');
+  if (!/^---\r?\n/.test(normalized)) {
+    return { frontmatter: '', body: raw };
+  }
+  const afterOpen = normalized.replace(/^---\r?\n/, '');
+  const closeIdx = afterOpen.search(/^---\r?\n/m);
+  if (closeIdx === -1) {
+    return { frontmatter: '', body: raw }; // no closing fence → not frontmatter
+  }
+  const frontmatter = afterOpen.slice(0, closeIdx);
+  const body = afterOpen.slice(closeIdx).replace(/^---\r?\n/, '');
+  return { frontmatter, body };
+}
+
+/**
  * Resolve a request slug to an absolute markdown path, fail-fast on a path
  * that would escape the docs root (traversal guard).
  */
@@ -136,8 +158,11 @@ function resolveMarkdownPath(slug) {
 async function getContent(slug) {
   const filePath = resolveMarkdownPath(slug);
   try {
-    const content = await readFile(filePath, 'utf8');
-    return { content, path: slug };
+    const raw = await readFile(filePath, 'utf8');
+    const { frontmatter, body } = separateFrontmatter(raw);
+    // `content` is the display body (frontmatter stripped); `frontmatter` is
+    // the raw YAML text for metadata consumers (empty when there is none).
+    return { content: body, path: slug, frontmatter };
   } catch (err) {
     if (isMissingFileError(err)) {
       throw new NotFoundError(`Doc not found: ${slug}`);
