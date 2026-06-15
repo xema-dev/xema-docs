@@ -13,8 +13,6 @@
 //   GET /content?path=<slug>       -> { content, path, frontmatter }
 //   GET /health/live               -> { status: 'ok' }
 //   GET /health/ready              -> { status: 'ok' } | 503
-// (Transitional: /api/docs/tree + /api/docs/content still answer until host-web
-//  and xema-shell-api move to /tree + /content, then they're removed.)
 //
 // Intentionally ZERO npm dependencies — the job is "read markdown, return
 // JSON", so it runs on Node built-ins only. No framework, no platform
@@ -493,6 +491,43 @@ const server = createServer((req, res) => {
   });
 });
 
+async function handleReady(res) {
+  try {
+    await access(DOCS_SOURCE_DIR);
+  } catch {
+    return send(res, 503, {
+      status: 'unavailable',
+      reason: `docs source dir not accessible: ${DOCS_SOURCE_DIR}`,
+    });
+  }
+  return send(res, 200, { status: 'ok' });
+}
+
+async function handleContent(res, url) {
+  try {
+    const result = await getContent(url.searchParams.get('path') ?? '');
+    return send(res, 200, result);
+  } catch (err) {
+    if (err instanceof BadRequestError) {
+      return send(res, 400, { error: err.message });
+    }
+    if (err instanceof NotFoundError) {
+      return send(res, 404, { error: err.message });
+    }
+    throw err;
+  }
+}
+
+// Static (no-arg) GET routes. Content routes live OFF the `/api` prefix
+// (API_STANDARDS §1 reserves `/api` for Swagger only); the viewer (host-web)
+// and the concept registry (xema-shell-api) both consume `/tree` + `/content`.
+const STATIC_ROUTES = {
+  '/health/live': (res) => send(res, 200, { status: 'ok' }),
+  '/api/openapi.json': (res) => send(res, 200, OPENAPI_SPEC),
+  '/api/docs': (res) => sendHtml(res, 200, SWAGGER_UI_HTML),
+  '/tree': async (res) => send(res, 200, await buildTree(DOCS_SOURCE_DIR)),
+};
+
 async function handle(req, res) {
   const method = req.method ?? 'GET';
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
@@ -505,50 +540,16 @@ async function handle(req, res) {
     return send(res, 405, { error: 'Method not allowed' });
   }
 
-  if (path === '/health/live') {
-    return send(res, 200, { status: 'ok' });
-  }
   if (path === '/health/ready') {
-    try {
-      await access(DOCS_SOURCE_DIR);
-    } catch {
-      return send(res, 503, {
-        status: 'unavailable',
-        reason: `docs source dir not accessible: ${DOCS_SOURCE_DIR}`,
-      });
-    }
-    return send(res, 200, { status: 'ok' });
+    return handleReady(res);
+  }
+  if (path === '/content') {
+    return handleContent(res, url);
   }
 
-  if (path === '/api/openapi.json') {
-    return send(res, 200, OPENAPI_SPEC);
-  }
-  if (path === '/api/docs') {
-    return sendHtml(res, 200, SWAGGER_UI_HTML);
-  }
-
-  // Content routes live OFF the `/api` prefix (API_STANDARDS §1 line 9 reserves
-  // `/api` for Swagger only). The `/api/docs/*` forms are accepted transitionally
-  // while host-web + xema-shell-api migrate to `/tree` + `/content`; remove once
-  // both consumers are on the new routes.
-  if (path === '/tree' || path === '/api/docs/tree') {
-    const tree = await buildTree(DOCS_SOURCE_DIR);
-    return send(res, 200, tree);
-  }
-
-  if (path === '/content' || path === '/api/docs/content') {
-    try {
-      const result = await getContent(url.searchParams.get('path') ?? '');
-      return send(res, 200, result);
-    } catch (err) {
-      if (err instanceof BadRequestError) {
-        return send(res, 400, { error: err.message });
-      }
-      if (err instanceof NotFoundError) {
-        return send(res, 404, { error: err.message });
-      }
-      throw err;
-    }
+  const staticRoute = STATIC_ROUTES[path];
+  if (staticRoute) {
+    return staticRoute(res);
   }
 
   return send(res, 404, { error: 'Not found' });
