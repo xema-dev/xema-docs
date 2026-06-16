@@ -24,6 +24,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [MCP and Capabilities](./mcp-and-capabilities.md) | The three meta-tools + external MCP federation |
 | [Developer Annotations](./developer-annotations.md) | `@XemaResource` / `@XemaRoute` + convention inference |
 | [CLI](./cli.md) | The global `xema` CLI — install, commands, workflows |
+| [Xema-as-Code](./iac.md) | Declarative provisioning — `xema.yaml`, the Terraform provider, the `managedBy` ownership model |
 | [Skills](./skills/) | Skill bundles, 5-tier Space model, authoring and slash commands |
 | [Agent Composition](./agent-composition/) | Recursive agent tree, CompositionLifecycle, Model Resolution Matrix |
 | [Shell](./shell.md) | The unified command surface, WebSocket protocol, sandbox terminal |
@@ -57,8 +58,9 @@ Read in order:
 10. **[Agent Composition](./agent-composition/)** — build multi-agent pipelines with the Model Resolution Matrix.
 11. **[Shell](./shell.md)** — the command surface humans and agents share.
 12. **[CLI](./cli.md)** — install and use the `xema` binary.
-13. **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome.
-14. **[SDK / Manifest](./sdk/manifest.md)** — reference for every manifest field.
+13. **[Xema-as-Code](./iac.md)** — provision the platform declaratively with `xema.yaml` or Terraform.
+14. **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome.
+15. **[SDK / Manifest](./sdk/manifest.md)** — reference for every manifest field.
 
 ## Phase rollout
 

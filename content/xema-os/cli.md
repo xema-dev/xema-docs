@@ -228,9 +228,10 @@ Anything in the config can be overridden by a flag (`--target`, `--profile`, …
 - [Shell](./shell.md) — `xema shell` is the same shell the web terminal exposes.
 - [Biomes](./biomes.md) — `xema biome` commands manage the lifecycle.
 - [Service registry](./service-registry.md) — `xema doctor services` inspects it.
+- [Xema-as-Code](./iac.md) — `xema plan` / `apply` / `export` / `import` drive declarative provisioning.
 - [SDK / Getting Started](./sdk/getting-started.md) — the end-to-end walkthrough.
 
 ---
 
 **Previous**: [← Developer Annotations](./developer-annotations.md)
-**Next**: [Skills →](./skills/)
+**Next**: [Xema-as-Code →](./iac.md)
