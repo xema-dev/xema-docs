@@ -18,7 +18,7 @@ on:
 
 concurrency:
   group: build-and-dispatch-docs-api-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true  # SHA-tagged images; the matrix re-enumerates all services each run, so newest commit supersedes — cancel stale in-flight builds
 
 env:
   REGISTRY: ghcr.io
