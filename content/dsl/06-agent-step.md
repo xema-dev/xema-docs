@@ -75,7 +75,7 @@ with:
   agentSlug: engineering
   subAgents:
     - slug: build-verifier
-    - slug: web-researcher
+    - slug: web-explorer
       alias: rfc-researcher           # optional display name
       model:                          # optional per-binding model override
         kind: concrete

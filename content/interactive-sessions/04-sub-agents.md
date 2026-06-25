@@ -49,18 +49,18 @@ curl -X POST https://agent-session-api.xema.dev/sessions/{sessionId}/subagents \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "web-researcher",
+    "slug": "web-explorer",
     "modelOverride": { "kind": "strategy", "modelClass": "utility" }
   }'
 
 # Refine the model on an existing or intrinsic binding
-curl -X PATCH https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-researcher \
+curl -X PATCH https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-explorer \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "modelOverride": null }'
 
 # Detach a non-intrinsic binding
-curl -X DELETE https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-researcher \
+curl -X DELETE https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-explorer \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -103,7 +103,7 @@ jobs:
       agentSlug: engineering
       subAgents:
         - slug: build-verifier
-        - slug: web-researcher
+        - slug: web-explorer
           model:
             kind: concrete
             modelId: anthropic/claude-haiku-4-5-20251001
