@@ -93,5 +93,5 @@ A profile version is immutable once published. Editing a profile creates a new d
 
 ---
 
-**Previous**: [← Policy](./policy.md)
+**Previous**: [← Permissions & Access](./permissions.md)
 **Next**: [Runners →](./runners.md)

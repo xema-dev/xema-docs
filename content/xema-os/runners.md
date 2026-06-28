@@ -163,5 +163,5 @@ If the filter set is empty after step 6, the invocation fails fast with `NO_RUNN
 
 ---
 
-**Previous**: [← Policy](./policy.md)
+**Previous**: [← Profiles](./profiles.md)
 **Next**: [Service Registry →](./service-registry.md)

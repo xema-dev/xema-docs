@@ -17,6 +17,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Spaces](./spaces.md) | The seven-level SpaceRef hierarchy, URI grammar, data classification |
 | [Execution Contexts](./execution-contexts.md) | The per-invocation envelope; what flows where |
 | [Policy](./policy.md) | PolicyDecision shape, obligations, route hints, approval flow |
+| [Permissions & Access](./permissions.md) | The whole access model — capabilities, grants, roles, teams, agent reach tiers, auto-grant |
 | [Profiles](./profiles.md) | Named grant bundles attached to subjects (experimental) |
 | [Runners](./runners.md) | Embedded, local-module, and remote runners; attestation; push vs pull |
 | [Controllers](./controllers.md) | Reconciliation loops, desired vs observed state, error categories |
@@ -52,15 +53,16 @@ Read in order:
 4. **[Execution Environments](./environments.md)** — the trust profiles capability calls run under.
 5. **[Execution Contexts](./execution-contexts.md)** — the per-invocation envelope.
 6. **[Policy](./policy.md)** — how every invocation is decided.
-7. **[Capabilities](./capabilities.md)** — the invocation surface every call uses.
-8. **[Biomes](./biomes.md)** — the lifecycle every installable bundle moves through.
-9. **[Skills](./skills/)** — teach agents domain knowledge with folder bundles.
-10. **[Agent Composition](./agent-composition/)** — build multi-agent pipelines with the Model Resolution Matrix.
-11. **[Shell](./shell.md)** — the command surface humans and agents share.
-12. **[CLI](./cli.md)** — install and use the `xema` binary.
-13. **[Xema-as-Code](./iac.md)** — provision the platform declaratively with `xema.yaml` or Terraform.
-14. **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome.
-15. **[SDK / Manifest](./sdk/manifest.md)** — reference for every manifest field.
+7. **[Permissions & Access](./permissions.md)** — the whole access model + the agent reach-tier ceiling.
+8. **[Capabilities](./capabilities.md)** — the invocation surface every call uses.
+9. **[Biomes](./biomes.md)** — the lifecycle every installable bundle moves through.
+10. **[Skills](./skills/)** — teach agents domain knowledge with folder bundles.
+11. **[Agent Composition](./agent-composition/)** — build multi-agent pipelines with the Model Resolution Matrix.
+12. **[Shell](./shell.md)** — the command surface humans and agents share.
+13. **[CLI](./cli.md)** — install and use the `xema` binary.
+14. **[Xema-as-Code](./iac.md)** — provision the platform declaratively with `xema.yaml` or Terraform.
+15. **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome.
+16. **[SDK / Manifest](./sdk/manifest.md)** — reference for every manifest field.
 
 ## Phase rollout
 
