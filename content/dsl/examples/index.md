@@ -122,5 +122,5 @@ jobs:
 
 ---
 
-**Full DSL Reference**: [DSL Reference](/docs/dsl/reference.md)  
-**Best Practices**: [Best Practices](/docs/dsl/best-practices.md)
+**Full DSL Reference**: [DSL Reference](../01-reference.md)  
+**Best Practices**: [Best Practices](../02-best-practices.md)

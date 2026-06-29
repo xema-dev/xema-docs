@@ -73,7 +73,7 @@ Manifest-declared sub-agent delegates. Each entry is a slug from the LLM registr
 spec:
   agent:
     slug: brainstorm
-    phase: interactive
+    stage: interactive
     role: brainstorming
     subAgents:
       - slug: html-builder
@@ -123,15 +123,17 @@ spec:
     - kind: provider
       providerKind: catalog
       resourceId: default-dev-tools
-    # A single tool from a biome workflow
+    # A single tool from a biome workflow. resourceId is the biome
+    # installation id — a plain string; parameterize with ${input.<name>}
+    # if it varies per dispatch.
     - kind: tool
       providerKind: biome_workflow_tools
-      resourceId: ${{ biome.installations['imap-fetcher'].id }}
+      resourceId: "imap-fetcher-installation-id"
       toolName: search-archive
     # A single tool shipped as biome handler code
     - kind: tool
       providerKind: biome_code_tools
-      resourceId: ${{ biome.installations['stripe-tools'].id }}
+      resourceId: "stripe-tools-installation-id"
       toolName: customer-lookup
 ```
 
@@ -153,7 +155,7 @@ session selection is the override.
 
 ## `spec.credentials`
 
-Typed credential bindings the agent needs at runtime. Replaces the ad-hoc `${{ secrets.* }}` escape hatch with a structured contract.
+Typed credential bindings the agent needs at runtime. Replaces the ad-hoc `${secrets.*}` escape hatch with a structured contract.
 
 ```yaml
 spec:

@@ -49,7 +49,7 @@ You can override the model for a specific session:
 }
 ```
 
-Available models come from your organization's [LLM Registry](/docs/workflows/api-reference.md).
+Available models are resolved per-invocation by the [Model Resolution Matrix](../xema-os/agent-composition/02-model-resolution.md).
 
 ### Repository & Branch Strategy
 

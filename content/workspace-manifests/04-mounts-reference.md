@@ -56,7 +56,7 @@ spec:
     repos:
       mode: read-write    # agent can commit, push, create branches
       work:               # repository role/group
-        - url: ${{ input.repo_url }}
+        - url: ${input.repo_url}
           role: primary   # which repo is the "main" one
         - url: https://github.com/example/dependency
           role: reference
@@ -94,9 +94,9 @@ spec:
     references:
       mode: read-only                          # always read-only
       kb:                                      # knowledge-base spaces
-        spaces: ${{ input.kbSpaceIds }}       # e.g. ["best-practices", "api-docs"]
+        spaces: ${input.kbSpaceIds}       # e.g. ["best-practices", "api-docs"]
       externalProjects:                        # external reference repos
-        repos: ${{ input.referenceRepo }}     # e.g. "owner/reference-repo"
+        repos: ${input.referenceRepo}     # e.g. "owner/reference-repo"
 ```
 
 **File structure:**
@@ -294,10 +294,10 @@ spec:
   mounts:
     references:
       kb:
-        spaces: ${{ input.kbSpaces }}     # resolved at dispatch
+        spaces: ${input.kbSpaces}     # resolved at dispatch
     repos:
       work:
-        - url: ${{ input.primaryRepo }}  # resolved at dispatch
+        - url: ${input.primaryRepo}  # resolved at dispatch
 ```
 
 ---
@@ -368,7 +368,7 @@ spec:
     repos:                 # read code
       mode: read-only
       work:
-        - url: ${{ input.repo_url }}
+        - url: ${input.repo_url}
     references: true       # reference patterns/guidelines
     deliverables: true     # write review comments
 ```
@@ -380,7 +380,7 @@ spec:
     repos:                 # work on codebase
       mode: read-write
       work:
-        - url: ${{ input.repo_url }}
+        - url: ${input.repo_url}
     deliverable-specs: true    # understand output contract
     deliverables: true         # write implementation
 ```
@@ -391,7 +391,7 @@ spec:
   mounts:
     references:            # research materials
       kb:
-        spaces: ${{ input.kbSpaces }}
+        spaces: ${input.kbSpaces}
     deliverables: true     # write findings
     # no repos — this is documentation work, not coding
 ```

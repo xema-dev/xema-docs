@@ -418,7 +418,7 @@ ${{ trigger.payload.commit.sha }}           # Commit SHA
 
 External webhooks are configured per-integration in the Integration Adapters service. Each integration subscribes a specific provider and routes normalized events to the workflow engine.
 
-See [Integration Guide](/docs/workflows/integration-guide.md) for provider setup instructions.
+See [Integration Guide](./05-integration-guide.md) for provider setup instructions.
 
 ### Example: GitHub PR Auto-Review
 
@@ -640,5 +640,5 @@ jobs:
 
 ---
 
-**Next**: [Concurrency & Execution Control](/docs/workflows/features.md#concurrency-control)  
-**See Also**: [DSL Reference: Triggers](/docs/dsl/reference.md#triggers)
+**Next**: [Concurrency & Execution Control](./02-features.md#concurrency-control)  
+**See Also**: [DSL Reference: Triggers](../dsl/01-reference.md#triggers)

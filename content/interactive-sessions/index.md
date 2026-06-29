@@ -175,7 +175,7 @@ Sessions can be bound to a **pipeline run** (`pipelineRunId`). When this happens
 - When the session completes, results flow back to the pipeline
 - The pipeline can gate on the session result (approval, artifact quality)
 
-See [Pipeline Integration Examples](/docs/dsl/examples/pipeline-integration.md) for workflow examples that spawn sessions.
+See [Pipeline Integration Examples](../dsl/examples/pipeline-integration.md) for workflow examples that spawn sessions.
 
 ---
 

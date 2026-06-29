@@ -137,40 +137,67 @@ function separateFrontmatter(raw) {
 }
 
 /**
- * Resolve a request slug to an absolute markdown path, fail-fast on a path
- * that would escape the docs root (traversal guard).
+ * Resolve a request slug to the ordered markdown candidates to try, fail-fast
+ * on a path that would escape the docs root (traversal guard).
+ *
+ * A slug names either a page file (`<slug>.md`) or a section directory whose
+ * landing page is its `index.md` (`<slug>/index.md`). Section links in the
+ * docs are authored as `./section/`, which arrives here as the BARE directory
+ * slug — so a slug with no `<slug>.md` MUST fall back to `<slug>/index.md`
+ * (the standard "a directory URL serves its index" rule). Without it every
+ * section-landing link 404s.
+ *
+ * Each candidate carries the `canonicalSlug` of the file it would serve — for
+ * a directory slug that is `<slug>/index`, so the viewer can resolve the
+ * page's relative links against the right directory rather than the docs root.
  */
-function resolveMarkdownPath(slug) {
+function resolveMarkdownCandidates(slug) {
   if (typeof slug !== 'string' || slug.trim() === '') {
     throw new BadRequestError('Query param "path" is required.');
   }
   if (slug.includes('\0')) {
     throw new BadRequestError('Invalid path.');
   }
-  const candidate = resolve(DOCS_SOURCE_DIR, `${slug}${MARKDOWN_EXTENSION}`);
   const rootWithSep = DOCS_SOURCE_DIR.endsWith(sep)
     ? DOCS_SOURCE_DIR
     : `${DOCS_SOURCE_DIR}${sep}`;
-  if (!candidate.startsWith(rootWithSep)) {
-    throw new BadRequestError('Path escapes documentation root.');
+  const candidates = [
+    {
+      absPath: resolve(DOCS_SOURCE_DIR, `${slug}${MARKDOWN_EXTENSION}`),
+      canonicalSlug: slug,
+    },
+    {
+      absPath: resolve(DOCS_SOURCE_DIR, slug, `index${MARKDOWN_EXTENSION}`),
+      canonicalSlug: `${slug}/index`,
+    },
+  ];
+  for (const { absPath } of candidates) {
+    if (!absPath.startsWith(rootWithSep)) {
+      throw new BadRequestError('Path escapes documentation root.');
+    }
   }
-  return candidate;
+  return candidates;
 }
 
 async function getContent(slug) {
-  const filePath = resolveMarkdownPath(slug);
-  try {
-    const raw = await readFile(filePath, 'utf8');
+  const candidates = resolveMarkdownCandidates(slug);
+  for (const { absPath, canonicalSlug } of candidates) {
+    let raw;
+    try {
+      raw = await readFile(absPath, 'utf8');
+    } catch (err) {
+      // Only a missing candidate falls through to the next; a real read error
+      // (permissions, etc.) propagates — no silent degradation.
+      if (isMissingFileError(err)) continue;
+      throw err;
+    }
     const { frontmatter, body } = separateFrontmatter(raw);
     // `content` is the display body (frontmatter stripped); `frontmatter` is
-    // the raw YAML text for metadata consumers (empty when there is none).
-    return { content: body, path: slug, frontmatter };
-  } catch (err) {
-    if (isMissingFileError(err)) {
-      throw new NotFoundError(`Doc not found: ${slug}`);
-    }
-    throw err;
+    // the raw YAML text for metadata consumers (empty when there is none);
+    // `path` is the canonical slug of the file actually served.
+    return { content: body, path: canonicalSlug, frontmatter };
   }
+  throw new NotFoundError(`Doc not found: ${slug}`);
 }
 
 function isMissingFileError(err) {

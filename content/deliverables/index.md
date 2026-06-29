@@ -12,6 +12,7 @@ A **deliverable spec** describes what an agent must produce on a given workflow 
 | [02 Authoring](./02-authoring.md) | Declaring `with.deliverableSpecRef` in a workflow; literal vs expression form; matrix fan-out for variable count |
 | [03 Output Envelope](./03-output-envelope.md) | The canonical `agentResult.deliverable` shape and how downstream YAML expressions read it |
 | [04 Validation & Self-Correction](./04-validation-and-self-correction.md) | What kind handlers verify, structured failure payloads, and the one-shot self-correction loop |
+| [Reviewer Output](./reviewer-output.md) | The review-verdict deliverable shape and how the reviewer kernel emits it |
 | [Examples](./examples/index.md) | End-to-end YAML for each kind plus a mixed-kind matrix dispatch |
 
 ## Getting Started

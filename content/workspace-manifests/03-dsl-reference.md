@@ -59,7 +59,7 @@ metadata:
 spec:
   agent:
     slug: clarification-coordinator
-    phase: clarification
+    stage: clarification
     role: coordinator
   mounts:
     deliverable-specs: { mode: read-only }   # added on top of base
@@ -106,7 +106,7 @@ them directly in the Agent Studio.
 
 ## Inputs
 
-Declare variables that callers supply at dispatch or session start. All `${{ input.x }}` references in the manifest must have a corresponding input declaration.
+Declare variables that callers supply at dispatch or session start. All `${input.x}` references in the manifest must have a corresponding input declaration.
 
 ```yaml
 spec:
@@ -184,11 +184,12 @@ spec:
 
 ## Expression Syntax
 
-Manifest values can include **expressions** that are resolved at bind time. Expressions use `${{ ... }}` syntax and can reference:
+Manifest values can include **interpolation tokens** resolved at bind time. The grammar is intentionally narrow — parameterized templates, not control flow — so the only form is single-brace `${ … }`, and the only reference the manifest interpolator resolves is a declared input:
 
-- **Inputs:** `${{ input.repoRef }}`
-- **Literals:** `${{ 'string-value' }}`
-- **Environment:** `${{ env.USER }}` (platform-supplied, not user inputs)
+- **Input:** `${input.repoRef}` — resolves to a `spec.inputs` value (a whole-value token preserves the input's declared type, e.g. an array stays an array).
+- **Input with default:** `${input.repoRef | default: 'main'}` — falls back to a string (`'foo'`/`"foo"`), number, or boolean literal when the input is absent.
+
+`spec.env` values may additionally reference a declared credential as `${credential.NAME}` — see [Environment Blocks](./05-environment-blocks.md). No other token namespaces (`env.*`, bare literals, arithmetic, function calls) are supported; an unrecognised token is a compile-time error (`unsupported interpolation token`).
 
 ### Examples
 
@@ -205,20 +206,20 @@ spec:
   mounts:
     repos:
       work:
-        - url: "https://github.com/${{ input.repo }}"
+        - url: "https://github.com/${input.repo}"
           role: primary
   
   seedFiles:
     - path: /workspace/config.json
       content: |
         {
-          "debug": ${{ input.debug }},
-          "repo": "${{ input.repo }}"
+          "debug": ${input.debug},
+          "repo": "${input.repo}"
         }
   
   env:
     - name: DEBUG_MODE
-      value: "${{ input.debug }}"
+      value: "${input.debug}"
 ```
 
 ### Expression Resolution Rules
@@ -227,8 +228,8 @@ spec:
 2. **Missing input:** If `required: true` input is missing → compile error
 3. **Default fallback:** If `required: false` input is missing → use `default` value
 4. **Null handling:** `null` values are rejected unless explicitly allowed
-5. **No nested expressions:** `${{ ${{ ... }} }}` is invalid
-6. **String interpolation:** Expressions can be embedded in strings: `"prefix-${{ input.x }}-suffix"`
+5. **No nested tokens:** `${ ${ … } }` is invalid
+6. **String interpolation:** Expressions can be embedded in strings: `"prefix-${input.x}-suffix"`
 
 ---
 
@@ -317,7 +318,7 @@ When manifest compilation fails — at biome install time, or in your editor via
 |---|---|---|
 | `VALIDATION_ERROR` | Tier 1 or 2 failure | Fix the YAML |
 | `TEMPLATE_NOT_FOUND` | Required template doesn't exist | Ship the template as a skill-bundle resource referenced by the manifest |
-| `INTERPOLATION_ERROR` | Expression syntax error | Check `${{ ... }}` syntax |
+| `INTERPOLATION_ERROR` | Expression syntax error | Check `${ … }` token syntax |
 | `SEMANTIC_ERROR` | Tier 3 (runtime) failure | Will be caught at dispatch; can't fix offline |
 
 ---

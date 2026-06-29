@@ -114,7 +114,7 @@ Declares the agent identity. The platform resolves the agent definition, its ski
 spec:
   agent:
     slug: engineer              # agent slug registered in the LLM Registry
-    phase: engineering          # phase key (controls which config tier is used)
+    stage: engineering          # stage key — a structural label, not a config-resolution dimension
     role: engineer              # see Role values below
     deliverableSpecRef: ${input.deliverableSpecRef}   # optional
 ```
@@ -223,7 +223,7 @@ spec:
       default: My Xema Canvas
   agent:
     slug: demo-runner
-    phase: interactive
+    stage: interactive
     role: agent-session
   seedFiles:
     - path: preview/index.html
@@ -285,7 +285,7 @@ spec:
       mode: read-only
   agent:
     slug: brainstorming
-    phase: interactive
+    stage: interactive
     role: coordinator
   seedFiles:
     - path: preview/index.html
@@ -345,7 +345,7 @@ spec:
       mode: read-only
   agent:
     slug: engineer
-    phase: engineering
+    stage: engineering
     role: engineer
     deliverableSpecRef: ${input.deliverableSpecRef}
 ```
