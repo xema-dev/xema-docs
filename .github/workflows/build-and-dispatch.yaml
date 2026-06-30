@@ -1,6 +1,6 @@
 # Self-hosted runners (xema-dev). Registration:
 #   https://github.com/organizations/xema-dev/settings/actions/runners
-# Runner labels: [self-hosted, linux, xema-dev].
+# Runner labels: [self-hosted, linux].
 name: Build & Dispatch (docs-api)
 
 # Builds the docs-api image (this repo is the single source of truth for Xema
@@ -29,7 +29,7 @@ env:
 jobs:
   build:
     name: Build & dispatch docs-api
-    runs-on: [self-hosted, linux, xema-dev]
+    runs-on: [self-hosted, linux]
     permissions:
       contents: read
       packages: write
