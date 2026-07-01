@@ -107,8 +107,7 @@ A biome can contribute:
 | `artifact-type` | `backend/artifact-types/` | Custom artifact kinds |
 | `event-subscription` | `contracts/events.json` | Declarative CloudEvent subscriptions |
 | `backend-service` | `backend/api/` | Optional backend service with capabilities namespace |
-| `frontend-route` | `frontend/routes/` | New UI routes in the platform shell |
-| `frontend-slot` | `frontend/slots/` | Platform UI slot contributions |
+| `frontend` (web) | `<id>-web/` package | UI pages, nav items, and slot panels — a `target: "web"` biome that default-exports a `FrontendBiomeFactory` (authored via `defineWebBiome`). See [UI: I contribute](../xema-os/sdk/ui-i-contribute.md) |
 | `storage-schema` | `backend/migrations/` | Managed relational database schema for the biome |
 
 ---
