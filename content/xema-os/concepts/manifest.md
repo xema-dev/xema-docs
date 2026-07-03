@@ -20,5 +20,5 @@ version. The optional `lifecycle` block declares the five hook fields
 (`onInstall`, `onUninstall`, `onUpgrade`, `onEnable`, `onDisable`) that
 `biome-host-api` invokes at the corresponding [BiomeLifecycle](./lifecycle.md)
 transitions. See the [Manifest reference](../sdk/manifest.md) for every
-field and `apps/biome-host-api/openapi.json` for the publish / install
+field and `biome-host-api`'s OpenAPI spec for the publish / install
 surface.

@@ -1,7 +1,3 @@
-# Self-hosted runners (xema-dev). Registration:
-#   https://github.com/organizations/xema-dev/settings/actions/runners
-# Runner labels: [self-hosted, linux]. macOS/Windows kept on
-# GitHub-hosted runners only where the build genuinely requires that OS.
 name: Deploy docs to GitHub Pages
 on:
   push:

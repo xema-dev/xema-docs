@@ -93,7 +93,7 @@ Empty optional layers are omitted entirely — a biome with no `assets/` directo
 
 ### Packaging tool
 
-The repo-local CLI `xema-biome-package` (workspace path `tooling/biome-package/`) does the packaging. From the monorepo root:
+The `xema-biome-package` CLI does the packaging:
 
 ```bash
 pnpm biome package <biome-dir> --out <oci-layout-dir> --tag registry.xemahq.com/biomes/<id>:<version>
@@ -116,7 +116,7 @@ Every push also generates a SLSA v1.0 in-toto attestation describing the build r
 
 ### Install-time enforcement
 
-`apps/biome-fetcher-api` verifies signature + provenance **before** any bytes are unpacked. Failure modes:
+`biome-fetcher-api` verifies signature + provenance **before** any bytes are unpacked. Failure modes:
 
 | Verdict | Error code | HTTP status |
 |---|---|---|

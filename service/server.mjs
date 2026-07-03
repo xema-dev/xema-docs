@@ -1,13 +1,11 @@
 // =============================================================================
 // docs-api — the public documentation content server.
 //
-// Reads the markdown docs in `content/` (this repo is the single source of
-// truth for Xema public docs) and serves them as JSON for the host-web
-// in-app docs viewer (`xema.dev/docs`) and for any other consumer
-// (e.g. xema-shell-api's concept registry).
+// Reads the markdown docs in `content/` and serves them as JSON for the
+// in-app docs viewer (`xema.dev/docs`) and for any other consumer.
 //
 // Endpoints (all public, read-only):
-//   GET /api/docs                  -> Swagger UI (API_STANDARDS §1: /api is Swagger-only)
+//   GET /api/docs                  -> Swagger UI (the /api prefix is reserved for the API reference)
 //   GET /api/openapi.json          -> OpenAPI 3 spec
 //   GET /tree                      -> DocTreeNode[]
 //   GET /content?path=<slug>       -> { content, path, frontmatter }
@@ -206,11 +204,8 @@ function isMissingFileError(err) {
 }
 
 // ── OpenAPI / Swagger ─────────────────────────────────────────────────────────
-// API_STANDARDS.md §1 requires Swagger at /api/docs + the spec at
-// /api/openapi.json for every service. docs-api is not a NestJS service (the
-// Nest-plugin / Orval codegen sub-rules don't apply — its frontend client is
-// hand-written), so the spec is authored here by hand and kept in sync with the
-// handlers above.
+// Swagger UI is served at /api/docs and the spec at /api/openapi.json. The
+// spec is authored by hand here and kept in sync with the handlers above.
 
 const OPENAPI_SPEC = {
   openapi: '3.0.3',
@@ -219,9 +214,8 @@ const OPENAPI_SPEC = {
     version: '1.0.0',
     description:
       'Serves the Xema public documentation — the Markdown under `content/` in ' +
-      'the xema-docs repo (the single source of truth for public docs) — as ' +
-      'JSON. Consumed by the host-web docs viewer at xema.dev/docs and by ' +
-      'xema-shell-api (concept registry). Read-only and unauthenticated.',
+      'the xema-docs repo — as JSON. Consumed by the in-app docs viewer at ' +
+      'xema.dev/docs. Read-only and unauthenticated.',
   },
   servers: [
     { url: 'https://docs-api.xema.dev', description: 'Production' },
@@ -546,8 +540,8 @@ async function handleContent(res, url) {
 }
 
 // Static (no-arg) GET routes. Content routes live OFF the `/api` prefix
-// (API_STANDARDS §1 reserves `/api` for Swagger only); the viewer (host-web)
-// and the concept registry (xema-shell-api) both consume `/tree` + `/content`.
+// (which is reserved for the Swagger UI + spec); consumers read `/tree` +
+// `/content`.
 const STATIC_ROUTES = {
   '/health/live': (res) => send(res, 200, { status: 'ok' }),
   '/api/openapi.json': (res) => send(res, 200, OPENAPI_SPEC),

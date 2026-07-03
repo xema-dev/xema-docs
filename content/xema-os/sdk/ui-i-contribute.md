@@ -10,7 +10,7 @@ You do **not** declare UI in `xema-biome.json`. The manifest only declares that
 the biome is a web biome (`xema.target: "web"`) plus its id, scope, and display
 metadata; every frontend contribution comes from the default-exported factory.
 
-- **Host shell**: `submodules/xema-host-web` — a Next.js App Router app.
+- **Host shell**: `xema-host-web` — a Next.js App Router app.
 - **Kernel contract**: `@xemahq/ui-kernel` (published on npm). Host-rendering
   helpers (`<BiomeSlot>`, `HostExtensionSlots`, session primitives) live under
   the `@xemahq/ui-kernel/registry` subpath.
@@ -256,8 +256,8 @@ contributions object (session profiles, slash commands, secondary-drawer tabs,
 header chips, mutation bars, activity/tool-call renderers, attachment classes)
 and can bind a biome-defined artifact `OutputKind` to a renderer via
 `outputRenderers[]` (overlaid on the built-in set; built-in kinds cannot be
-overridden, new kinds light up when the biome loads). The reference biome at
-`submodules/xema-host-web/templates/template-third-party-web/` exercises every
+overridden, new kinds light up when the biome loads). The reference biome
+`template-third-party-web` (shipped with `xema-host-web`) exercises every
 contribution kind — fork it to bootstrap a real biome.
 
 ---

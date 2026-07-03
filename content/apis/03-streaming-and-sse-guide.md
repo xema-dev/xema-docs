@@ -118,7 +118,7 @@ Swagger usually describes the HTTP route but not the live event envelope matrix 
 <!-- AUTO-GENERATED:REALTIME_EVENTS_START -->
 ## Realtime Events You May Receive
 
-This section is auto-generated from every backend descriptor registry in the monorepo (`apps/*/src/events/...`). Re-run `pnpm --filter docs-api run build:docs` after adding or modifying a `defineEvent({...})` declaration.
+This section is auto-generated from every backend service's event descriptor registry. It is regenerated after adding or modifying a `defineEvent({...})` declaration.
 
 ### Domain Summary
 

@@ -135,7 +135,7 @@ Before the registry, every service carried its own coupling:
 - A docker-compose / Helm values entry per consumer.
 - A per-service "seeder" that hot-loaded peers at boot.
 
-Adding a service meant editing dozens of consumers. Renaming a service meant a coordinated PR across the monorepo. The registry collapses all of that into **two things**: register once at boot, inject by name.
+Adding a service meant editing dozens of consumers. Renaming a service meant a coordinated change across every consumer. The registry collapses all of that into **two things**: register once at boot, inject by name.
 
 ---
 

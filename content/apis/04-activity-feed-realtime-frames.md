@@ -75,7 +75,7 @@ Treat realtime as a low-latency hint channel and make consumers idempotent.
 <!-- AUTO-GENERATED:REALTIME_EVENTS_START -->
 ## Activity Feed Realtime Event Matrix
 
-Every event a subscriber may receive over the unified realtime stream. Materialization into `FeedItem` rows is determined per-descriptor by the `descriptor.feed` metadata block (or the fallback type-keyed map in `apps/activity-feed-api/src/feed/materializer-definitions.ts`).
+Every event a subscriber may receive over the unified realtime stream. Materialization into `FeedItem` rows is determined per-descriptor by the `descriptor.feed` metadata block (or a fallback type-keyed map in `activity-feed-api`).
 
 | Event Type | Visibility | Producing Service | Description |
 |---|---|---|---|

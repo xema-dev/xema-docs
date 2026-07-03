@@ -68,7 +68,7 @@ The trade-off: embedded runners share the kernel server's lifecycle. A crash tak
 
 ## Local-module runners — the developer default
 
-A **local-module runner** is a separate process on the same node, supervised by `apps/biome-host-api`. This is the default for first-party biomes and for every biome installed by `xema dev`. The supervisor:
+A **local-module runner** is a separate process on the same node, supervised by `biome-host-api`. This is the default for first-party biomes and for every biome installed by `xema dev`. The supervisor:
 
 - Spawns the runner with a minimal environment (no `*_API_URL` env vars — the runner discovers everything via the Service Registry).
 - Issues a service-account token at spawn time.

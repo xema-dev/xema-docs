@@ -3,7 +3,7 @@
 A biome that needs persistence has two choices:
 
 - **Ship a full relational database schema** in a [biome-owned API](./backend-i-ship.md) — own the migrations, own the queries, own the operational surface.
-- **Declare collections** in `xema-biome.json`'s `storage` block — let the shared **biome data plane** (`apps/biome-storage-api`) host them, with per-tenant isolation, encryption, and a closed filter grammar already wired in.
+- **Declare collections** in `xema-biome.json`'s `storage` block — let the shared **biome data plane** (`biome-storage-api`) host them, with per-tenant isolation, encryption, and a closed filter grammar already wired in.
 
 This page documents the second path. The two patterns coexist — a biome may use both.
 

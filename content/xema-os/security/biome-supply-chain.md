@@ -1,6 +1,6 @@
 # Biome supply-chain security
 
-Biomes are distributed as **signed OCI artifacts** with **SLSA v1.0 provenance attestations**. Verification is enforced at install time by `apps/biome-fetcher-api`. There are no silent fallbacks — a biome that fails any verification step cannot install.
+Biomes are distributed as **signed OCI artifacts** with **SLSA v1.0 provenance attestations**. Verification is enforced at install time by `biome-fetcher-api`. There are no silent fallbacks — a biome that fails any verification step cannot install.
 
 This page is the operator runbook for managing trust in that pipeline.
 
@@ -27,7 +27,7 @@ Any failure produces a typed `BIOME_*` error code and a 403 response — install
 | `BIOME_REQUIRE_PROVENANCE` | optional | `"true"` (default) requires a valid SLSA v1.0 attestation. `"false"` skips provenance (signature still required). |
 | `BIOME_ALLOW_UNSIGNED_INSTALL` | dev only | Set to `"1"` to disable verification entirely in test/dev environments. **Never set in production.** |
 
-All four land in `biome-fetcher-api`'s Helm values at `apps/biome-fetcher-api/helm/main.values.yaml` and are sourced from the `biome-fetcher-secrets` external secret manifest in the cluster namespace.
+All four are configured on the `biome-fetcher-api` deployment — supplied as environment variables and sourced from your secret manager rather than committed to values files.
 
 ---
 
@@ -47,14 +47,9 @@ The certificate-identity is the **workflow ref** that signed the artifact. The c
 
 ### Operator side
 
-```bash
-# Add a new trusted publisher (must edit the secret manifest, not the Helm values)
-kubectl -n xema-prod edit externalsecret biome-fetcher-secrets
-# Append to the comma-separated `trustedPublishers` value.
-
-# Restart the fetcher so it re-reads the env
-kubectl -n xema-prod rollout restart deployment/biome-fetcher-api
-```
+To add a new trusted publisher, append its identity to the comma-separated
+`BIOME_TRUSTED_PUBLISHERS` value in your secret manager, then restart (roll)
+the `biome-fetcher-api` deployment so it re-reads the environment.
 
 Trust changes apply only to subsequent install requests. Already-installed biomes are not re-verified retroactively — the verification gate runs on the install path, not on every runtime call.
 
@@ -100,7 +95,7 @@ Provenance generated on a developer laptop carries `builderId = local-developer:
 ### Lost / compromised signing key (keyed mode)
 
 1. Remove the affected `key:<path>` entry from `BIOME_TRUSTED_PUBLISHERS`.
-2. Rotate the secret manifest (`kubectl -n xema-prod apply -f ...`).
+2. Rotate the backing secret.
 3. Restart `biome-fetcher-api` deployments.
 4. Re-sign and re-push every active biome version with a fresh key, then add the new public key.
 
@@ -114,7 +109,7 @@ Installed-but-not-yet-fetched biomes will fail their next pull. Already-installe
 
 ### `cosign` binary missing from the fetcher image
 
-Symptom: `BIOME_COSIGN_UNAVAILABLE` on every OCI install. Fix: the fetcher Dockerfile must `COPY` the cosign binary (or `apk add cosign`) into the runtime image. Track via `apps/biome-fetcher-api/Dockerfile` (when not using the canonical backend service Dockerfile fallback).
+Symptom: `BIOME_COSIGN_UNAVAILABLE` on every OCI install. Fix: the fetcher's container image must include the cosign binary — `COPY` it in (or `apk add cosign`) as part of the `biome-fetcher-api` image build.
 
 ---
 

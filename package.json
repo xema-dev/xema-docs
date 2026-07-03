@@ -3,6 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "license": "Apache-2.0",
+  "author": "Neuralchowder Inc. <developer@xema.dev> (https://xema.dev)",
+  "homepage": "https://xema.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xema-dev/xema-docs.git"
+  },
+  "bugs": "https://github.com/xema-dev/xema-docs/issues",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

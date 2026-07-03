@@ -2,14 +2,11 @@
 # =============================================================================
 # docs-api image — the public documentation content server.
 #
-# This repo (xema-docs) is the single source of truth for Xema public docs.
 # The image bakes the `content/` markdown bundle and the zero-dependency Node
-# server, so the service builds and runs entirely on its own.
+# server, so the service builds and runs entirely on its own. It backs the
+# in-app docs viewer at xema.dev/docs.
 #
-#   docker build -t ghcr.io/xema-dev/docs-api:dev .
-#
-# Deployed to the cluster via xema-deploy (charts/docs-api). The host-web docs
-# viewer (xema.dev/docs) and xema-shell-api both consume it.
+#   docker build -t docs-api:dev .
 # =============================================================================
 
 FROM public.ecr.aws/docker/library/node:22-slim AS runtime

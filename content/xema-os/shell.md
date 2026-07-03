@@ -79,7 +79,7 @@ The WS transport is gated by `XEMA_SHELL_WS_ENABLED`. When disabled, the gateway
 
 ## The terminal route — `/shell`
 
-The host shell exposes an xterm.js-backed terminal at `/shell` in `submodules/xema-host-web`. The page wires xterm.js (with `@xterm/addon-fit`, `@xterm/addon-web-links`, `@xterm/addon-search`) to the `/shell/ws` gateway through the `useXemaShellSession()` hook.
+The host shell exposes an xterm.js-backed terminal at `/shell` in `xema-host-web`. The page wires xterm.js (with `@xterm/addon-fit`, `@xterm/addon-web-links`, `@xterm/addon-search`) to the `/shell/ws` gateway through the `useXemaShellSession()` hook.
 
 The page is also available embedded at `/embedded/shell` for external-subject contexts where the host shell is replaced by an app's branded chrome. The embedded variant carries the delegated session JWT in the URL token.
 
