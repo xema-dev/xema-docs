@@ -86,6 +86,26 @@ cd hello-xema
 
 There is no pnpm dependency, no monorepo assumption. The scaffolded directory is self-contained.
 
+### `xema biome validate [path]`
+
+Run the pre-boot checks over a biome directory — manifest schema, `xema.agents[]` ⟷ `agents/*.md` parity, contribution envelopes, skill frontmatter, workflow schemas — without booting anything. Works from anywhere inside the biome; defaults to the current directory.
+
+```bash
+xema biome validate            # validate the biome you are inside
+xema biome validate ./my-biome
+```
+
+Exits `0` when every check passes and `3` when a check fails (every issue is listed, not just the first) — so it drops straight into CI.
+
+### `xema biome dev [path]`
+
+The biome sandbox loop: run the same validation pass, overlay the directory as a workspace source (no publish, no token), and boot the smallest platform slice the biome needs.
+
+```bash
+xema biome dev                 # validate + boot from inside the biome
+xema biome dev --dry-run       # validate + print the resolved slice, boot nothing
+```
+
 ### `xema biome install <ref-or-path>`
 
 Install a biome into the local Xema instance.
@@ -187,6 +207,7 @@ This sequence is the canonical first experience: a working Xema with one biome i
 xema biome scaffold my-biome
 cd my-biome
 # edit ./contributions, ./agents, ./skills, ./api...
+xema biome validate
 xema biome lint
 xema biome install ./
 xema run my:something@1

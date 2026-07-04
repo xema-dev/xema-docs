@@ -217,6 +217,7 @@ The `manifest` body is validated by the owning platform service per `kind`; a ma
 Validation is layered, and every layer uses the same platform schema — never a docs-only approximation:
 
 - **Scaffold time** — `xema biome scaffold` re-parses the generated manifest with the real platform parser before it returns.
+- **Author time** — `xema biome validate` runs the full pre-boot checks over the biome directory — manifest schema, `xema.agents[]` ⟷ `agents/*.md` parity, contribution envelopes, skill frontmatter, workflow schemas — without booting anything. It works from anywhere inside the biome and exits non-zero when a check fails, so it drops straight into CI.
 - **Lint** — `xema biome lint` runs the workspace boundary checks (biome folder layout, deprecated-name usage, hardcoded tool names) from anywhere inside a Xema workspace.
 - **Boot time** — when the platform loads the biome, the manifest is parsed against the schema and the `xema.agents[]` roster is cross-validated against the on-disk `agents/*.md` files. A drifted manifest fails fast instead of silently degrading.
 
@@ -231,6 +232,8 @@ During development, a biome that lives in your workspace boots directly — no p
 ```bash
 xema dev
 ```
+
+From inside a single biome directory, `xema biome dev` runs the validation pass above and then boots only the smallest platform slice that biome needs — the sandbox loop for developing one biome without a full workspace.
 
 Workspace sources always take precedence over remote sources for the same biome id, so local edits win. To try a biome published elsewhere without a running platform, fetch it to your machine:
 

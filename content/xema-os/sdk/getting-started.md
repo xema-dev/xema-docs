@@ -115,6 +115,7 @@ That is the end-to-end loop: scaffold, install, invoke. The same loop works agai
 Edit `agents/greeter.agent.yaml`, edit the contribution manifest, add new contributions to `contributions/`. Then:
 
 ```bash
+xema biome validate        # pre-boot checks: manifest, agents, contributions, skills, workflows
 xema biome lint            # boundary + manifest + capability-call audit
 xema biome install ./      # reinstall over the previous version
 xema run hello:greet@1 --name Eduardo
