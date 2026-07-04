@@ -6,28 +6,19 @@ A **biome** is a folder bundle with a `xema-biome.json` manifest at its root. Un
 
 ## The manifest
 
-`xema-biome.json` is the sole required file. A minimal manifest:
+`xema-biome.json` is the sole required file. It is a wrapped `{ "name", "version", "xema": { … } }` document — everything biome-specific lives under `xema`, discriminated on `xema.target` (`server` or `web`). A minimal manifest:
 
 ```json
 {
-  "name": "acme-code-review",
+  "name": "@acme/code-review",
   "version": "1.0.0",
-  "displayName": "Acme Code Review",
-  "description": "Automated PR review workflows for the Acme engineering team.",
-  "lifecycle": "draft",
-  "requiresCapabilities": [
-    "connector:scm.create-pull-request@1",
-    "kb:page.write@1"
-  ],
-  "permissionHints": {
-    "connector:scm.create-pull-request@1": "Posts review comments back to the PR.",
-    "kb:page.write@1": "Stores review summaries in the knowledge base."
-  },
-  "defaultProfile": "internal-agent",
-  "contributions": {
-    "workflows": ["workflows/pr-review.yaml"],
-    "agents": ["agents/reviewer.agent.json"],
-    "skills": ["skills/code-review/"]
+  "xema": {
+    "id": "acme-code-review",
+    "displayName": "Acme Code Review",
+    "description": "Automated PR review workflows for the Acme engineering team.",
+    "scope": "platform",
+    "target": "server",
+    "requiresCapabilities": ["kb:page.write@1"]
   }
 }
 ```
@@ -36,13 +27,16 @@ Key fields:
 
 | Field | Purpose |
 |---|---|
-| `name` | Unique kebab-case identifier within the org |
-| `version` | Semantic version; the Store and lockfile pin to this |
-| `lifecycle` | Current state in the lifecycle state machine |
-| `requiresCapabilities` | Every capability ref the biome may invoke |
-| `permissionHints` | Human-readable reason per capability (shown at install time) |
-| `defaultProfile` | Built-in profile that best fits this biome's risk level |
-| `contributions` | Paths to each contribution kind |
+| `name` | Scoped package name; the Store and lockfile pin `name@version` |
+| `version` | Semantic version |
+| `xema.id` | Unique kebab-case biome identifier (matches the folder name) |
+| `xema.target` | `server` (backend contributions) or `web` (frontend bundle) |
+| `xema.scope` | Dependency/boot tier: `kernel`, `system`, `base`, `platform` |
+| `xema.requiresCapabilities` | Every capability ref the biome may invoke |
+| `xema.permissions` | Consent metadata (profile recommendation + per-capability reasons) shown at install time |
+| `xema.ships.apis[]` | API services the biome ships (content is discovered from convention directories instead) |
+
+The full field-by-field detail — generated from the platform schema itself — is in the [Manifest Reference](./04-manifest-reference.md).
 
 ---
 
@@ -95,20 +89,20 @@ Every call from the biome goes through the capability gateway with `{ ref, subje
 
 A biome can contribute:
 
-| Kind | Folder | Description |
+| Kind | Where it lives | Description |
 |---|---|---|
-| `agent-definition` | `agents/` | Named agents with prompts and intrinsic skills/tools |
-| `agent-skill` | `skills/` | Skill folder bundles (see [Skills](../xema-os/skills/)) |
-| `workflow-definition` | `workflows/` | Workflow YAML files |
-| `deliverable-spec` | `specs/` | Structured output contracts |
-| `connector-binding` | `contracts/` | Named connector bindings (SCM, tracker, docs, chat) |
-| `document-template` | `templates/` | Document and report templates |
-| `mount-source` | `backend/mount-sources/` | Custom agent workspace mount sources |
-| `artifact-type` | `backend/artifact-types/` | Custom artifact kinds |
-| `event-subscription` | `contracts/events.json` | Declarative CloudEvent subscriptions |
-| `backend-service` | `backend/api/` | Optional backend service with capabilities namespace |
-| `frontend` (web) | `<id>-web/` package | UI pages, nav items, and slot panels — a `target: "web"` biome that default-exports a `FrontendBiomeFactory` (authored via `defineWebBiome`). See [UI: I contribute](../xema-os/sdk/ui-i-contribute.md) |
-| `storage-schema` | `backend/migrations/` | Managed relational database schema for the biome |
+| Agent definitions | `agents/<slug>.md` + `xema.agents[]` | Named agents with prompts and permissions; the manifest roster and the files are cross-validated |
+| Skills | `skills/` | Skill folder bundles (see [Skills](../xema-os/skills/)) |
+| Workflows | `workflow-config/` | Workflow YAML files |
+| Deliverable specs | `deliverable-specs/` | Structured output contracts |
+| Workspace manifests | `workspace-manifests/` | Agent workspace manifests |
+| Typed contribution envelopes | `contributions/*.contribution.json` | Capabilities, connector bindings, document templates, and every other single-file typed kind |
+| Event subscriptions | `xema.subscribes[]` | Declarative CloudEvent subscriptions bound to handler modules |
+| API services | `api/<name>/` + `xema.ships.apis[]` | Optional backend services the biome ships |
+| Managed database | `xema.database` | Managed relational schema provisioned per org, migrated at boot |
+| Frontend (web) | `<id>-web/` package | UI pages, nav items, and slot panels — a `target: "web"` biome that default-exports a frontend module (authored via `defineWebBiome`). See [UI: I contribute](../xema-os/sdk/ui-i-contribute.md) |
+
+Multi-file content kinds are discovered by **on-disk presence** of their convention directory — there is no per-kind declaration list in the manifest. The complete directory table is in the [Manifest Reference](./04-manifest-reference.md#convention-content-directories).
 
 ---
 

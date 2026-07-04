@@ -1,94 +1,167 @@
 # Authoring a Biome
 
-A biome is a folder. You need a `xema-biome.json` manifest and at least one contribution. This page walks through the authoring lifecycle from first file to local validation.
+A biome is a folder with a **`xema-biome.json`** manifest at its root. Everything else — agents, skills, workflows, contribution envelopes, an optional API service — is discovered from conventional directories or declared in the manifest. This page walks through the authoring lifecycle from first file to local validation; the field-by-field schema detail lives in the generated [Manifest Reference](./04-manifest-reference.md).
+
+---
+
+## Scaffold a starting point
+
+The fastest way to a valid biome is to generate one:
+
+```bash
+xema biome scaffold acme-code-review --target server --scope platform
+```
+
+The scaffolder re-parses the generated `xema-biome.json` with the real platform manifest parser before it returns, so a fresh scaffold is guaranteed installable. Pass `--target web` for a frontend-only biome.
 
 ---
 
 ## Folder layout
 
+A biome ships content by **on-disk presence**: drop files into the conventional directory and the platform discovers them — there is no per-kind declaration list in the manifest. A typical server biome:
+
 ```
 acme-code-review/
-  xema-biome.json               ← manifest (required)
-  contracts/
-    capabilities.json           ← exposesCapabilities + requiresCapabilities
-    permissions.json            ← role-capability + environment hooks
-    events.json                 ← declarative subscribes[]
+  xema-biome.json                 ← manifest (required, the only strict file)
   agents/
-    reviewer.agent.json         ← agent definitions
+    reviewer.md                   ← agent definition; also listed in xema.agents[]
   skills/
-    code-review/                ← skill folder bundle (SKILL.md required)
+    code-review/                  ← skill folder bundle (SKILL.md required)
       SKILL.md
       reference/
         style-guide.md
-  workflows/
-    pr-review.yaml              ← workflow YAML
-  specs/
-    review-report.yaml          ← deliverable spec
-  backend/
-    api/                        ← optional backend service
-    migrations/                 ← storage schema migrations
-    handlers/                   ← event subscription handlers
-  frontend/
-    routes/                     ← UI route contributions
-    slots/                      ← host extension slot contributions
+  workflow-config/
+    pr-review.yaml                ← workflow YAML
+  deliverable-specs/
+    review-report.yaml            ← deliverable spec
+  workspace-manifests/
+    reviewer.workspace.yaml       ← agent workspace manifest
+  contributions/
+    scm-binding.contribution.json ← typed contribution envelopes
+  install-schema/                 ← install-wizard schema (required with
+                                    integrationRequirements)
+  provisioning/                   ← provisioning scaffolds; also listed in
+                                    xema.provisioning[]
+  api/
+    acme-code-review-api/         ← optional API service, declared in
+                                    xema.ships.apis[]
 ```
+
+Every directory is optional — a biome that only ships skills is just `xema-biome.json` + `skills/`. The full directory-to-content-kind table is in the [Manifest Reference](./04-manifest-reference.md#convention-content-directories).
 
 ---
 
-## `xema-biome.json` — full reference
+## `xema-biome.json` — the manifest
+
+The manifest is a wrapped `{ "name", "version", "xema": { … } }` document. `name` is a scoped package name, `version` is the semver the Store and lockfiles pin to, and everything biome-specific lives under `xema`, discriminated on `xema.target` (`server` or `web`).
+
+A realistic server-biome manifest:
 
 ```json
 {
-  "name": "acme-code-review",
+  "name": "@acme/code-review",
   "version": "1.2.0",
-  "displayName": "Acme Code Review",
-  "description": "PR review workflows and AI reviewer agents for engineering teams.",
-  "author": "Acme Engineering",
-  "homepage": "https://acme.example.com/docs/biomes/code-review",
-  "lifecycle": "draft",
-
-  "requiresCapabilities": [
-    "connector:scm.create-pull-request@1",
-    "connector:scm.merge@1",
-    "kb:page.write@1",
-    "artifact:blob.read@1"
-  ],
-
-  "exposesCapabilities": [],
-
-  "permissionHints": {
-    "connector:scm.create-pull-request@1": "Posts inline review comments and a summary to the PR.",
-    "connector:scm.merge@1": "Merges the PR when all checks pass and the review is approved.",
-    "kb:page.write@1": "Stores the review report in the knowledge base.",
-    "artifact:blob.read@1": "Reads the PR diff artifact produced by the trigger workflow."
-  },
-
-  "defaultProfile": "internal-agent",
-
-  "contributions": {
-    "agents": ["agents/reviewer.agent.json"],
-    "skills": ["skills/code-review/"],
-    "workflows": ["workflows/pr-review.yaml"],
-    "specs": ["specs/review-report.yaml"]
-  },
-
-  "executionZones": ["org", "project"],
-
-  "uninstallPolicy": "delete"
+  "xema": {
+    "id": "acme-code-review",
+    "displayName": "Acme Code Review",
+    "description": "PR review workflows and AI reviewer agents for engineering teams.",
+    "scope": "platform",
+    "target": "server",
+    "engines": { "xema": "^1.0.0" },
+    "requiresCapabilities": ["kb:page.write@1", "artifact:blob.read@1"],
+    "exposesCapabilities": [],
+    "permissions": {
+      "defaultProfile": "internal-agent",
+      "hints": [
+        {
+          "capability": "kb:page.write@1",
+          "reason": "Stores the review report in the knowledge base.",
+          "riskTier": "medium"
+        },
+        {
+          "capability": "artifact:blob.read@1",
+          "reason": "Reads the PR diff artifact produced by the trigger workflow.",
+          "riskTier": "low"
+        }
+      ]
+    },
+    "agents": [{ "slug": "reviewer", "mode": "primary" }],
+    "contributions": { "directory": "./contributions" },
+    "ships": {
+      "apis": [
+        {
+          "name": "acme-code-review-api",
+          "path": "./api/acme-code-review-api",
+          "displayName": "Acme Code Review API",
+          "serviceKind": "biome-api",
+          "exposesCapabilities": []
+        }
+      ]
+    }
+  }
 }
 ```
 
 ### Key fields explained
 
-**`requiresCapabilities`** — every capability ref the biome may invoke at runtime. Declaring a capability here does not grant it; the org admin approves the grant at install time. If a capability is not declared here, the gateway denies every call for it, regardless of any grant.
+**`xema.id`** — the kebab-case biome identifier. It must match the biome's folder name and is the namespace for everything the biome contributes.
 
-**`exposesCapabilities`** — capability refs this biome makes available to other biomes or agents. Optional; most biomes leave this empty.
+**`xema.scope`** — the dependency/boot tier: `kernel`, `system`, `base`, or `platform`. Third-party biomes are `platform`; the lower tiers are reserved for the platform's own foundation.
 
-**`defaultProfile`** — the built-in permission profile that best fits this biome's risk level. Shown to the org admin as the recommended starting point. Options: `read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`.
+**`xema.target`** — `server` or `web`. A server biome ships backend contributions the platform boots and supervises; a web biome is a static frontend bundle the host shell loads. A product usually pairs one of each (see below).
 
-**`executionZones`** — the zones this biome may run in. The capability gateway enforces that every call is made within one of these zones. Omit to default to `["org"]`.
+**`xema.requiresCapabilities`** — every capability ref (`domain:slug@version`) the biome may invoke at runtime. Declaring a capability here does not grant it; the org admin approves the grant at install time. If a capability is not declared here, the gateway denies every call for it, regardless of any grant.
 
-**`uninstallPolicy`** — what happens to org data when the biome is archived. `delete` purges the managed storage schema; `retain` keeps it (useful for compliance). Defaults to `retain`.
+**`xema.permissions`** — install-time consent metadata: a `defaultProfile` recommendation plus one `hints[]` entry per required capability explaining *why* the biome needs it and its `riskTier`. Shown verbatim to the approving org admin.
+
+**`xema.agents[]`** — the explicit roster of agents the biome ships, one entry per `agents/<slug>.md` file. The platform validates roster ⟷ file parity at boot, so an agent file added or removed without a manifest update fails fast instead of drifting.
+
+**`xema.ships.apis[]`** — the API services the biome ships, one entry per service under `api/<name>/`. Content contributions (agents, skills, workflows, …) are **not** declared here — they are discovered from their convention directories.
+
+**`xema.contributions`** — points at the directory of typed `*.contribution.json` envelopes (default `./contributions`), or carries entries inline.
+
+The complete field list — including `runtimeRequirements`, `integrationRequirements`, `webhookFilters`, MCP tool declarations, and the install/upgrade lifecycle hooks — is in the [Manifest Reference](./04-manifest-reference.md).
+
+### Web biome manifests
+
+A web biome's manifest is smaller — it names the server biome(s) it needs and the host shell does the rest:
+
+```json
+{
+  "name": "@acme/code-review-web",
+  "version": "1.2.0",
+  "xema": {
+    "id": "acme-code-review-web",
+    "displayName": "Acme Code Review",
+    "scope": "platform",
+    "target": "web",
+    "requiresServerBiomes": ["acme-code-review"]
+  }
+}
+```
+
+The bundle default-exports a frontend module built with `defineWebBiome` — see [UI: I contribute](../xema-os/sdk/ui-i-contribute.md).
+
+---
+
+## Writing agent contributions
+
+An agent definition is a markdown file in `agents/`, one `<slug>.md` per agent. YAML frontmatter carries the agent's identity and permissions; the body is the system prompt:
+
+```markdown
+---
+name: reviewer
+displayName: PR Reviewer
+description: Reviews pull requests using the code-review skill and writes structured feedback.
+mode: primary
+---
+
+# PR Reviewer
+
+You are an expert code reviewer...
+```
+
+Every agent file must also appear in `xema.agents[]` with its execution `mode` (`primary` for a session's lead agent, `subagent` for a delegate other agents can task). The manifest roster and the on-disk files are cross-validated at boot — keep them in sync.
 
 ---
 
@@ -107,7 +180,7 @@ description: Teaches the agent to review diffs, apply style guides, and write st
 ...reference material, style guides, checklists...
 ```
 
-Sub-skills are nested folders:
+`SKILL.md` is the only strict file — `reference/`, `scripts/`, and `assets/` are free-form and mounted as-is. Sub-skills are nested folders, each with its own `SKILL.md`:
 
 ```
 skills/
@@ -115,68 +188,57 @@ skills/
     SKILL.md                         ← required
     reference/
       style-guide.md
-    sub-skills/
-      security-review/
-        SKILL.md                     ← each sub-skill also requires SKILL.md
+    security-review/
+      SKILL.md                       ← each sub-skill also requires SKILL.md
 ```
 
-The platform mounts the full bundle at `/workspace/.xema/skills/code-review/` in the agent workspace and registers a `/code-review` slash command automatically.
-
+The platform mounts the full bundle into the agent workspace and registers a `/code-review` slash command automatically.
 
 ---
 
-## Writing agent contributions
+## Typed contribution envelopes
 
-An agent definition is a JSON file in `agents/`:
+Single-file, typed contributions (capabilities, connector bindings, document templates, …) ship as one `*.contribution.json` per entry under `contributions/`:
 
 ```json
 {
-  "slug": "reviewer",
-  "version": "1.0.0",
-  "displayName": "PR Reviewer",
-  "description": "Reviews pull requests using the code-review skill and writes structured feedback.",
-  "systemPrompt": "You are an expert code reviewer...",
-  "intrinsicSkills": ["code-review"],
-  "intrinsicTools": ["mcp-tool:github.read-pr@1"],
-  "defaultModel": "gpt-4o"
+  "kind": "capability",
+  "id": "review-report-fetch",
+  "manifest": { }
 }
 ```
+
+The `manifest` body is validated by the owning platform service per `kind`; a malformed envelope fails the biome's activation fast. See [Contribution envelopes](./04-manifest-reference.md#contribution-envelopes) for the closed set of kinds and the inline form.
 
 ---
 
 ## Local validation
 
-Before pushing, validate the manifest and contributions:
+Validation is layered, and every layer uses the same platform schema — never a docs-only approximation:
 
-```bash
-xema biome validate ./acme-code-review
-```
+- **Scaffold time** — `xema biome scaffold` re-parses the generated manifest with the real platform parser before it returns.
+- **Lint** — `xema biome lint` runs the workspace boundary checks (biome folder layout, deprecated-name usage, hardcoded tool names) from anywhere inside a Xema workspace.
+- **Boot time** — when the platform loads the biome, the manifest is parsed against the schema and the `xema.agents[]` roster is cross-validated against the on-disk `agents/*.md` files. A drifted manifest fails fast instead of silently degrading.
 
-The validator checks:
-
-- `xema-biome.json` parses correctly and all required fields are present.
-- Every path listed in `contributions` exists on disk.
-- Every `SKILL.md` in `skills/` has `name` and `description` frontmatter.
-- Every capability ref in `requiresCapabilities` is syntactically valid.
-- The declared `executionZones` are all known built-in zones.
-
-Fix any errors before submitting to the Biome Studio or the Xema Store.
+Fix any errors before publishing.
 
 ---
 
-## Installing into a sandbox
+## Running it locally
 
-During development, install the biome into a sandbox environment to test in isolation:
-
-```bash
-xema biome install ./acme-code-review --environment sandbox
-```
-
-This creates a `sandbox-installed` biome. The sandbox environment has no access to org secrets or external connectors. Use mock connectors during development:
+During development, a biome that lives in your workspace boots directly — no publish, no token:
 
 ```bash
-xema connector mock scm --name my-mock-repo
+xema dev
 ```
+
+Workspace sources always take precedence over remote sources for the same biome id, so local edits win. To try a biome published elsewhere without a running platform, fetch it to your machine:
+
+```bash
+xema biome install acme-code-review --local --from my-registry
+```
+
+When the biome is ready to share, [publish it](./03-store.md) as a signed OCI artifact with `xema biome publish`.
 
 ---
 

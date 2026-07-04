@@ -119,4 +119,4 @@ Listing metadata updates go through a lightweight review (no sandbox run require
 
 **Previous**: [← Authoring](./02-authoring.md)
 
-**Next**: [Examples →](./examples/)
+**Next**: [Manifest Reference →](./04-manifest-reference.md)

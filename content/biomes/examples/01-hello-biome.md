@@ -22,7 +22,7 @@ hello-biome/
   skills/
     hello-skill/
       SKILL.md
-  workflows/
+  workflow-config/
     hello.yaml
 ```
 
@@ -32,26 +32,31 @@ hello-biome/
 
 ```json
 {
-  "name": "hello-biome",
+  "name": "@acme/hello-biome",
   "version": "0.1.0",
-  "displayName": "Hello Biome",
-  "description": "A minimal starter biome for learning the authoring model.",
-  "lifecycle": "draft",
-  "requiresCapabilities": [
-    "kb:page.write@1"
-  ],
-  "permissionHints": {
-    "kb:page.write@1": "Saves the generated greeting to the knowledge base."
-  },
-  "defaultProfile": "internal-agent",
-  "contributions": {
-    "skills": ["skills/hello-skill/"],
-    "workflows": ["workflows/hello.yaml"]
-  },
-  "executionZones": ["org"],
-  "uninstallPolicy": "delete"
+  "xema": {
+    "id": "hello-biome",
+    "displayName": "Hello Biome",
+    "description": "A minimal starter biome for learning the authoring model.",
+    "scope": "platform",
+    "target": "server",
+    "engines": { "xema": "^1.0.0" },
+    "requiresCapabilities": ["kb:page.write@1"],
+    "permissions": {
+      "defaultProfile": "internal-agent",
+      "hints": [
+        {
+          "capability": "kb:page.write@1",
+          "reason": "Saves the generated greeting to the knowledge base.",
+          "riskTier": "low"
+        }
+      ]
+    }
+  }
 }
 ```
+
+The skill and workflow are not declared anywhere — they are discovered from the `skills/` and `workflow-config/` convention directories by on-disk presence.
 
 ---
 
@@ -84,7 +89,7 @@ You are writing for a technical audience that values clarity and brevity.
 
 ---
 
-## `workflows/hello.yaml`
+## `workflow-config/hello.yaml`
 
 ```yaml
 apiVersion: workflow/v1alpha1
@@ -122,24 +127,21 @@ spec:
 ## Run it locally
 
 ```bash
-# 1. Validate
-xema biome validate ./hello-biome
+# 1. Run the workspace boundary checks
+xema biome lint
 
-# 2. Install in sandbox
-xema biome install ./hello-biome --environment sandbox
-
-# 3. Trigger the workflow
-xema workflow run hello-biome/hello \
-  --input audienceName="Engineering Team" \
-  --environment sandbox
+# 2. Boot the platform with your workspace biomes — local sources always win
+xema dev
 ```
+
+Then trigger the `hello-biome/hello` workflow from the Workflows page with `audienceName: "Engineering Team"` and watch the greeting land in the knowledge base.
 
 ---
 
 ## What to change for a real biome
 
-- Add `connector:scm.create-pull-request@1` to `requiresCapabilities` and use it in a step.
-- Add an agent definition under `agents/` with `intrinsicSkills: ["hello-skill"]`.
+- Add `connector:scm.create-pull-request@1` to `xema.requiresCapabilities` (with a matching `permissions.hints[]` entry) and use it in a step.
+- Add an agent definition under `agents/<slug>.md` and declare it in `xema.agents[]`.
 - Extend `SKILL.md` with richer reference material relevant to your domain.
 
 ---
