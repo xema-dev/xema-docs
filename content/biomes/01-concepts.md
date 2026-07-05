@@ -97,8 +97,7 @@ A biome can contribute:
 | Deliverable specs | `deliverable-specs/` | Structured output contracts |
 | Workspace manifests | `workspace-manifests/` | Agent workspace manifests |
 | Typed contribution envelopes | `contributions/*.contribution.json` | Capabilities, connector bindings, document templates, and every other single-file typed kind |
-| Event subscriptions | `xema.subscribes[]` | Declarative CloudEvent subscriptions bound to handler modules |
-| API services | `api/<name>/` + `xema.ships.apis[]` | Optional backend services the biome ships |
+| API services | `api/<name>/` + `xema.ships.apis[]` | Optional backend services the biome ships (event consumers register inside these) |
 | Managed database | `xema.database` | Managed relational schema provisioned per org, migrated at boot |
 | Frontend (web) | `<id>-web/` package | UI pages, nav items, and slot panels — a `target: "web"` biome that default-exports a frontend module (authored via `defineWebBiome`). See [UI: I contribute](../xema-os/sdk/ui-i-contribute.md) |
 

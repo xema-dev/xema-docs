@@ -65,7 +65,7 @@ XSI is the stable external interface every biome, app, agent, workflow, and exte
 2. **[Contribution Protocol](./sdk/contributions.md)** — how new objects and behaviors enter the OS (kernel-typed envelope, closed `ContributionKind` enum, backend slot registry).
 3. **[Capability Protocol](./capabilities.md)** — how those objects are invoked. Every call carries an [Execution Context](./execution-contexts.md) and routes through the capability router.
 4. **[Execution Environment Protocol](./environments.md)** — which trust profile applies to a call. Eight built-in environments: `system`, `org`, `project`, `app`, `session`, `sandbox`, `store-review`, `public-app`.
-5. **Manifest / Wire** — how all of the above are declared in the biome manifest and routed through `subscribes[]`, `requires`, `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`.
+5. **Manifest / Wire** — how all of the above are declared in the biome manifest through `requires`, `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`.
 
 ---
 

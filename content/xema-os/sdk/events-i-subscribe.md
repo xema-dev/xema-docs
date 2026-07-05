@@ -1,14 +1,14 @@
-# SDK — Events I Subscribe
+# SDK — Events I Consume
 
-A biome wires itself to platform events through the manifest's `subscribes[]` block. Each entry binds a CloudEvents 1.0 event type to a handler module exported by the biome; the host (`biome-host-api`) registers the subscription with `event-hub-api` at install time, and the platform delivers matching events to the handler.
+A biome consumes platform events through the **backend service it ships**. The service registers a set of typed **consumed-event descriptors** with `@xemahq/events`; the platform's event hub delivers every matching CloudEvent to that service, and a decorated handler method processes it.
 
-There is no imperative subscription API. The manifest is the source of truth — boot-time subscriptions never drift from the declared set.
+There is no manifest field that subscribes a biome to events. Event consumption is a property of running code — a biome with no shipped service consumes no events. If your biome needs to react to platform events, it [ships an API](./backend-i-ship.md) and registers consumers inside it.
 
 ---
 
 ## CloudEvents 1.0 envelope
 
-Every platform event is a CloudEvents 1.0 message delivered over the platform's transport. The envelope carries:
+Every platform event is a CloudEvents 1.0 message delivered over the platform's event transport. The envelope carries:
 
 ```
 specversion = "1.0"
@@ -22,100 +22,97 @@ projectid   = "<projectId>"                             extension attribute (whe
 data        = { ... }                                   typed per the registered event descriptor
 ```
 
-Event types are versioned in the `vN` suffix — same major-bump-only rule as [capabilities](../capabilities.md). A subscriber that subscribes to `xema.store.install.created.v1` keeps receiving v1 events even after a v2 type ships; the subscriber must update its `subscribes[]` to receive v2.
+Event types are versioned in the `vN` suffix — same major-bump-only rule as [capabilities](../capabilities.md). A consumer registered for `xema.store.install.created.v1` keeps receiving v1 events even after a v2 type ships; to receive v2 the consumer registers the v2 descriptor.
 
-The event registry is a closed set extended only by kernel PR; biomes never invent their own event types. They subscribe to types other services publish.
-
----
-
-## The `subscribes[]` block
-
-```jsonc
-{
-  "xema": {
-    "subscribes": [
-      {
-        "type": "workflow.run.completed.v1",
-        "handler": "./dist/handlers/on-run-completed.js"
-      },
-      {
-        "type": "xema.store.install.created.v1",
-        "handler": "./dist/handlers/on-store-install.js",
-        "filter": {
-          "biomeRef": "xema://store/biome/${biomeId}@*"
-        }
-      }
-    ]
-  }
-}
-```
-
-| Field | Required | Purpose |
-|---|---|---|
-| `type` | yes | The CloudEvents `type` to subscribe to (closed set, kernel-registered) |
-| `handler` | yes | Module path relative to the biome root |
-| `filter` | optional | Per-attribute equality / glob filter applied by `event-hub-api` before delivery |
-
-The host validates the `type` against the registered event descriptors at manifest-parse time. An unknown type is a fail-fast install error.
+The event registry is a closed set extended only by kernel PR; biomes never invent their own event types. They consume types other services publish.
 
 ---
 
-## Handler module shape
+## How a biome consumes an event
 
-A handler module exports an async function that takes the typed event envelope and a context:
+Consumption is three pieces of code inside the biome's shipped service:
+
+1. **A descriptor** — declare the event you consume with `defineEvent` from `@xemahq/events`, giving its `type`, `source`, and a Zod schema for `data`. This is the runtime contract the transport validates delivered payloads against.
+2. **A consumed-events registry** — collect the descriptors your service consumes into a `consumed-events.registry.ts` array. The service module registers this array so the event hub knows which types to deliver to this service.
+3. **A handler** — a NestJS provider method decorated with `@OnCloudEvent(<descriptor>)` that receives the validated envelope and does the work.
+
+### 1. Declare the descriptor
 
 ```ts
-// dist/handlers/on-run-completed.js
-import type {
-  EventHandlerContext,
-  WorkflowRunCompletedEvent,
-} from '@xemahq/biome-host-sdk';
+// src/events/consumed/consumed-events.registry.ts
+import { defineEvent, type EventSource, VisibilityTier } from '@xemahq/events';
+import { z } from 'zod';
 
-export default async function onRunCompleted(
-  event: WorkflowRunCompletedEvent,
-  ctx: EventHandlerContext,
-): Promise<void> {
-  // event.data.workflowRunId
-  // event.data.outcome
-  // event.orgid, event.projectid
+const STORE_SOURCE: EventSource = '/services/xema-store-api';
 
-  await ctx.callCapability('connector:chat.send-message@1', {
-    channel: 'team-engineering',
-    text: `Run ${event.data.workflowRunId} finished: ${event.data.outcome}`,
-  });
+export const StoreInstallCreatedConsumed = defineEvent({
+  type: 'xema.store.install.created.v1',
+  source: STORE_SOURCE,
+  schemaVersion: '1.0.0',
+  visibility: VisibilityTier.INTERNAL,
+  description: 'Store install created — refresh the biome cache for the org.',
+  data: z.object({
+    biomeRef: z.string(),
+    orgId: z.string(),
+  }),
+  hint: z.object({ orgId: z.string() }),
+});
+
+export const MY_BIOME_CONSUMED_EVENT_DESCRIPTORS = [
+  StoreInstallCreatedConsumed,
+] as const;
+```
+
+### 2. Register the array in the service module
+
+The service's `@xemahq/events` module registration takes the descriptor array so the event hub creates the subscription for exactly those types. An unknown or misspelled `type` never silently no-ops — the transport only delivers types that a registered descriptor declares.
+
+### 3. Handle the delivered event
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { OnCloudEvent } from '@xemahq/events';
+
+import { StoreInstallCreatedConsumed } from '../events/consumed/consumed-events.registry';
+
+@Injectable()
+export class StoreInstallConsumerService {
+  @OnCloudEvent(StoreInstallCreatedConsumed)
+  async onStoreInstallCreated(
+    event: typeof StoreInstallCreatedConsumed.envelope,
+  ): Promise<void> {
+    // event.data.biomeRef / event.data.orgId — validated against the descriptor schema
+    // event.orgid / event.projectid — envelope extension attributes
+    await this.refreshCache(event.data.orgId);
+  }
 }
 ```
 
 Rules:
 
-- The handler runs under the biome's installation subject and `BiomeInstallGrant` — every `ctx.callCapability(...)` invocation goes through `xema-capability-router` and is authorised exactly like any other biome call.
+- The handler runs inside the biome's own shipped service, under that service's identity and grants — every downstream call it makes is authorised exactly like any other call the service makes.
 - The handler MUST be idempotent. The platform delivers events at-least-once; the deterministic CloudEvents `id` lets handlers dedupe.
-- The handler runs in the same execution environment the biome itself runs in for the installation that owns the subscription.
-- Synchronous handlers must complete within the per-handler timeout (configurable per biome, default 30s). Long-running work belongs in a workflow run, dispatched from the handler.
+- `data` is validated against the descriptor's Zod schema before your handler runs. A payload that fails the schema is a delivery error, not a silent skip.
+- Long-running work belongs in a workflow run dispatched from the handler, not in the handler body.
 
 ---
 
-## Filtering
+## When a biome ships no service
 
-The optional `filter` block is an attribute-level match that `event-hub-api` evaluates before delivering. Supported predicates:
+A contributions-only biome — one that ships agents, skills, workflows, or connector bindings but no `ships.apis[]` service — does not consume platform events directly. If it needs event-driven behaviour, either:
 
-| Form | Meaning |
-|---|---|
-| `"key": "literal"` | Equality against the event's top-level attribute or `data.<key>` |
-| `"key": "prefix*"` | Prefix glob |
-| `"key": "${var}"` | Template — `var` is resolved against the biome's installation context (`biomeId`, `orgId`, `projectId`) at install time |
-
-Filters reduce delivery volume; they are not authorisation. Even a filtered event passes through the gateway check inside the handler when the handler invokes a capability.
+- react to workflow lifecycle inside a [workflow definition](../../workflows/) (gates, follow-on jobs), or
+- ship a small backend service ([Backend I ship](./backend-i-ship.md)) whose only job is to register consumers.
 
 ---
 
-## Event types biomes commonly subscribe to
+## Event types biomes commonly consume
 
 (Closed set; this is a representative slice, not exhaustive.)
 
 | Event type | Source | Typical use |
 |---|---|---|
-| `xema.store.install.created.v1` | `xema-store-api` | Biome that consumes Store events — e.g. cache invalidation, analytics |
+| `xema.store.install.created.v1` | `xema-store-api` | Cache invalidation, analytics, per-install provisioning |
 | `workflow.run.completed.v1` | `workflow-engine-api` | Notify a chat channel, write a follow-up artifact |
 | `workflow.run.failed.v1` | `workflow-engine-api` | Open an incident, trigger a remediation workflow |
 | `agent-session.created.v1` | `agent-session-api` | Provision per-session resources (a temp KB space, a sandbox) |
@@ -126,18 +123,11 @@ The full registry is exposed via `xema concepts` and `xema concept event-type` i
 
 ---
 
-## Capability requirements
-
-Every capability the handler calls MUST appear in `requiresCapabilities[]`. The boundary check rejects handlers that reach for refs the biome did not declare. At runtime, the gateway denies any call to an undeclared ref — fail-fast, with a structured `auditId` resolvable via `xema why-denied`.
-
----
-
 ## Related pages
 
-- [Manifest reference](./manifest.md) — the `subscribes` block
-- [Capabilities](../capabilities.md) — how `ctx.callCapability` is authorised
+- [Backend I ship](./backend-i-ship.md) — the service a biome needs before it can consume events
+- [Capabilities](../capabilities.md) — how the calls a handler makes are authorised
 - [Lifecycle Hooks](./lifecycle-hooks.md) — for transitions tied to a biome's own lifecycle (not platform events)
-- [Backend I ship](./backend-i-ship.md) — when an event handler should become a full service
 
 ---
 

@@ -34,7 +34,6 @@ This page mirrors the runtime Zod schema. The schema is the source of truth; thi
   "contributions":        { ... },
   "requiresCapabilities": [ ... ],
   "exposesCapabilities":  [ ... ],
-  "subscribes":           [ ... ],
   "requires":             { ... },
   "permissions":          { ... },
   "lifecycle":            { ... },
@@ -132,18 +131,6 @@ The unified surface for everything a biome ships. Two equivalent forms:
 ```
 
 The `kind` value is a `ContributionKind` enum — closed set, extended only by kernel PR. Adding a new kind is two files: one enum entry plus the Zod schema for its manifest. No new top-level directory, no new seeder. See [SDK / Contributions](./contributions.md) for authoring details.
-
----
-
-## `subscribes[]`
-
-Declarative CloudEvents subscriptions. Each entry binds an event type to a handler module exported by the biome.
-
-```jsonc
-"subscribes": [
-  { "type": "workflow.run.completed", "handler": "./dist/handlers/on-run-completed.js" }
-]
-```
 
 ---
 

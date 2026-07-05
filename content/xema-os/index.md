@@ -40,7 +40,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [SDK / Storage](./sdk/storage.md) | Declared collections, isolation, `uninstallPolicy` |
 | [SDK / Publishing](./sdk/publishing.md) | The four publishing transitions, bundle format, signing intent |
 | [SDK / UI I contribute](./sdk/ui-i-contribute.md) | `HostExtensionSlots`, route contributions, nav registry |
-| [SDK / Events I subscribe](./sdk/events-i-subscribe.md) | Declarative `subscribes[]`, CloudEvents envelope |
+| [SDK / Events I consume](./sdk/events-i-subscribe.md) | Per-service event consumers, CloudEvents envelope |
 | [SDK / Testing](./sdk/testing.md) | Manifest validation, capability-stub tests, lifecycle hook tests |
 
 ## Getting Started

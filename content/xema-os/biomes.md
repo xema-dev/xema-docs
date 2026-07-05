@@ -85,9 +85,7 @@ xema-biome.json                ← manifest
 contracts/
   capabilities.json            ← exposesCapabilities + requiresCapabilities
   permissions.json             ← role-capability + execution-environment hooks
-  events.json                  ← subscribes[]
 backend/
-  handlers/                    ← event-subscription handler modules
   migrations/                  ← if the biome owns a relational database schema
   api/                         ← optional backend service(s)
   openapi.json                 ← when the biome ships a service

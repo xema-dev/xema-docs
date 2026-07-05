@@ -18,8 +18,9 @@ A biome ships its own API when it needs:
 A biome should **not** ship an API when its needs fit:
 
 - a few collections of structured rows — use [biome-storage-api collections](./storage.md);
-- event handlers — use [event subscriptions](./events-i-subscribe.md);
 - one-shot install / uninstall housekeeping — use [lifecycle hooks](./lifecycle-hooks.md).
+
+Consuming platform events, by contrast, **does** require a shipped service — the event consumers register inside it. See [Events I consume](./events-i-subscribe.md).
 
 ---
 
