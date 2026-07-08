@@ -54,7 +54,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `database` | object — see **xema.database** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
 | `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine` |
+| `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
@@ -64,6 +64,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `mandatory` | boolean | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
+| `kind` | enum | no | one of: `app`, `connector`, `library` |
 
 ### `xema.display`
 
@@ -259,6 +260,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `displayName` | string | no | — |
 | `serviceKind` | enum | no | one of: `platform-service`, `biome-api`, `cli` |
 | `requiresServices` | string[] | no | — |
+| `optionalServices` | string[] | no | — |
 | `exposesCapabilities` | string[] | no | — |
 
 ### `xema.capabilities.network`
@@ -299,7 +301,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine` |
+| `kind` | enum | yes | one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type` |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
 
@@ -347,7 +349,7 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `capabilities` | object — see **xema.capabilities** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
 | `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine` |
+| `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
@@ -357,6 +359,7 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `mandatory` | boolean | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
+| `kind` | enum | no | one of: `app`, `connector`, `library` |
 
 ### `xema.capabilities`
 
