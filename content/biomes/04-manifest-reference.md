@@ -53,6 +53,8 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `provisioning` | array of objects — see **xema.provisioning[]** | no | — |
 | `database` | object — see **xema.database** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
+| `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
+| `signedBy` | string | no | — |
 | `requires` | map<string, string> | no | — |
 | `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy` |
 | `contributions` | object — see **xema.contributions** | no | — |
@@ -183,6 +185,30 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `algorithm` | string | yes | — |
 | `value` | string | yes | — |
 | `keyId` | string | yes | — |
+
+### `xema.bundleSource (kind: "npm")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "npm" | yes | — |
+| `name` | string | yes | — |
+| `version` | string | yes | — |
+| `registryUrl` | string | no | — |
+| `authTokenEnv` | string | no | — |
+
+### `xema.bundleSource (kind: "tarball")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "tarball" | yes | — |
+| `uploadId` | string | yes | — |
+
+### `xema.bundleSource (kind: "oci")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "oci" | yes | — |
+| `ociRef` | string | yes | — |
 
 ### `xema.contributions`
 
@@ -348,6 +374,8 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `optionalServerBiomes` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `capabilities` | object — see **xema.capabilities** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
+| `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
+| `signedBy` | string | no | — |
 | `requires` | map<string, string> | no | — |
 | `contributes` | enum[] | no | entries one of: `mount-source`, `mcp-tool`, `workflow-step`, `gate-action`, `chart-runtime`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `workspace-spec-overlay`, `system-overlay-contribution`, `integration-provider`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `workspace-manifest-template`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy` |
 | `contributions` | object — see **xema.contributions** | no | — |
