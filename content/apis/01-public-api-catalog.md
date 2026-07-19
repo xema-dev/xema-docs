@@ -26,7 +26,7 @@ The **catalog** below lists all publicly reachable Xema APIs and their primary i
 | mcp-gateway-api | MCP server/catalog access gateway | MCP discovery, server metadata, and bridge endpoints | https://mcp-gateway-api.xema.dev/api/docs |
 | memory-api | Memory extraction, retrieval, and graph exploration | Memory records, extraction pipelines, and memory graph traversal | https://memory-api.xema.dev/api/docs |
 | project-registry-api | Project system-of-record operations | Project registration, variables, manifests, and bindings | https://project-registry-api.xema.dev/api/docs |
-| scm-integration-api | Source control integration domain APIs | Repository metadata, change requests, snapshots, and SCM configuration | https://scm-integration-api.xema.dev/api/docs |
+| scm-connector-api | Source control integration domain APIs | Repository metadata, change requests, snapshots, and SCM configuration | https://scm-connector-api.xema.dev/api/docs |
 | search-api | Search and index management | Search query capabilities plus indexing/admin controls | https://search-api.xema.dev/api/docs |
 | user-hub-api | End-user settings and notifications | Preferences, notification streams, and device-oriented settings | https://user-hub-api.xema.dev/api/docs |
 | workflow-engine-api | Workflow definition and execution control plane | Workflow CRUD, triggers, run orchestration, approvals, scheduling, run streams | https://workflow-engine-api.xema.dev/api/docs |

@@ -179,8 +179,8 @@ This section is auto-generated from every backend service's event descriptor reg
 | `deliverable.spec.created` | Deliverable | INTERNAL | deliverable-specs-api | A deliverable spec was created. |
 | `external.adapter.configured` | External | PROJECT | connector-gateway-api | A project-level adapter binding was configured or updated. |
 | `external.sync.requested` | External | PROJECT | connector-gateway-api | A sync was requested for a project-level adapter binding (manual or webhook-triggered). |
-| `integration.integration.removed` | Integration | INTERNAL | connector-gateway-api | An organization-level integration was removed. |
-| `integration.integration.removed` | Integration | INTERNAL | connector-gateway-api | Integration removed — purge org repositories + project bindings for the integration. |
+| `connector.connection.removed` | Integration | INTERNAL | connector-gateway-api | An organization-level connector connection was removed. |
+| `connector.connection.removed` | Integration | INTERNAL | connector-gateway-api | Connection removed — purge org repositories + project bindings for the integration. |
 | `integration.sync.completed` | Integration | PROJECT | connector-gateway-api | A scheduled or manual sync run completed. |
 | `integration.sync.failed` | Integration | PROJECT | connector-gateway-api | A scheduled or manual sync run failed. |
 | `kb.comment.added` | Kb | PROJECT | knowledge-base-api | A user anchored a new comment on a document page. |

@@ -71,7 +71,7 @@ inputs:
 
 jobs:
   fetch-diff:
-    action: scm-integration-api.fetch-diff@1.0.0
+    action: scm-connector-api.fetch-diff@1.0.0
     input:
       repoFullName: "{{ inputs.repoFullName }}"
       prNumber: "{{ inputs.prNumber }}"
@@ -92,7 +92,7 @@ jobs:
 
   post-comment:
     needs: [review]
-    action: scm-integration-api.post-pr-comment@1.0.0
+    action: scm-connector-api.post-pr-comment@1.0.0
     input:
       repoFullName: "{{ inputs.repoFullName }}"
       prNumber: "{{ inputs.prNumber }}"
