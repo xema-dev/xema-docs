@@ -44,7 +44,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `ships` | object — see **xema.ships** | no | — |
 | `capabilities` | object — see **xema.capabilities** | no | — |
 | `trustTier` | enum | no | one of: `first-party`, `third-party` |
-| `integrationRequirements` | array of objects — see **xema.integrationRequirements[]** | no | — |
+| `connectorRequirements` | array of objects — see **xema.connectorRequirements[]** | no | — |
 | `webhookFilters` | array of objects — see **xema.webhookFilters[]** | no | — |
 | `mcpWorkflowTools` | array of objects — see **xema.mcpWorkflowTools[]** | no | — |
 | `mcpTools` | array of objects — see **xema.mcpTools[]** | no | — |
@@ -101,7 +101,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `network` | object — see **xema.capabilities.network** | no | — |
 | `secrets` | string[] | no | — |
 
-### `xema.integrationRequirements[]`
+### `xema.connectorRequirements[]`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
