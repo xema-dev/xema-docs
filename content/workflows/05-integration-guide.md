@@ -1,7 +1,7 @@
 # Integration Guide
 
 > API Docs: https://workflow-engine-api.xema.dev/api/docs
-> Integration API Docs: https://integration-adapters-api.xema.dev/api/docs
+> Integration API Docs: https://connector-gateway-api.xema.dev/api/docs
 
 This document explains how external systems integrate with Xema Workflows, including webhook triggers, trigger payloads, external actions, and best practices.
 
@@ -33,7 +33,7 @@ External systems trigger and interact with Xema Workflows through:
 
 ### Architecture Principle
 
-**Single Ingress Edge**: All external provider webhooks flow through a **single normalization layer** (`integration-adapters-api`), which standardizes events into canonical envelope format before routing to domain services.
+**Single Ingress Edge**: All external provider webhooks flow through a **single normalization layer** (`connector-gateway-api`), which standardizes events into canonical envelope format before routing to domain services.
 
 This ensures:
 - ✅ Consistent webhook handling across providers

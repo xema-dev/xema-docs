@@ -20,7 +20,7 @@ Human reviewers get a head-start; the agent does the boring part.
 ## Trigger
 
 A GitHub webhook fires when a PR is opened against the `main` branch. The
-`integration-adapters-api` normalises the event and dispatches a
+`connector-gateway-api` normalises the event and dispatches a
 `ScmWebhookEvent.PULL_REQUEST_OPENED` envelope to `workflow-engine-api`, which
 matches it to this workflow.
 

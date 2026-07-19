@@ -19,7 +19,7 @@ The **catalog** below lists all publicly reachable Xema APIs and their primary i
 | docs-api | Public documentation delivery and navigation data | Docs content resolution, section trees, and rendering inputs | https://docs-api.xema.dev/api/docs |
 | document-render-api | Rendering documents to portable formats | PDF and DOCX rendering for knowledge-base pages and inline HTML, with downloadable output | https://document-render-api.xema.dev/api/docs |
 | governance-api | Human and policy governance workflows | Decisions, interactions, judging, resolution, and presets | https://governance-api.xema.dev/api/docs |
-| integration-adapters-api | External provider ingress and adapter orchestration | Provider bindings, sync settings, external webhook edge handling | https://integration-adapters-api.xema.dev/api/docs |
+| connector-gateway-api | External provider ingress and adapter orchestration | Provider bindings, sync settings, external webhook edge handling | https://connector-gateway-api.xema.dev/api/docs |
 | agent-session-api | Interactive agent-session lifecycle | Session management, chat streaming, preview control, attachment workflows | https://agent-session-api.xema.dev/api/docs |
 | knowledge-base-api | Knowledge spaces, pages, ingestion, and graph ops | Space/page lifecycle, ingestion jobs, knowledge graph capabilities | https://knowledge-base-api.xema.dev/api/docs |
 | llm-registry-api | LLM, skill, and execution policy governance | Model strategy, capability registry, profiles, and runtime policy controls | https://llm-registry-api.xema.dev/api/docs |

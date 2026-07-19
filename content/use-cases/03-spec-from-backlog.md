@@ -16,7 +16,7 @@ The team gets a structured starting point for implementation instead of a blank 
 
 ## Trigger
 
-A Jira webhook fires when an issue transitions to `status: "Ready for Spec"`. The `integration-adapters-api` normalises the event to a `TrackerWebhookEvent.ISSUE_TRANSITIONED` envelope and dispatches it to the workflow engine.
+A Jira webhook fires when an issue transitions to `status: "Ready for Spec"`. The `connector-gateway-api` normalises the event to a `TrackerWebhookEvent.ISSUE_TRANSITIONED` envelope and dispatches it to the workflow engine.
 
 ---
 

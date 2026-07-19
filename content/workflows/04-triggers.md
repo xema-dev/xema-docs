@@ -1,7 +1,7 @@
 # Workflow Triggers
 
 > API Docs: https://workflow-engine-api.xema.dev/api/docs
-> Integration API Docs: https://integration-adapters-api.xema.dev/api/docs
+> Integration API Docs: https://connector-gateway-api.xema.dev/api/docs
 
 Workflows are started by **triggers** — events or actions that initiate a workflow run. Xema supports four trigger types, each designed for a different use case.
 
@@ -337,7 +337,7 @@ Multiple webhook subscriptions can be declared. Each fires independently.
 
 ```
 External Provider (GitHub, Jira, Slack, …)
-  → POST /webhooks to integration-adapters-api
+  → POST /webhooks to connector-gateway-api
   → Adapter normalizes to canonical envelope
   → Forward to workflow-engine-api
   → Engine matches event type + filters

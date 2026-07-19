@@ -18,7 +18,7 @@ This gives you configuration, orchestration, and observability without over-coup
 
 | Capability you need | Recommended API set |
 |---|---|
-| Repository-driven automation | scm-connector-api, integration-adapters-api, workflow-engine-api |
+| Repository-driven automation | scm-connector-api, connector-gateway-api, workflow-engine-api |
 | Backlog to delivery workflow | backlog-api, workflow-engine-api, activity-feed-api |
 | Knowledge-assisted workflows | knowledge-base-api, memory-api, search-api |
 | Biome-powered extensibility | biome-host-api, catalog-api, llm-registry-api |
