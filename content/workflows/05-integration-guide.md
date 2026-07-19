@@ -257,7 +257,7 @@ All webhooks are normalized to this format:
 ```typescript
 interface IntegrationWebhookEnvelope<TPayload = unknown> {
   // Provider and adapter info
-  provider: IntegrationProvider
+  provider: ConnectorKind
     // GITHUB | GITLAB | GITEA | AZURE_DEVOPS | ATLASSIAN | SLACK
 
   adapterKey: AdapterKey

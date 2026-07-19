@@ -96,7 +96,7 @@ The kinds that benefit from inline:
 - **role-capability** — a role → capability mapping.
 - **artifact-type** — an artifact-type definition.
 - **icon** — a small icon descriptor.
-- **integration-provider** — a connector provider registration.
+- **connector-adapter** — a connector provider registration.
 
 ```jsonc
 {
@@ -134,7 +134,7 @@ A short, illustrative slice. The authoritative list is the `ContributionKind` en
 | `connector-binding` | inline | provider + auth ref |
 | `capability` | inline | ref + schemas |
 | `role-capability` | inline | role → capabilities |
-| `integration-provider` | inline | provider registration |
+| `connector-adapter` | inline | provider registration |
 | `project-kit` | directory | scaffold + bootstrap |
 | `frontend-route` | directory | route module |
 | `host-extension-slot` | inline | slot id + module ref |
