@@ -36,6 +36,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `displayName` | string | yes | — |
 | `description` | string | no | — |
 | `display` | object — see **xema.display** | no | — |
+| `tags` | string[] | no | — |
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "server" | yes | — |
 | `runtimeRequirements` | object — see **xema.runtimeRequirements** | no | — |
@@ -367,6 +368,7 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `displayName` | string | yes | — |
 | `description` | string | no | — |
 | `display` | object — see **xema.display** | no | — |
+| `tags` | string[] | no | — |
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "web" | yes | — |
 | `systemSurface` | boolean | no | — |
