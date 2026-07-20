@@ -4,7 +4,7 @@
 
 The **Xema Store** is the canonical distribution surface for biomes. It is not a marketplace in the colloquial sense — Store listings are first-class XVFS objects (`xema://store/biome/<id>`), every listing operation is a capability call, and submission, review, approval, and install are biome [lifecycle](./biomes.md#the-biome-lifecycle) transitions, not free-form CRUD.
 
-The Store sits under `/store/...` in [XVFS](./concepts/xvfs.md). The owning service is **`xema-store-api`**, which `app-runtime-api` and `biome-host-api` consume through capabilities only — never through direct DB access.
+The Store sits under `/store/...` in [XVFS](./concepts/xvfs.md). The owning service is **`xema-store-api`**, which `app-platform-api` and `biome-host-api` consume through capabilities only — never through direct DB access.
 
 ---
 

@@ -21,4 +21,4 @@ and granted a [delegated-session](./delegated-session.md)), or
 Audiences are how the platform stays scalable as the subject graph
 grows — you grant capabilities to a role, not to a snapshot of
 individuals. See the [Apps page](../apps.md) for the audience-policy
-endpoints on `app-runtime-api`.
+endpoints on `app-platform-api`.

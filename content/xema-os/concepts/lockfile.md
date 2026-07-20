@@ -22,7 +22,7 @@ lockfile names them.
 Lockfiles are produced by the shared resolver in
 `@xemahq/lockfile-resolver` and written at three invocation
 boundaries: app deploy
-(`POST /apps/:id/lockfile/refresh` on `app-runtime-api`),
+(`POST /apps/:id/lockfile/refresh` on `app-platform-api`),
 session creation (`agent-session-api`'s `SessionLockfileService`,
 served at `GET /sessions/:id/lockfile`), and workflow-run start
 (the Xema workflow worker service's `xemaEmitRunLockfileActivity`, written

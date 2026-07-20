@@ -10,7 +10,7 @@ stability: experimental
 
 A delegated session represents one external subject authenticated into
 Xema for a bounded period. An [app](./app.md) registers an `app-client`,
-then mints a delegated session for an end user via `app-runtime-api`'s
+then mints a delegated session for an end user via `app-platform-api`'s
 public ingress; that session carries the user's [audience](./audience.md),
 the requesting client, and a narrow set of [capabilities](./capability.md).
 The token is RS256-signed in production (HS256 in dev) and carries

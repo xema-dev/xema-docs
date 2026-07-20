@@ -57,7 +57,7 @@ At invocation boundaries (workflow run start, interactive session start, sub-age
 
 Lockfiles are produced by the resolver in `@xemahq/lockfile-resolver`. Concrete write paths:
 
-- **Apps.** `POST /apps/:id/lockfile/refresh` on `app-runtime-api` resolves and persists a full pinned lockfile.
+- **Apps.** `POST /apps/:id/lockfile/refresh` on `app-platform-api` resolves and persists a full pinned lockfile.
 - **Sessions.** `agent-session-api`'s session-creation flow mints + persists a lockfile via the internal `SessionLockfileService` and serves `GET /sessions/:id/lockfile`.
 - **Workflow runs.** The Xema workflow worker service emits a `xemaEmitRunLockfileActivity` as a Xema runtime activity that writes the lockfile as a `REPLACE`-versioned artifact (idempotent under retry).
 

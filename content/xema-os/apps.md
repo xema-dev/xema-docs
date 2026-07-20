@@ -1,10 +1,10 @@
 # Apps
 
-> API Docs: https://app-runtime-api.xema.dev/api/docs
+> API Docs: https://app-platform-api.xema.dev/api/docs
 
 An **App** is the product-layer surface in Xema OS. It composes one or more biomes, adds optional product-specific UI and branding, and exposes itself to an [audience](./concepts/audience.md) — internal Xema users, external (non-Xema) subjects, or anonymous visitors. The same biome can live inside many apps; each app picks its own audience, environment, and capability policy.
 
-The owning platform service is **`app-runtime-api`**. It owns App definitions, App clients, audience policies, external subjects, and delegated-session minting.
+The owning platform service is **`app-platform-api`**. It owns App definitions, App clients, audience policies, external subjects, and delegated-session minting.
 
 ---
 
@@ -36,7 +36,7 @@ Apps are addressable in [XVFS](./concepts/xvfs.md) at `/orgs/<org>/projects/<pro
 | `POST /apps/:id/archive` | Lifecycle transition to archived |
 | `POST /apps/:id/lockfile/refresh` | Resolve and persist a full pinned [lockfile](./versioning.md) |
 
-App admin endpoints terminate at the org-internal ingress (`app-runtime-api.xema.dev`).
+App admin endpoints terminate at the org-internal ingress (`app-platform-api.xema.dev`).
 
 ---
 
@@ -77,7 +77,7 @@ External subjects do **not** become Xema users. They are app-scoped identities. 
 
 ## Delegated session JWT
 
-When an external subject signs in through an app, `app-runtime-api` mints a short-lived **delegated session JWT**. The token carries:
+When an external subject signs in through an app, `app-platform-api` mints a short-lived **delegated session JWT**. The token carries:
 
 ```
 sub          = external-user:<externalId>     (or anon:<random>)
@@ -94,7 +94,7 @@ Signing is **RS256** in production (with an HS256 dev fallback). Public keys are
 
 ### Public ingress endpoints (no Xema identity required)
 
-These live on a separate ingress hostname (`app-runtime-public.xema.dev`) so platform AuthGuard can be bypassed in a controlled way — every public endpoint is decorated with `@Public()` and listed in the AuthGuard `extraExcludes`.
+These live on a separate ingress hostname (`app-platform-public.xema.dev`) so platform AuthGuard can be bypassed in a controlled way — every public endpoint is decorated with `@Public()` and listed in the AuthGuard `extraExcludes`.
 
 | Endpoint | Purpose |
 |---|---|
@@ -120,7 +120,7 @@ A separate platform-internal mint endpoint exists for invite flows; it is gated 
 
 ## Rate limiting
 
-`app-runtime-api` ships a Redis-backed rate limiter (atomic Lua `INCR + EXPIRE`). Limits apply per app + audience + endpoint. The limiter is the first line of defence on the public ingress; the second line is the standard capability-gateway rate-and-quota check on every capability invocation routed through the delegated session.
+`app-platform-api` ships a Redis-backed rate limiter (atomic Lua `INCR + EXPIRE`). Limits apply per app + audience + endpoint. The limiter is the first line of defence on the public ingress; the second line is the standard capability-gateway rate-and-quota check on every capability invocation routed through the delegated session.
 
 ---
 
@@ -139,7 +139,7 @@ The embedded route lives outside the host shell's `ProtectedAppShell` — it doe
 ```html
 <!-- The app's own server mints a delegated session token on behalf of the external user -->
 <iframe
-  src="https://app-runtime-public.xema.dev/embedded/session/eyJhbGciOiJSUzI1NiIs...?app=customer-portal"
+  src="https://app-platform-public.xema.dev/embedded/session/eyJhbGciOiJSUzI1NiIs...?app=customer-portal"
   width="480"
   height="640"
   allow="clipboard-read; clipboard-write"
