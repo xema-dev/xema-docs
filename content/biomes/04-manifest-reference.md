@@ -84,6 +84,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 |---|---|---|---|
 | `labels` | object — see **xema.runtimeRequirements.labels** | no | — |
 | `resources` | object — see **xema.runtimeRequirements.resources** | no | — |
+| `scaling` | object — see **xema.runtimeRequirements.scaling** | no | — |
 | `isolation` | object — see **xema.runtimeRequirements.isolation** | no | — |
 | `locality` | object — see **xema.runtimeRequirements.locality** | no | — |
 | `trustTier` | object — see **xema.runtimeRequirements.trustTier** | no | — |
@@ -255,6 +256,15 @@ A server biome ships backend contributions — agents, skills, workflows, option
 |---|---|---|---|
 | `cpu` | string | no | — |
 | `memory` | string | no | — |
+| `gpu` | object — see **xema.runtimeRequirements.resources.gpu** | no | — |
+
+### `xema.runtimeRequirements.scaling`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `min` | number | yes | integer; min 0 |
+| `max` | number | yes | integer; min 1 |
+| `cpuTargetPercent` | number | no | integer; min 1; max 100 |
 
 ### `xema.runtimeRequirements.isolation`
 
@@ -348,6 +358,13 @@ A server biome ships backend contributions — agents, skills, workflows, option
 |---|---|---|---|
 | `name` | string | yes | — |
 | `capabilities` | string[] | yes | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
+
+### `xema.runtimeRequirements.resources.gpu`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `count` | number | yes | integer; min 1 |
+| `type` | string | no | — |
 
 ### `xema.ships.apis[].image`
 
