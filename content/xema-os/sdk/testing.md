@@ -75,7 +75,7 @@ describe('on-run-completed', () => {
         source: 'workflow-engine-api',
         id: 'evt-1',
         time: '2026-05-26T12:00:00Z',
-        subject: 'xema://org/acme/project/main/workflow-run/r-1',
+        subject: 'xema://orgs/acme/projects/main/workflow-run/r-1',
         orgid: 'org_acme',
         projectid: 'proj_main',
         data: { workflowRunId: 'r-1', outcome: 'success' },

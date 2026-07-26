@@ -22,8 +22,8 @@ A biome contributes a connector by shipping a `connector` contribution in its ma
 Bindings are addressable through the [Space URI grammar](./spaces.md):
 
 ```
-xema://org/acme/connector-binding/github-main
-xema://org/acme/project/billing/connector-binding/jira-prod
+xema://orgs/acme/connector-binding/github-main
+xema://orgs/acme/projects/billing/connector-binding/jira-prod
 ```
 
 A workflow or agent that needs to call out names the binding URI — never the provider, never the token.

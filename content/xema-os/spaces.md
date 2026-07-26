@@ -31,32 +31,33 @@ The set is closed — third-party biomes cannot introduce new Space kinds. Custo
 A Space is referenced by a structured URI:
 
 ```
-xema://<kind>/<id>[/<kind>/<id>...]
+xema://<plural-kind>/<id>[/<plural-kind>/<id>...]
 ```
 
 Examples:
 
 ```
 xema://system
-xema://org/acme
-xema://org/acme/project/billing
-xema://org/acme/project/billing/biome/xema.document-buddy@1.4.2
-xema://org/acme/project/billing/session/sess_abc123
-xema://user/u_42
+xema://orgs/acme
+xema://orgs/acme/projects/billing
+xema://biomes/xema.document-buddy
+xema://sessions/sess_abc123
+xema://users/u_42
 ```
 
 Hard rules:
 
-- Every segment pair is `<kind>/<id>` where `kind` is a `SpaceKind` value and `id` is the kebab-case stable identifier of that Space.
+- Every segment pair is `<plural-kind>/<id>` — the pluralised `SpaceKind` value (`orgs`, `projects`, `apps`, `sessions`, `biomes`, `users`) plus that Space's stable identifier. `xema://system` is the one rootless, id-less form. This is the SAME scope grammar `XemaObjectRef` and search refs use, so a Space URI is always a prefix of the object URIs it contains.
 - Segments are ordered from least-specific to most-specific. Reversing the order is a parse error.
-- Walking ancestors is the precedence chain for grant resolution: a grant at `xema://org/acme` applies to every descendant unless overridden.
+- `users`, `biomes` and `sessions` are ROOT-addressable: a User, Biome or Session Space is identified by its own id alone and parents onto System. Only `orgs → projects → apps` nests.
+- Walking ancestors is the precedence chain for grant resolution: a grant at `xema://orgs/acme` applies to every descendant unless overridden.
 
 Parse and traverse via `@xemahq/space-contracts`:
 
 ```ts
 import { parseSpaceRef, ancestorsOf } from '@xemahq/space-contracts';
 
-const ref = parseSpaceRef('xema://org/acme/project/billing');
+const ref = parseSpaceRef('xema://orgs/acme/projects/billing');
 // → { kind: 'Project', id: 'billing', parent: { kind: 'Org', id: 'acme' } }
 
 for (const ancestor of ancestorsOf(ref)) {
@@ -103,7 +104,7 @@ Spaces are first-class in every product surface:
 - A **Space** says *where data lives and who owns it*. It is durable, hierarchical, and named.
 - An **Environment** says *what trust profile this call runs under*. It is runtime, profile-based, and bound to each invocation.
 
-The same object in `xema://org/acme/project/billing` may be touched from the `org`, `project`, or `sandbox` environment depending on who is calling. The data does not move; the trust profile that applies to the call does.
+The same object in `xema://orgs/acme/projects/billing` may be touched from the `org`, `project`, or `sandbox` environment depending on who is calling. The data does not move; the trust profile that applies to the call does.
 
 ---
 
@@ -112,8 +113,8 @@ The same object in `xema://org/acme/project/billing` may be touched from the `or
 | Command | What it shows |
 |---|---|
 | `xema spaces list` | All Spaces the calling subject can reach |
-| `xema explain xema://org/acme/project/billing` | Owner, classification, descendant count, recent activity |
-| `xema objects list xema://org/acme/project/billing` | Typed objects anchored to the Space |
+| `xema explain xema://orgs/acme/projects/billing` | Owner, classification, descendant count, recent activity |
+| `xema objects list xema://orgs/acme/projects/billing` | Typed objects anchored to the Space |
 
 ---
 

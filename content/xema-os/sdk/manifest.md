@@ -158,7 +158,7 @@ Per-capability metadata that powers the install-time digest. Each entry pairs a 
     {
       "capability": "kb:page.read@1",
       "reason": "Search the knowledge base when answering questions.",
-      "suggestedResource": "xema://org/${orgId}/project/${projectId}/kb/support-*",
+      "suggestedResource": "xema://orgs/${orgId}/projects/${projectId}/kb/support-*",
       "riskTier": "low"
     }
   ],

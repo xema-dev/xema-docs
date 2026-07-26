@@ -146,7 +146,7 @@ Invoke a capability against the local Xema instance.
 xema run hello:greet@1 --name Eduardo
 # → { "message": "Hello Eduardo from my first Xema biome" }
 
-xema run kb:page.read@1 --pageId 'xema://org/acme/kb/page/welcome'
+xema run kb:page.read@1 --pageId 'xema://orgs/acme/kb/page/welcome'
 ```
 
 `xema run` is the CLI face of `xema.capabilities.invoke`. The same authorization, audit, and policy flow applies — your CLI session is just another subject.
@@ -157,8 +157,8 @@ Drop into the interactive Xema Shell, same surface the web terminal exposes.
 
 ```bash
 xema shell
-xema-shell> ls xema://org/acme/project/billing
-xema-shell> explain xema://org/acme/project/billing/biome/xema.document-buddy
+xema-shell> ls xema://orgs/acme/projects/billing
+xema-shell> explain xema://biomes/xema.document-buddy
 ```
 
 ### `xema objects list <space>`
@@ -166,8 +166,8 @@ xema-shell> explain xema://org/acme/project/billing/biome/xema.document-buddy
 List the typed objects anchored to a given Space.
 
 ```bash
-xema objects list xema://org/acme/project/billing
-xema objects list xema://org/acme/project/billing --kind artifact
+xema objects list xema://orgs/acme/projects/billing
+xema objects list xema://orgs/acme/projects/billing --kind artifact
 ```
 
 ### `xema doctor`

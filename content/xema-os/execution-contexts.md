@@ -18,7 +18,7 @@ interface ExecutionContext {
   callerOrigin?: string;         // optional UI origin or service name
 
   // Where data lives + what trust profile applies
-  space:       SpaceRef;         // xema://org/acme/project/billing
+  space:       SpaceRef;         // xema://orgs/acme/projects/billing
   environment: ExecutionEnvironmentId;  // 'org' | 'project' | 'sandbox' | …
 
   // What is being asked
@@ -78,11 +78,11 @@ Most invocations originate inside a session. The router resolves Space + Environ
 
 | Session kind | Default Space | Default Environment |
 |---|---|---|
-| Project workspace session | `xema://org/<org>/project/<project>` | `project` |
-| Org admin console session | `xema://org/<org>` | `org` |
-| Sandbox build session | `xema://org/<org>/project/<project>/biome/<biome>` | `sandbox` |
-| Delegated app session | `xema://org/<org>/app/<app>` | `app` or `public-app` |
-| Personal session | `xema://user/<userId>` | `org` (fallback to `user`) |
+| Project workspace session | `xema://orgs/<org>/projects/<project>` | `project` |
+| Org admin console session | `xema://orgs/<org>` | `org` |
+| Sandbox build session | `xema://biomes/<biome>` | `sandbox` |
+| Delegated app session | `xema://orgs/<org>/apps/<app>` | `app` or `public-app` |
+| Personal session | `xema://users/<userId>` | `org` (fallback to `user`) |
 
 A subject may **request** an alternate Space or Environment via the Shell's `--space` / `--environment` flags or the capability invoker's `requestedEnvironment` field. The router applies the request only if the subject holds a grant that allows it; otherwise the request is rejected before policy check.
 

@@ -30,11 +30,11 @@ A `XemaObjectRef` is a typed URL into the Object Model:
 xema://<scope-path>/<kind>/<slug>[@<version>]
 
 Examples:
-  xema://org/acme/project/main/agent/code-reviewer@3.0.0
+  xema://orgs/acme/projects/main/agent/code-reviewer@3.0.0
   xema://system/capability/kb.page.read@1
   xema://store/biome/document-buddy@1.4.2
-  xema://org/acme/project/main/workflow/escalation
-  xema://org/acme/project/main/artifact/spec-2026-05-001
+  xema://orgs/acme/projects/main/workflow/escalation
+  xema://orgs/acme/projects/main/artifact/spec-2026-05-001
 ```
 
 Refs are stable, addressable, and unambiguous. They are what the Shell, the Capability Gateway, the Object Browser UI, and agents pass around when they refer to "the thing".

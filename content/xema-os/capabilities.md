@@ -129,7 +129,7 @@ Phase 1B ships the connector domain end-to-end. A workflow that opens a pull req
 
 1. The workflow step declares `connector:scm.create-pull-request@1` as a required capability.
 2. The biome manifest exposes (or requires) the same ref.
-3. At runtime the workflow runner asks the gateway: "open a PR against repo `xema://org/acme/project/main/connector-binding/github-main`, branch `feature/x`, title `…`, body `…`."
+3. At runtime the workflow runner asks the gateway: "open a PR against repo `xema://orgs/acme/projects/main/connector-binding/github-main`, branch `feature/x`, title `…`, body `…`."
 4. The gateway checks the `BiomeInstallGrant` for the workflow's subject, finds the connector binding allowed for the `project` environment, and calls the GitHub connector with the org's stored credentials.
 5. The agent never sees the GitHub token. The response is a typed artifact ref pointing at the new pull request.
 
@@ -185,39 +185,52 @@ client per caller.
 
 ---
 
-## The three meta-tools — how agents see capabilities
+## The six meta-tools — how agents see capabilities
 
-Agents never see individual MCP servers or per-biome tool surfaces. They see exactly three meta-tools, and discover everything else dynamically:
+Agents never see individual MCP servers or per-biome tool surfaces. They see exactly six meta-tools — `search`, `describe`, `invoke`, `plan`, `preflight`, `explain` — and discover everything else dynamically:
 
 | Meta-tool | What it does |
 |---|---|
-| `xema.capabilities.list` | Returns the capabilities the calling agent may invoke in the current Execution Context. Filtered by Subject + Space + Environment + Policy + installed biomes. Each entry: `{ ref, biome, title, summary, riskTier, policyDecision }`. |
-| `xema.capabilities.describe` | Returns the full schema for one or more refs: `{ ref, inputSchema, outputSchema, examples, sideEffects, requiresApproval, biome: { id, version } }`. Accepts an array of refs in one call. |
-| `xema.capabilities.invoke` | Generic invocation: `{ ref, input }` → `{ output, auditId, obligations }`. Input is validated against `describe(ref).inputSchema` at the gateway boundary before runner dispatch. |
+| `xema.capabilities.search` | Retrieves the capabilities the calling agent is **authorized to invoke** in the current Execution Context. All arguments are flat and optional: `{ query?, domain?, resourceType?, mutating?, limit?, cursor? }`. Each entry: `{ ref, biome, title, summary, riskTier, requiresApproval, mutation }`. |
+| `xema.capabilities.describe` | Returns the full schema for one or more refs: `{ ref, inputSchema, outputSchema, examples, sideEffects, requiresApproval, biome: { id, version } }`. Accepts an array of up to 50 refs in one call. |
+| `xema.capabilities.invoke` | Generic invocation: `{ ref, input }` → `{ output, auditId, obligations }`. `input` is validated against the capability's full declared JSON Schema at the gateway boundary before runner dispatch. |
+| `xema.capabilities.plan` | Derives the shortest runnable sequence to a goal capability over the capability graph: `{ goalCapabilityRef, fromResourceTypes, maxDepth? }` → `{ goal, found, steps, missingResourceTypes }`. |
+| `xema.capabilities.preflight` | Checks readiness before a call can fail: `{ ref }` → `{ ready, requirements, blockers }` — missing credentials, grants, or runtimes. |
+| `xema.capabilities.explain` | Turns a denial code from a failed `invoke` into the exact grant that unlocks it: `{ capabilityRef, denialCode }` → `{ permissions, domain, biome, suggestions }`. |
+
+**There is no full-catalogue listing.** `search` returns only what the caller may actually invoke — denied capabilities are absent, not flagged, and there is no "include denied" switch. Retrieval is graph-scoped: give it an anchor (`resourceType`, or a noun in `query` that names a known resource type) and it walks that type's capability-graph neighbourhood, which is the fast, high-precision path. Without an anchor it falls back to a bounded, paginated catalogue query — page through it with `cursor`, taken from the previous response's `nextCursor`.
 
 Worked example — an agent discovers and calls a capability:
 
 ```jsonc
-// 1. Discover
-xema.capabilities.list({ filter: { domain: "connector" } })
-// → [
-//     { "ref": "connector:scm.create-pull-request@1", "biome": "xema.software-dev", ... },
-//     { "ref": "connector:chat.send-message@1", "biome": "xema.slack-connector", ... }
-//   ]
+// 1. Discover (flat args — no filter wrapper)
+xema.capabilities.search({ domain: "connector" })
+// → {
+//     "capabilities": [
+//       { "ref": "connector:scm.create-pull-request@1", "biome": "xema.software-dev", ... },
+//       { "ref": "connector:chat.send-message@1", "biome": "xema.slack-connector", ... }
+//     ],
+//     "anchor": { "resourceType": null, "source": "none" },
+//     "consideredCount": 2
+//   }
 
 // 2. Describe (batched)
 xema.capabilities.describe({ refs: ["connector:scm.create-pull-request@1"] })
 // → [{ "ref": "...", "inputSchema": { ... }, "examples": [ ... ] }]
 
-// 3. Invoke
+// 3. Invoke — input must match the declared schema exactly
 xema.capabilities.invoke({
   ref: "connector:scm.create-pull-request@1",
-  input: { repoRef: "xema://org/acme/.../github-main", branch: "feature/x", title: "..." }
+  input: { repoRef: "xema://orgs/acme/.../github-main", branch: "feature/x", title: "..." }
 })
 // → { "output": { "url": "https://github.com/...", "number": 42 }, "auditId": "inv_abc" }
 ```
 
-Adding a new biome or MCP server expands the `list` result without changing the agent's tool surface. Agents adopt new capabilities at runtime; no prompt rebuild required.
+Adding a new biome or MCP server expands the `search` result without changing the agent's tool surface. Agents adopt new capabilities at runtime; no prompt rebuild required.
+
+### Invocation input is strictly validated
+
+`invoke` validates `input` against the capability's **full declared JSON Schema** — types, enums, and string formats are enforced, and unknown properties are rejected. Nothing is coerced: a string is not silently parsed into a number, and an extra or misspelt field is not dropped. A violation is a fail-fast `400` that names the offending JSON path, so an agent can correct the exact field rather than guess. Callers must send exactly the shape `describe` returns.
 
 ---
 
@@ -229,10 +242,10 @@ Xema OS does not show an agent the union of every MCP server's `tools/list`. Ins
 2. At registration time, `mcp-gateway-api` calls the external server's MCP `tools/list`.
 3. Each external tool is translated to a capability ref: `<provider-id>:<tool-name>@1`.
 4. The capability is inserted into the Service Registry with runner kind `mcp-external`.
-5. `xema.capabilities.list` includes the provider's capabilities under the same policy + grant model as any first-party capability.
+5. `xema.capabilities.search` surfaces the provider's capabilities under the same policy + grant model as any first-party capability — and, like every other capability, only to subjects authorized to invoke them.
 6. On `xema.capabilities.invoke`, the gateway translates the call back to an MCP `tools/call` against the registered server.
 
-The agent's view stays uniform: every capability — first-party, biome-shipped, or externally federated — is a ref behind the same three meta-tools. Policy, audit, and grant flows are identical.
+The agent's view stays uniform: every capability — first-party, biome-shipped, or externally federated — is a ref behind the same six meta-tools. Policy, audit, and grant flows are identical.
 
 ---
 
@@ -242,10 +255,10 @@ Each capability ref carries a lifecycle state that constrains how it may be invo
 
 | State | Meaning |
 |---|---|
-| `proposed` | Declared in a manifest but never seeded; `list` omits it |
+| `proposed` | Declared in a manifest but never seeded; `search` omits it |
 | `seeded` | Registered in the Service Registry; eligible for grants |
-| `published` | Granted, invocable, and visible in `list` for authorised subjects |
-| `deprecated` | Still invocable; `list` marks it; `describe` carries a `replacedBy` ref |
+| `published` | Granted, invocable, and returned by `search` for authorised subjects |
+| `deprecated` | Still invocable; `search` marks it; `describe` carries a `replacedBy` ref |
 | `retired` | No longer invocable; the gateway returns a structured denial pointing at the successor |
 
 Lifecycle is per-major-version. Bumping `@1 → @2` introduces a new ref; the `@1` ref enters `deprecated` and the manifest declares `replacedBy: "...@2"`.

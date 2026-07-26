@@ -14,7 +14,7 @@ An App is `XemaObjectKind.App`:
 
 ```ts
 interface App {
-  ref: XemaObjectRef;                         // xema://org/acme/project/support/app/customer-portal
+  ref: XemaObjectRef;                         // xema://orgs/acme/projects/support/apps/customer-portal
   installedBiomes: BiomeInstall[];            // { biomeRef, versionConstraint, configuration }
   defaultZone: ExecutionZoneRef;              // typically a project-scoped environment
   audiences: AudiencePolicy[];                // who may use the app, through which auth path
