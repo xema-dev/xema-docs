@@ -22,7 +22,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Runners](./runners.md) | Embedded, local-module, and remote runners; attestation; push vs pull |
 | [Controllers](./controllers.md) | Reconciliation loops, desired vs observed state, error categories |
 | [Service Registry](./service-registry.md) | Service discovery + `@InjectService(name)` |
-| [MCP and Capabilities](./mcp-and-capabilities.md) | The three meta-tools + external MCP federation |
+| [MCP and Capabilities](./mcp-and-capabilities.md) | The six meta-tools + external MCP federation |
 | [Developer Annotations](./developer-annotations.md) | `@XemaResource` / `@XemaRoute` + convention inference |
 | [CLI](./cli.md) | The global `xema` CLI — install, commands, workflows |
 | [Xema-as-Code](./iac.md) | Declarative provisioning — `xema.yaml`, the Terraform provider, the `managedBy` ownership model |

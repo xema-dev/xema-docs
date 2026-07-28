@@ -1,48 +1,61 @@
 # MCP and Capabilities
 
-External agents reach Xema through the Model Context Protocol (MCP). External tool servers (GitHub MCP, Slack MCP, third-party MCP servers an org installs) also speak MCP. Xema unifies both directions under **one surface**: every external MCP tool becomes a Xema [capability](./capabilities.md), and every agent — whether it lives inside Xema or talks to Xema over MCP — sees the same three meta-tools.
+External agents reach Xema through the Model Context Protocol (MCP). External tool servers (GitHub MCP, Slack MCP, third-party MCP servers an org installs) also speak MCP. Xema unifies both directions under **one surface**: every external MCP tool becomes a Xema [capability](./capabilities.md), and every agent — whether it lives inside Xema or talks to Xema over MCP — sees the same six meta-tools.
 
 This is the bridge between the agent ecosystem's wire protocol and Xema's typed, policy-mediated capability plane.
 
 ---
 
-## The agent's view: three meta-tools, no proliferation
+## The agent's view: six meta-tools, no proliferation
 
-An agent connected to Xema does **not** see N separate MCP servers, one per integration. It sees exactly three tools:
+An agent connected to Xema does **not** see N separate MCP servers, one per integration. It sees exactly six tools:
 
 | Meta-tool | Purpose |
 |---|---|
-| `xema.capabilities.list` | List the capabilities the agent is allowed to invoke right now |
+| `xema.capabilities.search` | Find the capabilities the agent is allowed to invoke right now |
 | `xema.capabilities.describe` | Get the input/output schema, examples, and side effects for one or more refs |
 | `xema.capabilities.invoke` | Invoke a capability by ref |
+| `xema.capabilities.plan` | Derive the shortest runnable sequence of capabilities to reach a goal |
+| `xema.capabilities.preflight` | Report what blocks an invocation — before the call fails |
+| `xema.capabilities.explain` | Turn a denial into the grant that would unlock it |
 
-This collapses the agent's surface from "one tool per provider verb across every installed integration" (dozens to hundreds) to **three tools, always**. The capability list returned by `list` is the agent's working set — filtered by Subject, Space, Environment, and Policy, so the agent never sees what it cannot invoke.
+This collapses the agent's surface from "one tool per provider verb across every installed integration" (dozens to hundreds) to **six tools, always** — and, crucially, keeps it constant as the capability catalogue grows. The results returned by `search` are the agent's working set: filtered by Subject, Space, Environment, and Policy, so the agent never sees what it cannot invoke.
 
-### `xema.capabilities.list`
+### `xema.capabilities.search`
 
-Returns the agent's allowed capabilities for the current [ExecutionContext](./execution-contexts.md).
+Finds the capabilities the agent may invoke under the current [ExecutionContext](./execution-contexts.md).
+
+Search is **anchored, not exhaustive**. Naming a resource type — explicitly, or as a noun in `query` — enters the [capability graph](./capabilities.md) at that type and returns its neighbourhood: the actions that act on it, plus those one containment hop below. That is what keeps discovery a constant-cost operation whether the org has installed forty capabilities or forty thousand. Without an anchor, search returns a bounded, ranked page of the catalogue.
+
+There is no full-catalogue listing. Page through results with `cursor`.
 
 ```jsonc
-// Input
-{ "includeDenied": false, "filter": { "domain": "connector" } }
+// Input — every field optional
+{ "query": "open a pull request", "domain": "connector", "limit": 20 }
 
 // Output
 {
   "capabilities": [
     {
       "ref":      "connector:scm.create-pull-request@1",
-      "biome":    "xema.software-dev",
+      "biome":    { "id": "xema.software-dev", "version": "1.4.0" },
       "title":    "Open a pull request",
       "summary":  "Creates a PR on the project's bound SCM provider.",
       "riskTier": "medium",
-      "policyDecision": "allow"
+      "requiresApproval": false,
+      "mutation": "mutating",
+      "relation": "acts_on",
+      "distance": 0
     },
     { "ref": "connector:tracker.issue.create@1", "...": "..." }
-  ]
+  ],
+  "anchor":          { "resourceType": "scm", "source": "derived-from-query" },
+  "consideredCount": 34,
+  "nextCursor":      "eyJ2IjoxLCJvIjoyMH0"
 }
 ```
 
-The list is filtered server-side. An agent in a `public-app` environment never sees `connector:bank.transfer@1` even if some other subject can invoke it.
+Filtering happens server-side, and a capability the agent may not invoke is **absent** — not returned with a denial marker. An agent in a `public-app` environment never sees `connector:bank.transfer@1` even if some other subject can invoke it. Compare `consideredCount` with the number of results to see how much authorization removed.
 
 ### `xema.capabilities.describe`
 
@@ -107,7 +120,7 @@ From that point forward, the external tool is **indistinguishable** from a nativ
 - Every input/output is validated against the schema the external server published.
 - Every result lands in the audit log with the full ExecutionContext.
 
-The agent **never** sees the external MCP server as a separate tool list. It sees one entry in `xema.capabilities.list`, with the same shape as every other capability.
+The agent **never** sees the external MCP server as a separate tool list. It sees one result in `xema.capabilities.search`, with the same shape as every other capability.
 
 ---
 
@@ -115,7 +128,7 @@ The agent **never** sees the external MCP server as a separate tool list. It see
 
 Three forces converge here:
 
-- **Agent UX** — a tool list that grows linearly with installed integrations becomes unusable. Three meta-tools stay constant.
+- **Agent UX** — a tool list that grows linearly with installed integrations becomes unusable. Six meta-tools stay constant, and anchored search keeps the cost of *finding* the right one constant too.
 - **Authorization** — every invocation crosses the same trust boundary, so it must read the same `ExecutionContext`. A direct-MCP escape hatch would bypass policy.
 - **Auditability** — one capability invocation = one audit row, regardless of whether the implementation is a first-party connector or an external MCP server.
 
@@ -129,10 +142,17 @@ Agents are taught — in their system skill — to **discover** capabilities at 
 
 ```
 On each new task:
-1. Call xema.capabilities.list with a domain filter.
+1. Call xema.capabilities.search, naming the resource you are acting on
+   (e.g. resourceType: "project") or describing the goal in `query`.
 2. Pick the capability whose summary matches the goal.
 3. Call xema.capabilities.describe to see the schema.
 4. Call xema.capabilities.invoke with valid input.
+
+For work that takes several dependent steps, call xema.capabilities.plan
+with the goal ref instead of guessing the order. Before an action that
+needs a connection or a grant, call xema.capabilities.preflight. If an
+invocation is refused, call xema.capabilities.explain with the denial
+code rather than retrying unchanged.
 ```
 
 This means a freshly installed biome's new capabilities appear to the agent **immediately** — no agent prompt redeployment, no skill bundle refresh, no training cycle.
