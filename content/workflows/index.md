@@ -92,7 +92,7 @@ See [Concepts & Fundamentals](./01-concepts.md) for architecture overview, then 
 └─────────────────────────────────────────────────────────────┘
 
 External Systems ──┐
-(GitHub, GitLab,   ├──> Integration Adapters ──> Webhook Dispatcher
+(GitHub, GitLab,   ├──> Connector Gateway ─────> Webhook Dispatcher
  Jira, Slack, ...) └────────────────────────────────> Workflow Trigger
 ```
 

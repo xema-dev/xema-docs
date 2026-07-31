@@ -296,6 +296,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `openapiSpec` | string | no | — |
 | `scopes` | enum[] | no | entries one of: `public`, `org`, `project`, `installation` |
 | `path` | string | no | — |
+| `workload` | enum | no | one of: `service`, `runtime-component`; default `"service"` |
 | `displayName` | string | no | — |
 | `serviceKind` | enum | no | one of: `platform-service`, `biome-api`, `cli` |
 | `requiresServices` | string[] | no | — |

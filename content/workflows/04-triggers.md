@@ -416,7 +416,7 @@ ${{ trigger.payload.commit.sha }}           # Commit SHA
 
 ### Configuring Webhook Sources
 
-External webhooks are configured per-integration in the Integration Adapters service. Each integration subscribes a specific provider and routes normalized events to the workflow engine.
+External webhooks are configured per-connector in the Connector Gateway service. Each connector subscribes a specific provider and routes normalized events to the workflow engine.
 
 See [Integration Guide](./05-integration-guide.md) for provider setup instructions.
 

@@ -1,0 +1,17 @@
+# The docs-api image contains exactly two directories: `service/` (the
+# zero-dependency Node server) and `content/` (the markdown bundle). Everything
+# else in this repository belongs to the Astro marketing site, which ships to
+# GitHub Pages via `deploy-pages.yaml` and is a different artifact entirely.
+#
+# Without this file the build context is ~150 MB (node_modules) for an image
+# that COPYs ~1.3 MB. The Dockerfile's own header invites `docker build .`, so
+# the cost lands on anyone following it.
+node_modules
+dist
+.git
+.github
+src
+astro.config.mjs
+package.json
+package-lock.json
+*.md

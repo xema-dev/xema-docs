@@ -1,0 +1,245 @@
+# Build + push the `docs-api` container image.
+#
+# WHY THIS FILE EXISTS
+#
+#   `docs-api` is a real, deployed service: it has a chart
+#   (`charts/docs-api` in xema-deploy), it is `enabled: true` in four
+#   deployments, and every distribution edition's `images.lock.json` names it
+#   as a subject at `ghcr.io/xema-dev/docs-api:<contentHash>`. Nothing in this
+#   repository ever built it. The last image in that GHCR package was pushed on
+#   2026-06-14 by a workflow that no longer exists — the repository kept only
+#   `deploy-pages.yaml` (the Astro marketing site, a completely different
+#   artifact) after it went public.
+#
+#   So a lock promised an image nothing produced, and an appliance install
+#   would have failed pulling it. This closes that.
+#
+# WHAT `docs-api` IS
+#
+#   The zero-dependency Node content server at `service/server.mjs`, serving
+#   the markdown bundle in `content/`. The root `Dockerfile` COPYs exactly those
+#   two directories onto `node:22-slim` — no build step, no npm install. The
+#   Astro site under `src/` is NOT part of this image; it ships to GitHub Pages
+#   via `deploy-pages.yaml`.
+#
+# RUNNERS AND CREDENTIALS — both are forced, not preferences.
+#
+#   `ubuntu-latest`, not `[self-hosted, linux]`: this repository is PUBLIC and
+#   the org self-hosted runner group has `allows_public_repositories: false`,
+#   so a self-hosted job here queues forever and is never scheduled. Same
+#   constraint `deploy-pages.yaml` documents.
+#
+#   `secrets.GH_PACKAGES_TOKEN`, not `github.token`: the `docs-api` GHCR
+#   package is linked to `xema-dev/xema-platform`, not to this repository, so
+#   this repo's run-scoped `GITHUB_TOKEN` has no write access to it even with
+#   `packages: write` — the push would fail `403` on the blob HEAD request.
+#   The PAT already holds it. The secret is configured on this repository.
+#   Workflow-triggering is limited to `push` on `main` and `workflow_dispatch`,
+#   neither of which a fork can cause, so the secret is never exposed to
+#   untrusted code.
+#
+# WHAT THIS DELIBERATELY DOES NOT DO: dispatch a deploy.
+#
+#   `xema-deploy`'s `deploy-service-producers.json` carries no
+#   `xema-dev/xema-docs` source profile, and the `xema.deploy-service/v3`
+#   contract is verified against three cosign attestations the payload must
+#   name. Emitting a dispatch without that onboarding would fail the deploy
+#   gate on every push. Building and pushing the image is the gap this file
+#   closes; wiring `docs-api` into the attested deploy path is a separate,
+#   xema-deploy-side change. The image lands at its lock coordinate either way,
+#   which is what an appliance install resolves.
+name: Build docs-api image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # QUEUE, never cancel. This repository builds ONE image and every run
+  # rebuilds it in full, so a cancelled run costs nothing a later run does not
+  # redo — but the content coordinate is content-addressed, and a cancelled run
+  # can leave `:<contentHash>` unpublished for source that no later push
+  # touches. Queueing is the cheap side of that trade.
+  group: build-image-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  # Keyless cosign exchanges this job's OIDC token at Fulcio for a short-lived
+  # signing certificate. Without `id-token: write` there is no token to exchange
+  # and the signing step below fails.
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_ORG: xema-dev
+  SERVICE: docs-api
+
+jobs:
+  build:
+    name: Build & push docs-api
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # The content hash reads the COMMIT's git objects. Full history keeps
+          # that read independent of how the runner happened to fetch.
+          fetch-depth: 0
+
+      # A Node toolchain for the content-tag script below, so it does not
+      # depend on whatever node the runner image happens to ship.
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Compute image coordinates
+        id: img
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE="$(printf '%s' "${REGISTRY}/${REGISTRY_ORG}/${SERVICE}" \
+            | tr '[:upper:]' '[:lower:]')"
+          # ─────────────────────────────────────────────────────────────────
+          # THE CONTENT-ADDRESSED RELEASE COORDINATE.
+          #
+          # Every distribution's images.lock.json names this image as
+          # `<imageRef>:<contentHash>` — `deliver-images.mjs` calls it the
+          # "source tag", and its `shared` delivery mode entitles a customer
+          # pull token to exactly that ref with NO copy. All three delivery
+          # modes assume the PRODUCER already pushed it.
+          #
+          # The hash has ONE owner (`compute-image-tag.mjs` →
+          # `@xemahq/distribution-source-hash`); this workflow only consumes
+          # it. Re-deriving it here would put the release coordinate on two
+          # implementations that can silently disagree.
+          #
+          # `docs-api` is a WHOLE-REPO image, so the hashed path is the
+          # repository root — the same path the lock's subject declares.
+          # ─────────────────────────────────────────────────────────────────
+          CONTENT_TAG="$(
+            node tooling/release/compute-image-tag.mjs \
+              --service "${SERVICE}" --path . --commit "${SHA}"
+          )"
+          # sha256 hex, exactly as `sourceHashAlgorithm:
+          # xema-source-tree-sha256-v2` produces in the lock. A different shape
+          # means the algorithm moved and the tag would NOT be the coordinate
+          # the lock names — fail here, not at delivery time.
+          case "${CONTENT_TAG}" in
+            *[!0-9a-f]* | "")
+              echo "::error::compute-image-tag.mjs emitted a non-hex tag for ${SERVICE}"
+              exit 1
+              ;;
+          esac
+          if [ "${#CONTENT_TAG}" -ne 64 ]; then
+            echo "::error::compute-image-tag.mjs emitted a ${#CONTENT_TAG}-char tag for ${SERVICE}; expected 64 (sha256 hex)"
+            exit 1
+          fi
+          {
+            echo "image=${IMAGE}"
+            echo "tag=${SHA}"
+            echo "content_tag=${CONTENT_TAG}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # NOT `github.token` — see the credentials note in the file header.
+          password: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ steps.img.outputs.image }}
+          tags: |
+            type=raw,value=${{ steps.img.outputs.tag }}
+            # The distribution's deployable coordinate. The job runs on main
+            # only (job-level `if`), which is what keeps this — and `latest`
+            # below — off branch builds: an unreviewed build must never
+            # repoint a coordinate a lock names.
+            type=raw,value=${{ steps.img.outputs.content_tag }}
+            type=raw,value=latest
+
+      - name: Build & push image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          # amd64-only here. `release-arm64.yaml` produces linux/arm64 AFTER
+          # this run and merges both into a multi-arch index on the
+          # `:<contentHash>` coordinate — it never rewrites `:${SHA}`.
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=docs-api
+          cache-to: type=gha,scope=docs-api,mode=max
+          provenance: false
+
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+        with:
+          cosign-release: v2.6.3
+
+      # `docs-api` is a subject in the appliance distribution locks, and the
+      # fleet's ClusterImagePolicy
+      # (xema-control-plane/policy/cosign-policy.yaml, `xema-signed-images-docs`)
+      # admits it only against a signature from this workflow or from
+      # `release-arm64.yaml`. Without this step the amd64 manifest — the digest
+      # `:<contentHash>` resolves to until the arm64 lane merges an index — is
+      # unsigned, so the image is admitted only in the window AFTER arm64 lands.
+      #
+      # The job-level `if: github.ref == 'refs/heads/main'` is what keeps this
+      # off branch builds; it is deliberately not re-stated here, so there is
+      # one gate rather than two free to drift. The certificate identity is
+      # `@${GITHUB_REF}`-bound anyway, so a branch signature could not satisfy
+      # the main-pinned policy even if one were produced.
+      - name: Keyless-sign the image
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          OIDC_ISSUER: https://token.actions.githubusercontent.com
+        run: |
+          set -euo pipefail
+          if [[ ! "${DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::build produced an invalid digest '${DIGEST}'"
+            exit 1
+          fi
+          SUBJECT="${IMAGE}@${DIGEST}"
+          CERTIFICATE_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/build-image.yaml@${GITHUB_REF}"
+          cosign sign --yes "${SUBJECT}"
+          # Re-assert HERE, in the producing run: a signature that does not
+          # verify against the exact identity the policy pins is worth nothing,
+          # and an appliance install is far too late to find that out.
+          cosign verify \
+            --certificate-identity "${CERTIFICATE_IDENTITY}" \
+            --certificate-oidc-issuer "${OIDC_ISSUER}" \
+            --certificate-github-workflow-repository "${GITHUB_REPOSITORY}" \
+            --certificate-github-workflow-ref "${GITHUB_REF}" \
+            --certificate-github-workflow-sha "${GITHUB_SHA}" \
+            "${SUBJECT}" >/dev/null
+          echo "::notice::${SUBJECT} is keyless-signed as ${CERTIFICATE_IDENTITY}."
+
+      - name: Report the published coordinates
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          echo "::notice::${IMAGE}:${CONTENT_TAG} published (${DIGEST}) — the coordinate every distribution lock names."

@@ -1,0 +1,280 @@
+# ───────────────────────────────────────────────────────────────────────────
+# THE arm64 IMAGE PLANE FOR `docs-api`, IN ITS OWN PIPELINE.
+#
+# Every appliance edition targets arm64 hardware — `xema-appliance`'s
+# `os/dgx/install-k3s.sh` and `ansible/site.yml` HARD-FAIL on a non-arm64 host
+# — and `docs-api` is a subject in the appliance locks. An amd64-only image
+# makes those editions undeliverable.
+#
+# Why a SEPARATE workflow rather than a job in `build-image.yaml`:
+#
+#   Emulated arm64 under QEMU roughly doubles a build. As a job it would sit on
+#   the release run's own graph, so a release would stay in-progress until the
+#   emulated build finished and an arm64 failure would colour the run that
+#   published the canonical image. Triggered instead by `workflow_run` it is a
+#   DIFFERENT run with a different conclusion: it cannot delay a release,
+#   cannot fail one, and can be re-run on its own.
+#
+# Ordering (`types: [completed]` + `conclusion == 'success'`) is what makes this
+# safe: `build-image` has already pushed `:<contentHash>` and `:${SHA}` before
+# this workflow starts.
+#
+# What it produces (D3): `linux/arm64` at `:<contentHash>-arm64`, then ONE
+# `docker buildx imagetools create` that publishes a multi-arch index on the
+# canonical `:<contentHash>` coordinate — the ref every distribution lock names.
+# amd64 is REFERENCED, never rebuilt.
+#
+# What it deliberately does NOT touch: `:${SHA}` and `:latest`. `:${SHA}` is the
+# single-platform subject the amd64 build published, and is the input this merge
+# reads — republishing it as an index would feed a previous merge back into
+# itself. `:latest` is a moving pointer, and this run can start long after a
+# newer commit has moved it — merging into it would drag it BACKWARD onto older
+# content.
+#
+# Runners and credentials are forced exactly as in `build-image.yaml`: this is
+# a PUBLIC repository (no self-hosted runner group) and the `docs-api` GHCR
+# package is linked to another repository (no `github.token` write access).
+# ───────────────────────────────────────────────────────────────────────────
+name: Release arm64
+
+on:
+  workflow_run:
+    workflows: ['Build docs-api image']
+    types: [completed]
+  # Manual backfill. An arm64 build that failed on a QEMU flake is not retried
+  # by the next push, so the operator needs a way to ask for one without a
+  # no-op commit.
+  workflow_dispatch:
+
+concurrency:
+  # One lane per source commit, and QUEUE rather than cancel: a cancelled run
+  # leaves the canonical coordinate amd64-only, and nothing would rebuild it
+  # until the source changes again.
+  group: release-arm64-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  # Keyless cosign exchanges the job's OIDC token at Fulcio for a short-lived
+  # signing certificate; without `id-token: write` the signing step fails.
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_ORG: xema-dev
+  SERVICE: docs-api
+
+jobs:
+  arm64:
+    name: arm64 supplement
+    # NOT an opt-in `BUILD_SUPPLEMENTARY_ARCHES` variable. That gate defaulted
+    # OFF, which — now that an appliance edition cannot be delivered without
+    # arm64 — meant the default was "permanently undeliverable". The kill
+    # switch is inverted instead: an operator sets
+    # `SKIP_SUPPLEMENTARY_ARCHES=true` to stand the lane down. That can never
+    # ship a bad release silently: delivery verifies `requiredPlatforms`
+    # against the real registry manifest and fails CLOSED, so a stood-down lane
+    # surfaces as a distribution that is loudly not deliverable yet.
+    #
+    # `github.ref` in a `workflow_run` job is always the DEFAULT branch, never
+    # the branch that was built — so the branch assertion MUST read
+    # `workflow_run.head_branch`.
+    if: >-
+      vars.SKIP_SUPPLEMENTARY_ARCHES != 'true' &&
+      (
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_branch == 'main') ||
+        (github.event_name == 'workflow_dispatch' &&
+         github.ref == 'refs/heads/main')
+      )
+    runs-on: ubuntu-latest
+    # A job-level `permissions:` block REPLACES the workflow-level one rather
+    # than merging with it, so `id-token: write` MUST be repeated here.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      # The COMMIT that was built, never the branch tip. `main` may have moved
+      # while the amd64 build ran; hashing or building the tip would produce an
+      # arm64 image for source the amd64 half never saw.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Compute image coordinates
+        id: img
+        env:
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE="$(printf '%s' "${REGISTRY}/${REGISTRY_ORG}/${SERVICE}" \
+            | tr '[:upper:]' '[:lower:]')"
+          # The SAME script, at the SAME commit, as the amd64 build — so this
+          # resolves to the SAME coordinate by construction, never by
+          # coincidence. Whole-repo image, so the hashed path is the repository
+          # root. Reads the commit's git objects, never the work tree.
+          CONTENT_TAG="$(
+            node tooling/release/compute-image-tag.mjs \
+              --service "${SERVICE}" --path . --commit "${COMMIT}"
+          )"
+          case "${CONTENT_TAG}" in
+            *[!0-9a-f]* | "")
+              echo "::error::compute-image-tag.mjs emitted a non-hex tag for ${SERVICE}"
+              exit 1
+              ;;
+          esac
+          if [ "${#CONTENT_TAG}" -ne 64 ]; then
+            echo "::error::compute-image-tag.mjs emitted a ${#CONTENT_TAG}-char tag for ${SERVICE}; expected 64 (sha256 hex)"
+            exit 1
+          fi
+          {
+            echo "image=${IMAGE}"
+            echo "content_tag=${CONTENT_TAG}"
+            echo "amd64_source=${IMAGE}:${COMMIT}"
+          } >> "$GITHUB_OUTPUT"
+
+      # QEMU is needed for EMULATED arm64 on an amd64 runner. Remove once this
+      # job runs on native arm64 runners.
+      - name: Set up QEMU (emulated arm64)
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # NOT `github.token` — the `docs-api` GHCR package is linked to a
+          # different repository, so this repo's run-scoped token cannot push.
+          password: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      # ORDER MATTERS. The per-arch tag is published FIRST and the canonical
+      # coordinate is touched LAST, so a build that fails here leaves
+      # `:<contentHash>` exactly as the amd64 build left it — a working
+      # single-arch image, never a half-merged index.
+      - name: Build & push arm64 image (per-arch tag)
+        id: arm_build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: ${{ steps.img.outputs.image }}:${{ steps.img.outputs.content_tag }}-arm64
+          build-args: |
+            BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
+          # Arch-independent layers (metadata, config) are reused where
+          # BuildKit can; the compiled layers cannot be, by definition.
+          cache-from: type=registry,ref=${{ steps.img.outputs.amd64_source }}
+          # Symmetric with the amd64 build, which also attaches no
+          # provenance/SBOM. A half-attested index (arm64 attested, amd64 not)
+          # would be worse than an unattested one: it reads as evidence that
+          # covers the whole index when it covers one platform.
+          provenance: false
+
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+        with:
+          cosign-release: v2.6.3
+
+      - name: Merge arm64 into the content-addressed multi-arch index
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          AMD64_SOURCE: ${{ steps.img.outputs.amd64_source }}
+          ARM64_DIGEST: ${{ steps.arm_build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          ARM64_SOURCE="${IMAGE}:${CONTENT_TAG}-arm64"
+
+          if [[ ! "${ARM64_DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::arm64 build produced an invalid digest '${ARM64_DIGEST}'"
+            exit 1
+          fi
+
+          # BOTH sources must already resolve in the registry before the
+          # canonical coordinate is touched at all. `imagetools create` is a
+          # single manifest PUT, so with both inputs verified present the tag
+          # either keeps its current value or lands on a complete index — there
+          # is no intermediate state in which it points at something broken.
+          docker buildx imagetools inspect "${AMD64_SOURCE}" >/dev/null
+          docker buildx imagetools inspect "${ARM64_SOURCE}" >/dev/null
+
+          # The amd64 SIDE is sourced from `:${COMMIT}`, NOT from
+          # `:<contentHash>`. `:${COMMIT}` is never merged into, so it is always
+          # the single-platform subject the build produced — which makes this
+          # merge idempotent: re-running it rebuilds the identical index from
+          # the identical two inputs. Sourcing from the canonical tag would
+          # instead feed a previous merge's index back into itself.
+          docker buildx imagetools create \
+            -t "${IMAGE}:${CONTENT_TAG}" "${AMD64_SOURCE}" "${ARM64_SOURCE}"
+
+          # The published index must actually carry BOTH platforms. `unknown`
+          # entries are BuildKit's attestation manifests, not runnable images.
+          docker buildx imagetools inspect --raw "${IMAGE}:${CONTENT_TAG}" \
+            > "${RUNNER_TEMP}/index.json"
+          jq -e '
+            [ .manifests[]
+              | select(.platform.os != "unknown")
+              | "\(.platform.os)/\(.platform.architecture)" ] as $p
+            | ($p | index("linux/amd64")) and ($p | index("linux/arm64"))
+          ' "${RUNNER_TEMP}/index.json" >/dev/null \
+            || { echo "::error::${IMAGE}:${CONTENT_TAG} is not a linux/amd64 + linux/arm64 index"; exit 1; }
+
+          echo "::notice::${IMAGE}:${CONTENT_TAG} is now a multi-arch index (linux/amd64 + linux/arm64)."
+
+      # The merge above republished the canonical coordinate as an INDEX with a
+      # NEW digest. cosign signs BY DIGEST and only the amd64 child was ever
+      # signed (by the build workflow, on `:${SHA}`), so without this step the
+      # digest an admission policy actually resolves and verifies carries no
+      # signature at all — arm64 landing would silently un-sign the coordinate.
+      #
+      # Signing the INDEX rather than the per-platform children is deliberate:
+      # the index digest is what every consumer resolves and what
+      # policy-controller admits, and an OCI index names its children BY
+      # DIGEST — so one signature over the index content-addressably covers the
+      # exact amd64 and arm64 manifests it lists. Verifying per-platform
+      # children instead would leave the admitted digest itself unsigned.
+      - name: Keyless-sign the multi-arch index
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          CERTIFICATE_IDENTITY: https://github.com/xema-dev/xema-docs/.github/workflows/release-arm64.yaml@refs/heads/main
+          OIDC_ISSUER: https://token.actions.githubusercontent.com
+        run: |
+          set -euo pipefail
+          # Ask the registry for the digest the canonical tag now resolves to,
+          # rather than deriving it locally: that is precisely the value a
+          # puller resolves, so a mismatch cannot hide here.
+          INDEX_DIGEST="$(
+            docker buildx imagetools inspect \
+              --format '{{.Manifest.Digest}}' "${IMAGE}:${CONTENT_TAG}"
+          )"
+          if [[ ! "${INDEX_DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::could not resolve a digest for ${IMAGE}:${CONTENT_TAG} (got '${INDEX_DIGEST}')"
+            exit 1
+          fi
+          cosign sign --yes "${IMAGE}@${INDEX_DIGEST}"
+          # Re-assert the signature HERE, in the producing run: a signature that
+          # does not verify against the exact identity a policy pins is worth
+          # nothing, and discovering that at admission time is far too late.
+          cosign verify \
+            --certificate-identity "${CERTIFICATE_IDENTITY}" \
+            --certificate-oidc-issuer "${OIDC_ISSUER}" \
+            --certificate-github-workflow-repository "${GITHUB_REPOSITORY}" \
+            --certificate-github-workflow-ref "${GITHUB_REF}" \
+            --certificate-github-workflow-sha "${GITHUB_SHA}" \
+            "${IMAGE}@${INDEX_DIGEST}" >/dev/null
+          echo "::notice::${IMAGE}:${CONTENT_TAG} index ${INDEX_DIGEST} is keyless-signed."
