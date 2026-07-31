@@ -52,6 +52,15 @@ stamps it from the discovering biome's manifest. Authors never declare it inline
 | `outputClassification` | enum | no | one of: `public`, `internal`, `confidential`, `secret`, `regulated` |
 | `authorityEffect` | enum | no | one of: `none`, `expanding` |
 | `reach` | enum | no | one of: `owner`, `integration`, `platform` |
+| `trustedContextProjection` | object — see **trustedContextProjection** | no | — |
+
+### `trustedContextProjection`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `schemaVersion` | literal 1 | yes | — |
+| `profile` | enum | yes | one of: `critical-operation-v1` |
+| `delivery` | literal "server-envelope" | yes | — |
 
 ## Publish-time envelope
 
