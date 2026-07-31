@@ -22,6 +22,8 @@ import { readFile, readdir, access } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { registerSelf } from './service-registry.mjs';
+
 const MARKDOWN_EXTENSION = '.md';
 // `README.md` is repo-authoring meta, not a published doc page. Excluded
 // from both the tree and the content endpoint so it never surfaces in the
@@ -29,6 +31,8 @@ const MARKDOWN_EXTENSION = '.md';
 const EXCLUDED_FILENAMES = new Set(['README.md']);
 
 const PORT = Number(process.env.PORT ?? 3000);
+/** Advertised in the service descriptor. Kept in step with package.json. */
+const SERVICE_SEMVER = '0.0.1';
 
 /**
  * Absolute path to the markdown root we serve. Defaults to the sibling
@@ -580,4 +584,27 @@ server.listen(PORT, () => {
   process.stdout.write(
     `[docs-api] listening on :${PORT} (source: ${DOCS_SOURCE_DIR})\n`,
   );
+  // Announce ourselves into the KernelState registry only AFTER the port is
+  // accepting, so a peer that resolves us can immediately connect. Registering
+  // before `listen` would publish an endpoint that refuses connections.
+  //
+  // Fail-fast: an unregistered docs-api in a cluster makes every consumer that
+  // resolves it crashloop, so a registration error kills this process rather
+  // than leaving it serving-but-invisible.
+  registerSelf({ semver: SERVICE_SEMVER })
+    .then((registration) => {
+      if (registration === null) return;
+      const shutdown = (signal) => () => {
+        process.stdout.write(`[docs-api] ${signal} — deregistering\n`);
+        registration
+          .deregister()
+          .finally(() => server.close(() => process.exit(0)));
+      };
+      process.once('SIGTERM', shutdown('SIGTERM'));
+      process.once('SIGINT', shutdown('SIGINT'));
+    })
+    .catch((error) => {
+      process.stderr.write(`[docs-api] service registration failed: ${error.message}\n`);
+      process.exit(1);
+    });
 });
