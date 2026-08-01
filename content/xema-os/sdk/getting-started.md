@@ -121,10 +121,9 @@ xema biome install ./      # reinstall over the previous version
 xema run hello:greet@1 --name Eduardo
 ```
 
-Three checks run on every install:
+Two checks run on every install:
 
 - **Manifest schema** — the manifest is parsed by the Zod schema. Unknown closed-set values are rejected.
-- **Engine constraint** — `engines.xema` must satisfy the running platform's version. Mismatch is a fail-fast install error.
 - **Boundary check** — your biome may only depend on its own files and on published `@xemahq/*` kernel packages.
 
 ---
@@ -150,7 +149,7 @@ See [SDK / Publishing](./publishing.md) for the full publish flow and registry o
 ## What to read next
 
 - **[CLI](../cli.md)** — every `xema` command, every install variant.
-- **[Manifest reference](./manifest.md)** — every field of `xema-biome.json`, including `contributions`, `requiresCapabilities`, `exposesCapabilities`, `engines.xema`.
+- **[Manifest reference](./manifest.md)** — every field of `xema-biome.json`, including `contributions`, `requiresCapabilities`, `exposesCapabilities`.
 - **[Contributions](./contributions.md)** — authoring the `*.contribution.json` files in `contributions/`.
 - **[Capabilities](../capabilities.md)** — how your biome asks for and exposes capabilities.
 - **[Objects](../objects.md)** — the typed envelope every contribution becomes.

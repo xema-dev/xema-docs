@@ -40,7 +40,6 @@ hello-biome/
     "description": "A minimal starter biome for learning the authoring model.",
     "scope": "platform",
     "target": "server",
-    "engines": { "xema": "^1.0.0" },
     "requiresCapabilities": ["kb:page.write@1"],
     "permissions": {
       "defaultProfile": "internal-agent",

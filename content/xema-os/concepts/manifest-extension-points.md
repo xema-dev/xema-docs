@@ -61,12 +61,12 @@ Array of `ContributionKind` (29 legal values).
 ### `xema.target: "server"`
 
 - **Required (4)**: `id`, `displayName`, `scope`, `target`
-- **Optional (34)**: `description`, `display`, `tags`, `capabilityDomain`, `runtimeRequirements`, `dependencies`, `extends`, `ships`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `database`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `engines`, `mandatory`, `audience`, `storeListed`, `kind`
+- **Optional (33)**: `description`, `display`, `tags`, `capabilityDomain`, `runtimeRequirements`, `dependencies`, `extends`, `ships`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `database`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
 
 ### `xema.target: "web"`
 
 - **Required (4)**: `id`, `displayName`, `scope`, `target`
-- **Optional (23)**: `description`, `display`, `tags`, `systemSurface`, `requiresServerBiomes`, `optionalServerBiomes`, `capabilities`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `engines`, `mandatory`, `audience`, `storeListed`, `kind`
+- **Optional (22)**: `description`, `display`, `tags`, `systemSurface`, `requiresServerBiomes`, `optionalServerBiomes`, `capabilities`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
 
 Field types, constraints, and semantics for every name above are in
 [Biomes → Manifest Reference](../../biomes/04-manifest-reference.md).

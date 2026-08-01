@@ -67,7 +67,6 @@ A realistic server-biome manifest:
     "description": "PR review workflows and AI reviewer agents for engineering teams.",
     "scope": "platform",
     "target": "server",
-    "engines": { "xema": "^1.0.0" },
     "requiresCapabilities": ["kb:page.write@1", "artifact:blob.read@1"],
     "exposesCapabilities": [],
     "permissions": {

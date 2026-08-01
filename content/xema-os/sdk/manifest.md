@@ -1,8 +1,8 @@
 # SDK — Manifest Reference
 
-The biome manifest is the single declarative entry point for a biome. It identifies the package, declares the contributions it ships, declares the capabilities it requires and exposes, and pins its supported platform versions.
+The biome manifest is the single declarative entry point for a biome. It identifies the package, declares the contributions it ships, and declares the capabilities it requires and exposes.
 
-> **Naming.** The manifest filename is `xema-biome.json` and the SDK package is `@xemahq/biome-host-sdk`. The current Xema OS shape uses `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`, `engines`, `permissions`, `lifecycle`, `ships`, and `storage`.
+> **Naming.** The manifest filename is `xema-biome.json` and the SDK package is `@xemahq/biome-host-sdk`. The current Xema OS shape uses `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`, `permissions`, `lifecycle`, `ships`, and `storage`.
 
 This page mirrors the runtime Zod schema. The schema is the source of truth; this doc is the human-readable view.
 
@@ -29,7 +29,6 @@ This page mirrors the runtime Zod schema. The schema is the source of truth; thi
   "version":              "1.0.0",
   "trustTier":            "verified-store",
   "space":                "third-party",
-  "engines":              { "xema": "^1.0.0" },
 
   "contributions":        { ... },
   "requiresCapabilities": [ ... ],
@@ -61,14 +60,6 @@ Closed set: `first-party | verified-store | org-private | unverified`. Drives de
 ### `space` (enum, required)
 
 `first-party | third-party`. Drives UI badges and audit signals. (Previously named `scope`.)
-
-### `engines.xema` (semver range, required from Phase 1A)
-
-Semver range that must be satisfied by the running platform version. The host refuses to install a biome whose engine constraint is not satisfied — fail-fast, no best-effort load.
-
-```jsonc
-"engines": { "xema": "^1.0.0" }
-```
 
 ---
 
