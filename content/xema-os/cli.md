@@ -121,13 +121,13 @@ The install command runs the same install flow the Store uses — permission dig
 
 ### `xema biome publish <path>`
 
-Build the biome at `<path>` into an OCI artifact, sign it, and push it to a registry. Used both for local Store-equivalent publishing and for first-party release pipelines.
+Package the biome at `<path>` as an OCI artifact, push it to a registry (`oras push`), then sign the pushed ref (`cosign sign`). Used both for local Store-equivalent publishing and for first-party release pipelines.
 
 ```bash
-xema biome publish ./
+COSIGN_KEY=cosign.key xema biome publish ./ --registry ghcr.io/acme --token-env GHCR_TOKEN
 ```
 
-The publish command refuses to push an unsigned artifact in any non-`dev` profile.
+Signing is mandatory and keyed: with `COSIGN_KEY` unset the command fails before anything is pushed. There is no unsigned mode. `--dry-run` prints the resolved plan and the exact `oras` / `cosign` commands without touching the registry; see [SDK — Publishing](./sdk/publishing.md#bundle-format--oci-artifacts) for the full flag set.
 
 ### `xema biome lint`
 

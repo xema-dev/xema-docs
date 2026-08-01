@@ -31,15 +31,13 @@ store-approved    (visible to all orgs)
 ### 1. Bundle and sign
 
 ```bash
-xema biome bundle ./acme-code-review --output ./dist/acme-code-review-1.2.0.tar.gz
+COSIGN_KEY=cosign.key xema biome publish ./acme-code-review \
+  --registry ghcr.io/acme --token-env GHCR_TOKEN
 ```
 
-This produces an OCI-compatible archive. Xema signs the bundle with `cosign` during the automated review stage; the signature is pinned in the Store listing. You do not need to sign the bundle yourself.
+This packages the biome tree as an OCI artifact (`artifactType application/vnd.xema.biome.manifest.v1+json`, one layer per file), pushes it, and signs the pushed ref with `cosign`. Signing is the publisher's job and is mandatory — the publish fails before pushing if `COSIGN_KEY` is unset, and the platform refuses to install an unsigned artifact. The signature is pinned in the Store listing.
 
-The bundle layout matches the OCI artifact spec and includes:
-- The biome source folder compressed as a layer.
-- A computed SBOM (Software Bill of Materials) listing all npm dependencies.
-- A capability manifest derived from `xema-biome.json`.
+Everything under the biome root ships except `node_modules/` and `.git/` — manifest, source, compiled output and contributions alike. See [SDK — Publishing](../xema-os/sdk/publishing.md#bundle-format--oci-artifacts) for the full format and flag reference.
 
 ### 2. Submit
 
@@ -88,19 +86,18 @@ Submit a new version with the same `name` and an incremented `version`. The Stor
 
 ## OCI packaging and SLSA
 
-Biome bundles are stored as OCI artifacts in the Xema container registry. Each bundle gets a `cosign`-signed attestation with:
+Biome bundles are stored as OCI artifacts in a container registry. Each bundle carries a `cosign` signature on the pushed ref, plus a SLSA v1.0 in-toto attestation (`predicateType https://slsa.dev/provenance/v1`) attached with `cosign attest`.
 
-- A SLSA Level 2 provenance statement.
-- A `cyclonedx` SBOM.
-- The approved capability digest.
-
-Orgs can verify the signature before install:
+`biome-fetcher-api` verifies both **before** any bytes are unpacked, against the trust anchors in `BIOME_TRUSTED_PUBLISHERS`. A missing signature, an untrusted signer, or a missing/invalid attestation is a typed `BIOME_*` failure and a 403 — the install never proceeds. To check an artifact yourself:
 
 ```bash
-xema biome verify acme-code-review --version 1.2.0
+cosign verify --key cosign.pub ghcr.io/acme/acme-code-review:1.2.0
+cosign verify-attestation --key cosign.pub \
+  --type https://slsa.dev/provenance/v1 \
+  ghcr.io/acme/acme-code-review:1.2.0
 ```
 
-This checks the `cosign` signature against the Xema public key and prints the full provenance chain.
+See [Biome supply-chain security](../xema-os/security/biome-supply-chain.md) for the operator runbook.
 
 ---
 

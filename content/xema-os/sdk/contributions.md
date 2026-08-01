@@ -152,7 +152,7 @@ Three checks fire on the contributions:
 ```bash
 xema biome lint            # static: schema validation + boundary CI
 xema biome install ./       # runtime: register contributions with the local Xema
-xema biome publish ./       # build OCI artifact (lint runs first)
+xema biome publish ./       # push + cosign-sign the OCI artifact
 ```
 
 Lint failures are typed and structural — the failure message names the file, the field, and the closed-set value that was expected.

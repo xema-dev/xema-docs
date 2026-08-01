@@ -42,7 +42,7 @@ xema biome submit <installation-ref> --as <listing-id>
 Submission writes a `StoreListingVersion` row with lifecycle `store-submitted` via `POST /submissions` on `xema-store-api`. The submission carries:
 
 - the immutable manifest;
-- the bundle (today: a source tarball; target: an OCI artifact — see below);
+- the bundle, as a signed OCI artifact (see [Bundle format](#bundle-format--oci-artifacts) below);
 - the computed permission digest (capabilities + risk tier + data-access summary + diff against the previously approved version, if any);
 - the publisher's signing identity.
 
@@ -76,43 +76,76 @@ The Store records each install as a `StoreInstall` row and emits `xema.store.ins
 
 ## Bundle format — OCI artifacts
 
-Biomes ship as **OCI artifacts**, not npm packages and not bare `.tgz` files. The same `infra/container-registry/` substrate that holds Docker images stores biome artifacts; the same `cosign` toolchain that signs container images signs biomes.
+Biomes ship as **OCI artifacts**, not npm packages and not bare `.tgz` files. The same container-registry substrate that holds Docker images stores biome artifacts; the same `cosign` toolchain that signs container images signs biomes.
 
-### Layer layout
+### Layer layout — one layer per file
 
-A biome OCI artifact is a single image manifest with up to four layers, all under the `application/vnd.xemahq.biome.*` media-type namespace:
+A biome bundle is a single OCI artifact whose `artifactType` is:
 
-| Layer | Media type | Contents |
-|---|---|---|
-| 0 | `application/vnd.xemahq.biome.manifest+json` | The verbatim `xema-biome.json` bytes |
-| 1 | `application/vnd.xemahq.biome.code.tar+gzip` | Compiled code (`dist/`) |
-| 2 | `application/vnd.xemahq.biome.contributions.tar+gzip` | Declarative contributions (`skills/`, `agents/`, `workflows/`, `deliverable-specs/`, `document-templates/`, `document-themes/`) |
-| 3 | `application/vnd.xemahq.biome.assets.tar+gzip` | Heavy assets (`assets/` — fonts, images, theme binaries) |
-
-Empty optional layers are omitted entirely — a biome with no `assets/` directory ships a three-layer artifact. Heavy assets layer separately so registries can deduplicate them across versions.
-
-### Packaging tool
-
-The `xema-biome-package` CLI does the packaging:
-
-```bash
-pnpm biome package <biome-dir> --out <oci-layout-dir> --tag registry.xemahq.com/biomes/<id>:<version>
+```
+application/vnd.xema.biome.manifest.v1+json
 ```
 
-This builds the OCI image-layout v1 directory on disk. Add `--push` to push it to the registry via `oras cp`. The CLI emits structured JSON (`biomeId`, `biomeVersion`, `manifestDigest`, layer digests, `provenancePath`, `mode`) to stdout.
+Every file in the biome tree is pushed as **its own layer**. Each layer carries an `org.opencontainers.image.title` annotation holding that file's biome-root-relative POSIX path — `xema-biome.json`, `skills/code-review/SKILL.md`, `api/acme-api/dist/main.js`, and so on.
 
-### Signing — cosign
+That annotation is load-bearing, not decoration. `biome-fetcher-api` unpacks a bundle by running `oras pull --output <dir> <ref>`, and oras materialises each layer at `<dir>/<org.opencontainers.image.title>` — the annotation is the only thing that reconstructs the directory tree. **A layer without it is silently skipped by oras** (`Skipped pulling layers without file name in "org.opencontainers.image.title"`), so an artifact built from opaque tarball layers pulls successfully, writes nothing, and installs an empty bundle. The fetcher then re-tars the reconstructed tree and requires a top-level `xema-biome.json` in it.
 
-Every push signs the artifact with `cosign` in one of two modes:
+Two annotations are stamped on the artifact itself: `org.opencontainers.image.title` = the biome id, `org.opencontainers.image.version` = the manifest `version`.
 
-- **Keyless (recommended for CI).** Set `COSIGN_OIDC_ISSUER`; cosign uses the ambient OIDC token (e.g. GitHub Actions `id-token: write`) to obtain a Fulcio certificate and records the entry in Rekor. No long-lived keys.
-- **Keyed.** Set `COSIGN_KEY_PATH` to a private key file. Use only when keyless is impossible (air-gapped CI).
+### What ships
 
-The mode is selected via `--mode keyless|keyed|unsigned` or the env above. The CLI **refuses** to run with no mode selectable — there is no silent default. `--unsigned` is allowed only when `BIOME_ALLOW_UNSIGNED_BUILD=1` is set; the biome-fetcher in production refuses to install unsigned artifacts regardless.
+Everything under the biome root except `node_modules/` and `.git/`. There is no include-list and no per-directory layer split — manifest, source, compiled output, contributions, skills and assets all travel as ordinary files. Layer order is the sorted relative path, so the same tree produces the same layer sequence on every publish.
+
+### Publishing tool
+
+`xema biome publish <path>`, from the `@xemahq/xema` CLI. It resolves the target and the file set, runs `oras push`, then `cosign sign` — every prerequisite is fail-fast, nothing is skipped silently.
+
+```bash
+xema biome publish ./ --registry ghcr.io/acme --token-env GHCR_TOKEN
+```
+
+| Flag | Effect |
+|---|---|
+| `--registry <host>` | Target OCI registry host, optionally with a namespace path. Overrides a configured `oci` source. |
+| `--source <name>` | Name of a configured `oci` source in `xema.config.yaml` to take the registry + token from. Required to disambiguate when several `oci` sources exist. |
+| `--token-env <name>` | Env-var **NAME** holding the registry token (used with `--registry`). |
+| `--username <user>` | Registry username paired with the token. Default: `token`. |
+| `--tag <tag>` | Tag to publish under. Default: the manifest `version`. |
+| `--config <path>` | Explicit `xema.config.yaml` path, instead of the standard search order. |
+| `--dry-run` | Print the resolved plan and the exact `oras` / `cosign` commands without touching the registry. |
+
+The published reference is `<registry>/<biome-id>:<tag>`. The registry token is always referenced by env-var **name** — never inlined in config, never placed on the command line. The CLI resolves the name and hands the value to oras over `--password-stdin`. With no `--token-env` and no `authTokenEnv` on the configured `oci` source, oras uses ambient credentials; run `oras login` first.
+
+### Signing — keyed cosign
+
+The publisher signs with a **key**. Keyless (Fulcio/OIDC) signing is not supported by `xema biome publish`.
+
+`COSIGN_KEY` holds the cosign private-key ref — the same env var the distribution tooling uses. It is read from the environment and never passed on argv. If `COSIGN_KEY` is unset, the publish **fails before pushing anything**; there is no unsigned mode and no override flag.
+
+```bash
+COSIGN_KEY=cosign.key xema biome publish ./ --registry ghcr.io/acme
+```
+
+The command run is `cosign sign --yes --key <ref> <ociRef>` — a registry signature on the pushed ref, which is what the fetcher's `cosign verify` looks for. A detached `cosign sign-blob` signature would not be found.
+
+Verification is the broader of the two: `BIOME_TRUSTED_PUBLISHERS` accepts keyless certificate identities *or* a `key:<path>` public key, so an artifact signed keylessly by an external CI pipeline still installs. Only the CLI publisher is keyed-only.
 
 ### Provenance — SLSA v1.0
 
-Every push also generates a SLSA v1.0 in-toto attestation describing the build runner, the source repo + commit, the layer digests, and the invocation parameters. The attestation is attached to the OCI artifact via `cosign attest --type=https://slsa.dev/provenance/v1`. Disable with `--no-provenance` (not recommended; the fetcher requires it by default).
+`biome-fetcher-api` requires a SLSA v1.0 in-toto attestation on the artifact **by default**: `BIOME_REQUIRE_PROVENANCE` defaults to `"true"`. It is verified with `cosign verify-attestation --type https://slsa.dev/provenance/v1` against the same trust anchors as the signature, and an artifact without one is refused with `BIOME_PROVENANCE_MISSING` / 403.
+
+`xema biome publish` attaches it for you, as the third and final step of the publish — there is no separate command and no flag to skip it. It generates the predicate, writes it to a private temp file, and runs:
+
+```bash
+cosign attest --yes --key "$COSIGN_KEY" \
+  --type https://slsa.dev/provenance/v1 \
+  ghcr.io/acme/<biome-id>:<tag> \
+  --predicate <temp>/slsa-provenance.json
+```
+
+The predicate is SLSA v1.0. `buildDefinition.resolvedDependencies` carries one entry per published file with its sha256 — one per pushed layer, so the attestation covers the complete build input rather than a subset. `runDetails.builder.id` is resolved in this order: `XEMA_BIOME_BUILDER_ID` if set, else the GitHub Actions `GITHUB_WORKFLOW_REF`, else `local-developer://<user>@<host>`. There is no unset case, so provenance is never silently omitted.
+
+A deployment that sets `BIOME_REQUIRE_PROVENANCE=false` accepts a signature-only artifact — the signature is still mandatory.
 
 ### Install-time enforcement
 
@@ -127,7 +160,7 @@ Every push also generates a SLSA v1.0 in-toto attestation describing the build r
 | SLSA provenance invalid | `BIOME_PROVENANCE_INVALID` | 403 |
 | `cosign` binary absent in container | `BIOME_COSIGN_UNAVAILABLE` | 500 |
 
-See [the biome supply chain page](../security/biome-supply-chain.md) for the trusted-publisher allowlist runbook and the keyless OIDC configuration.
+See [the biome supply chain page](../security/biome-supply-chain.md) for the trusted-publisher allowlist runbook and the fetcher's trust configuration.
 
 ---
 

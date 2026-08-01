@@ -12,7 +12,7 @@ The platform trusts an OCI artifact when **all three** hold:
 
 1. `cosign verify` succeeds against an identity (keyless) or public key (keyed) that appears in `BIOME_TRUSTED_PUBLISHERS`;
 2. for keyless verification, the certificate's OIDC issuer claim matches `BIOME_TRUSTED_OIDC_ISSUER`;
-3. (if `BIOME_REQUIRE_PROVENANCE=true`, default) `cosign verify-attestation --type=https://slsa.dev/provenance/v1` succeeds against the same identity/key.
+3. (if `BIOME_REQUIRE_PROVENANCE=true`, default) `cosign verify-attestation --type https://slsa.dev/provenance/v1` succeeds against the same identity/key.
 
 Any failure produces a typed `BIOME_*` error code and a 403 response — install never proceeds.
 
@@ -25,15 +25,28 @@ Any failure produces a typed `BIOME_*` error code and a 403 response — install
 | `BIOME_TRUSTED_PUBLISHERS` | yes (prod) | Comma-separated allowlist. Each entry is either a cosign certificate-identity URI (keyless) or a `key:<path>` entry pointing at a public-key file (keyed). Empty + no `BIOME_ALLOW_UNSIGNED_INSTALL=1` → every install refused. |
 | `BIOME_TRUSTED_OIDC_ISSUER` | yes (keyless) | OIDC issuer URI pinned on the cosign cert SAN. Example: `https://token.actions.githubusercontent.com`. |
 | `BIOME_REQUIRE_PROVENANCE` | optional | `"true"` (default) requires a valid SLSA v1.0 attestation. `"false"` skips provenance (signature still required). |
-| `BIOME_ALLOW_UNSIGNED_INSTALL` | dev only | Set to `"1"` to disable verification entirely in test/dev environments. **Never set in production.** |
+| `BIOME_ALLOW_UNSIGNED_INSTALL` | dev only | Set to `"1"` to disable verification entirely in test/dev environments. `biome-fetcher-api` **refuses to start** with it set when `NODE_ENV=production`. |
 
 All four are configured on the `biome-fetcher-api` deployment — supplied as environment variables and sourced from your secret manager rather than committed to values files.
 
 ---
 
-## Keyless OIDC (recommended)
+## Which signing mode does what
 
-Keyless signing uses an ambient OIDC token (e.g. GitHub Actions `id-token: write`) to obtain a short-lived Fulcio certificate. The signature is recorded transparently in Rekor. No long-lived signing keys live anywhere.
+Verification accepts both modes; publishing does not.
+
+| | Keyed | Keyless (Fulcio/OIDC) |
+|---|---|---|
+| `xema biome publish` | yes — the only supported mode | no |
+| `biome-fetcher-api` verification | yes — a `key:<path>` entry in `BIOME_TRUSTED_PUBLISHERS` | yes — a certificate-identity entry + `BIOME_TRUSTED_OIDC_ISSUER` |
+
+So a keyless entry in the allowlist only ever matches an artifact signed by an external CI pipeline that ran `cosign sign` keylessly itself. Artifacts produced by the Xema CLI are keyed.
+
+---
+
+## Keyless OIDC (external publishers)
+
+Keyless signing uses an ambient OIDC token (e.g. GitHub Actions `id-token: write`) to obtain a short-lived Fulcio certificate. The signature is recorded transparently in Rekor. No long-lived signing keys live anywhere. `xema biome publish` does not do this — it is the shape to allowlist when a third party's own pipeline signs.
 
 ### CI side
 
@@ -55,38 +68,40 @@ Trust changes apply only to subsequent install requests. Already-installed biome
 
 ---
 
-## Keyed signing (escape hatch)
+## Keyed signing (the CLI publisher)
 
-When keyless is impossible (air-gapped CI), the publisher signs with a private key and the cluster verifies with the matching public key.
+The publisher signs with a private key and the cluster verifies with the matching public key. `COSIGN_KEY` carries the private-key ref; `xema biome publish` refuses to run without it.
 
 ```bash
 # Publisher
-COSIGN_KEY_PATH=/secrets/cosign.key pnpm biome package <biome-dir> \
-  --out _tmp/oci --tag registry.xemahq.com/biomes/<id>:<version> --push --mode keyed
+COSIGN_KEY=/secrets/cosign.key xema biome publish ./<biome-dir> \
+  --registry registry.xemahq.com/biomes --token-env REGISTRY_TOKEN
 
 # Cluster operator — mount the public key, then add an entry
 # `key:/secrets/biome-publishers/<name>.pub` to BIOME_TRUSTED_PUBLISHERS.
 ```
 
-Keyed mode is supported but **discouraged**: a leaked key compromises every artifact ever signed with it, and there is no transparent log of issuance.
+Keyed mode carries a real cost: a leaked key compromises every artifact ever signed with it, and there is no transparent log of issuance. Rotate on the schedule your key-management policy sets, and keep the key out of the CLI's argv — it is read from the environment only.
+
+See [SDK — Publishing](../sdk/publishing.md#bundle-format--oci-artifacts) for the bundle format and the full publish flag set.
 
 ---
 
 ## SLSA v1.0 provenance
 
-Provenance answers "what built this artifact, from which source, on which runner, with which parameters?". The packager generates an in-toto statement whose `predicate` is the SLSA v1.0 `provenance` document, then attaches it to the artifact via `cosign attest`.
+Provenance answers "what built this artifact, from which source, on which runner, with which parameters?". `xema biome publish` generates a SLSA v1.0 predicate and attaches it to the pushed ref with `cosign attest --type https://slsa.dev/provenance/v1`, as the final step of every publish. It is not optional and there is no flag to skip it: the fetcher requires the attestation by default, so a publish that produced only a signature would produce an uninstallable artifact.
 
-Required fields the cluster checks:
+What the cluster checks, via `cosign verify-attestation`:
 
-- `predicateType=https://slsa.dev/provenance/v1`
-- subject digest matches the artifact's image-manifest digest
-- builder identity (Fulcio cert SAN) matches the same `BIOME_TRUSTED_PUBLISHERS` allowlist used for the signature
+- the attestation's `predicateType` is `https://slsa.dev/provenance/v1` (anything else does not satisfy the requirement);
+- its subject digest matches the artifact's image-manifest digest;
+- it was signed by an identity or key from the same `BIOME_TRUSTED_PUBLISHERS` allowlist used for the signature.
 
-A biome whose signature comes from a trusted publisher but whose attestation comes from a different identity is **rejected** (`BIOME_PROVENANCE_INVALID`).
+A biome whose signature comes from a trusted publisher but whose attestation comes from a different identity is **rejected** (`BIOME_PROVENANCE_INVALID`). An artifact with no attestation at all is rejected with `BIOME_PROVENANCE_MISSING`.
 
 ### Local builds
 
-Provenance generated on a developer laptop carries `builderId = local-developer://<user>@<host>`. This is **never** trusted by the production allowlist. The fetcher refuses `local-developer://` provenance unless `BIOME_ALLOW_UNSIGNED_INSTALL=1` is set — i.e. local builds are for local testing only.
+The fetcher does not read the provenance body — it does not inspect `builderId`, and there is no special-cased "local" predicate. Trust is decided entirely by which key or certificate identity signed the attestation. A biome signed with a developer's own key therefore installs only where that key is in `BIOME_TRUSTED_PUBLISHERS`, or where `BIOME_ALLOW_UNSIGNED_INSTALL=1` disables verification outright. Both are dev/test postures; neither belongs in production.
 
 ---
 

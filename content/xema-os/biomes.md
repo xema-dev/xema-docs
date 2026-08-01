@@ -151,7 +151,7 @@ See [SDK / Storage](./sdk/storage.md).
 
 Biomes are installed from `biomes/<id>/` source folders through the fetcher. The manifest (`xema-biome.json`) carries the `contributes[]` / `requiresCapabilities[]` / `exposesCapabilities[]` / `lifecycle` / `ships` / `storage` blocks.
 
-Biomes are packaged and distributed as **OCI artifacts** through the same registry that holds Docker images. Signing (`cosign`), provenance (`SLSA`), and SBOM attachment ride the standard OCI flows. See [SDK / Publishing](./sdk/publishing.md).
+Biomes are packaged and distributed as **OCI artifacts** through the same registry that holds Docker images — one artifact per biome, one layer per file. Signing (`cosign`) and provenance (SLSA v1.0 in-toto attestation) ride the standard OCI flows. See [SDK / Publishing](./sdk/publishing.md#bundle-format--oci-artifacts).
 
 ---
 
