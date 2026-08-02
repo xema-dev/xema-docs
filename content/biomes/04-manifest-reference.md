@@ -295,6 +295,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `requiresServices` | string[] | no | — |
 | `optionalServices` | string[] | no | — |
 | `exposesCapabilities` | string[] | no | — |
+| `database` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
 
 ### `xema.capabilities.network`
 
