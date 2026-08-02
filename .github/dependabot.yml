@@ -1,0 +1,33 @@
+# Keep pinned GitHub Actions current WITHOUT anyone tracking them by hand.
+#
+# Every `uses:` in this repository is pinned to a commit SHA, not a tag. That is
+# a deliberate supply-chain control, not pedantry: a tag like `@v4` is mutable
+# and the action's owner — or anyone who compromises that account — can repoint
+# it at new code that runs with this workflow's secrets. It has happened at
+# scale (tj-actions/changed-files, March 2025, thousands of repositories).
+#
+# The cost of that control is that a SHA cannot be read or updated by eye, so
+# without automation the pins simply rot: the fleet had NO dependabot
+# configuration at all, which meant every pin was frozen at whenever a human
+# last touched it. This is the automation that makes the control sustainable —
+# Dependabot proposes the new SHA and rewrites the trailing `# v4` comment, so
+# upgrading is reviewing a diff rather than resolving a digest by hand.
+#
+# Scoped to `github-actions` on purpose. These are the pins that execute code
+# with access to this repository's secrets. Package ecosystems are governed by
+# each repo's own lockfile and release process and would drown this in noise.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # ONE grouped pull request rather than one per action. Ungrouped, a weekly
+    # sweep across this many workflows produces a wall of PRs that nobody reads,
+    # which is the same outcome as having no automation.
+    groups:
+      github-actions:
+        patterns: ['*']
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(actions)'
