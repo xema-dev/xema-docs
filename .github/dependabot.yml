@@ -7,27 +7,49 @@
 # scale (tj-actions/changed-files, March 2025, thousands of repositories).
 #
 # The cost of that control is that a SHA cannot be read or updated by eye, so
-# without automation the pins simply rot: the fleet had NO dependabot
-# configuration at all, which meant every pin was frozen at whenever a human
-# last touched it. This is the automation that makes the control sustainable —
-# Dependabot proposes the new SHA and rewrites the trailing `# v4` comment, so
-# upgrading is reviewing a diff rather than resolving a digest by hand.
+# without automation the pins simply rot. This is the automation that makes the
+# control sustainable — Dependabot resolves the new SHA and rewrites the trailing
+# `# v4` comment, so upgrading is reviewing a diff rather than chasing digests.
 #
-# Scoped to `github-actions` on purpose. These are the pins that execute code
-# with access to this repository's secrets. Package ecosystems are governed by
-# each repo's own lockfile and release process and would drown this in noise.
+# ── WHY MAJORS ARE SPLIT OUT, AND ARE NOT GROUPED ──
+#
+# The first version of this file grouped EVERY update into one weekly pull
+# request. Dependabot's first run proposed twelve bumps in a single PR, and
+# three of them were major versions that change build BEHAVIOUR this repository
+# now depends on:
+#
+#   docker/metadata-action     v5 → v6  emits `org.opencontainers.image.revision`,
+#                                       which xema-deploy's monotonicity gate
+#                                       reads to decide what commit is live.
+#   docker/build-push-action   v5 → v7  owns provenance/SBOM generation, whose
+#                                       exact predicate shape the
+#                                       `xema.deploy-service/v3` attestation
+#                                       contract verifies.
+#   sigstore/cosign-installer  v3 → v4  changes cosign itself, whose `--type`
+#                                       flags and attestation format that same
+#                                       contract pins.
+#
+# Any of those can pass CI and still break signing or delivery later, and rolled
+# into a twelve-item PR none of them would get read. So:
+#
+#   * minor/patch — GROUPED into one weekly PR. Safe by semver, boring to review,
+#     and the whole point of the automation.
+#   * major — one PR per action, ungrouped, on purpose. A major here is a
+#     contract change and deserves to be looked at alone.
+#
+# Scoped to `github-actions`: these are the pins that execute code with access to
+# this repository's secrets. Package ecosystems are governed by each repo's own
+# lockfile and release process, and would drown this in noise.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    # ONE grouped pull request rather than one per action. Ungrouped, a weekly
-    # sweep across this many workflows produces a wall of PRs that nobody reads,
-    # which is the same outcome as having no automation.
     groups:
       github-actions:
         patterns: ['*']
-    open-pull-requests-limit: 5
+        update-types: ['minor', 'patch']
+    open-pull-requests-limit: 10
     commit-message:
       prefix: 'chore(actions)'
