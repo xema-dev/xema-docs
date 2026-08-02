@@ -45,7 +45,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 
 | `kind` | Enum member | Ingestion | Note |
 |---|---|---|---|
-| `mount-source` | `ContributionKind.MountSource` | domain-service handler / self-registration (category 2) | Ingested by the kernel `@xemahq/backend-slot-registry-adapters` adapter (`adaptMountSourceRegistryIntoSlots`), which projects the existing `MountSourceKindRegistry` into the `BackendSlotRegistry`. |
+| `mount-source` | `ContributionKind.MountSource` | domain-service handler / self-registration (category 2) | Ingested by `@xemahq/biome-sdk`'s `MountSourceKindRegistry`, which each owning service self-registers its mount-source kinds into and which the workspace mount-resolver reads. |
 | `workflow-step` | `ContributionKind.WorkflowStep` | biome-host parser (`WorkflowStepParser`) | — |
 | `agent-skill` | `ContributionKind.AgentSkill` | biome-host parser (`AgentSkillParser`) | — |
 | `agent-kernel` | `ContributionKind.AgentKernel` | biome-host parser (`AgentKernelParser`) | — |

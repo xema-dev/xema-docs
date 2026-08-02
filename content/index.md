@@ -115,7 +115,7 @@ Key features:
 
 - **Schema-per-biome isolation** — broken migrations in one schema never affect another
 - **Workflow-orchestrated migrations** — safe, observable schema changes via the Xema Workflow Runtime
-- **Pluggable migration runners** — the v1 runner ships with the platform; the interface supports Drizzle, Flyway, raw SQL
+- **Two migration runners** — one applies the migration files a biome ships in its bundle; the other applies a platform-generated typed schema-change plan
 - **Short-lived credentials** — no static shared passwords; credentials expire after a configurable TTL
 - **Dev/Prod schema model** — apps develop against a dev schema and promote changes to prod explicitly
 

@@ -38,7 +38,7 @@ This triggers the `PromoteAppToProd` Xema Workflow Runtime job:
 
 1. **Diff** — calculate pending migrations (migrations applied to dev but not prod).
 2. **Pre-flight** — run connection checks, backup snapshot (if configured), and migration dry-run.
-3. **Migrate** — apply pending migrations to `app_webapp-studio_prod` using the `MigrationRunner`.
+3. **Migrate** — apply pending migrations to `app_webapp-studio_prod` using the app's declared migration runner.
 4. **Verify** — run post-migration health checks declared in the app's `promotion-checks.json`.
 5. **Complete** — mark the promotion record as `PROMOTED`; emit an audit event.
 
@@ -57,7 +57,7 @@ xema app rollback --app webapp-studio --to-version 1.2.3
 This triggers a `RollbackAppSchema` workflow that:
 
 1. Identifies the migration version to roll back to.
-2. Runs `MigrationRunner.rollback()` with the target version.
+2. Runs the rollback to the target version.
 3. Updates the migration history.
 4. Emits an audit event.
 

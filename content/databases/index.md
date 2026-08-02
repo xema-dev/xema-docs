@@ -12,7 +12,7 @@ Databases are provisioned through `org-database-pool-api`, which allocates datab
 |---|---|
 | [Concepts](./01-concepts.md) | DB-per-org naming, schema-per-purpose, DbPool model, isolation guarantees |
 | [Provisioning](./02-provisioning.md) | ProvisionDatabase workflow, naming conventions, capability gates |
-| [Migrations](./03-migrations.md) | MigrationRunner interface, running migrations, Xema Workflow Runtime orchestration |
+| [Migrations](./03-migrations.md) | Migration runners, running migrations, Xema Workflow Runtime orchestration |
 | [Connections](./04-connections.md) | Connection brokering, short-lived credentials, roles |
 | [App Studio Dev/Prod](./05-webapp-studio.md) | Dev and prod schemas, Promote-to-prod workflow |
 
@@ -32,4 +32,4 @@ A: No. The platform provisions databases in a devops-managed database cluster. Y
 A: By default, each biome gets an isolated schema. Cross-biome schema access requires an explicit capability grant.
 
 **Q: Is a specific migration framework required?**
-A: The v1 runner uses a standard migration framework. The MigrationRunner interface is pluggable — future runners will support Drizzle, Flyway, and raw SQL. See [Migrations](./03-migrations.md).
+A: Two runners ship today: one applies the migration files a biome ships inside its bundle; the other applies a platform-generated typed schema-change plan. See [Migrations](./03-migrations.md).
