@@ -487,6 +487,15 @@ jobs:
           fi
           echo "image_digest=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
 
+      - name: Report the published coordinates
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          echo "::notice::${IMAGE}:${CONTENT_TAG} published (${DIGEST}) — the coordinate every distribution lock names."
+
       # Say WHICH secret is missing, rather than letting the dispatch action fail
       # on an empty token with a bare 401 that names nothing.
       #
@@ -532,11 +541,3 @@ jobs:
               "sourceRunUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
 
-      - name: Report the published coordinates
-        env:
-          IMAGE: ${{ steps.img.outputs.image }}
-          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          set -euo pipefail
-          echo "::notice::${IMAGE}:${CONTENT_TAG} published (${DIGEST}) — the coordinate every distribution lock names."
