@@ -38,16 +38,29 @@
 #   neither of which a fork can cause, so the secret is never exposed to
 #   untrusted code.
 #
-# WHAT THIS DELIBERATELY DOES NOT DO: dispatch a deploy.
+# WHAT THIS DOES NOT DO YET: dispatch a deploy.
 #
-#   `xema-deploy`'s `deploy-service-producers.json` carries no
-#   `xema-dev/xema-docs` source profile, and the `xema.deploy-service/v3`
-#   contract is verified against three cosign attestations the payload must
-#   name. Emitting a dispatch without that onboarding would fail the deploy
-#   gate on every push. Building and pushing the image is the gap this file
-#   closes; wiring `docs-api` into the attested deploy path is a separate,
-#   xema-deploy-side change. The image lands at its lock coordinate either way,
-#   which is what an appliance install resolves.
+#   `xema-deploy`'s `deploy-service-producers.json` still carries no
+#   `xema-dev/xema-docs` source profile, so `docs-api` is not yet a v3 producer
+#   and nothing here emits a dispatch.
+#
+#   Until 2026-08-02 the blocker was this file: the `xema.deploy-service/v3`
+#   contract verifies THREE cosign attestations (SLSA provenance, SBOM, and the
+#   Xema source binding), and this workflow produced none of them — it built
+#   with `provenance: false` and only `cosign sign`ed the image, which proves
+#   "this workflow pushed it" and nothing about how it was built or what is in
+#   it. Adding the producer profile then would have failed the deploy gate on
+#   every push.
+#
+#   All three are now produced, signed and verified in-run. The remaining step
+#   is the xema-deploy-side profile, and it is deliberately NOT landed in the
+#   same change: a producer profile is a FENCE, and a fence that lands ahead of
+#   proof that its caller can satisfy it turns every subsequent push red. Land
+#   it once one green run here has demonstrated the attestations verify —
+#   the run logs the notice below on success.
+#
+#   The image lands at its lock coordinate regardless, which is what an
+#   appliance install resolves.
 name: Build docs-api image
 
 on:
@@ -76,6 +89,29 @@ env:
   REGISTRY: ghcr.io
   REGISTRY_ORG: xema-dev
   SERVICE: docs-api
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Attestation contract — ONE definition per value, mirroring
+  # xema-base/.github/workflows/build-and-dispatch.yaml so the two producers
+  # cannot drift.
+  # ─────────────────────────────────────────────────────────────────────────
+  #
+  # BuildKit is pinned to an exact release because the provenance PREDICATE
+  # VERSION is a property of the BuildKit build, not of cosign: BuildKit
+  # v0.28.0 switched the default SLSA provenance format from v0.2 to v1.0
+  # (moby/buildkit#6526). An unpinned BuildKit therefore silently changes the
+  # predicate shape under a fixed jq filter and a fixed cosign `--type`.
+  # v0.31.2 is >= v0.28.0, so it emits SLSA v1.0; `version=v1` is ALSO passed
+  # explicitly on the build so the pin's default can never become load-bearing.
+  BUILDKIT_IMAGE: moby/buildkit:v0.31.2
+  SLSA_PROVENANCE_VERSION: v1
+  # `slsaprovenance1` is cosign's v1.0 alias. Plain `slsaprovenance` maps to
+  # SLSA v0.2, which would unmarshal a v1 predicate into the v0.2 struct and
+  # drop every field — an attestation that claims v0.2 and contains nothing.
+  COSIGN_SLSA_PREDICATE_FLAG: slsaprovenance1
+  COSIGN_SBOM_PREDICATE_FLAG: spdxjson
+  SOURCE_BINDING_PREDICATE_TYPE: https://xema.dev/attestations/deploy-source/v1
+  ATTESTATION_OIDC_ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
   build:
@@ -148,6 +184,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          # Pin the BuildKit image: it, not cosign, decides which SLSA
+          # provenance predicate version is emitted. See the BUILDKIT_IMAGE
+          # comment in the workflow `env:` block.
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -188,12 +229,114 @@ jobs:
             BUILD_SHA=${{ github.sha }}
           cache-from: type=gha,scope=docs-api
           cache-to: type=gha,scope=docs-api,mode=max
-          provenance: false
+          # Was `provenance: false`, which is why this image carried a
+          # signature but no ATTESTATIONS — and a signature proves only "this
+          # workflow pushed it", not how it was built or what is inside. The
+          # `xema.deploy-service/v3` contract requires all three predicates, so
+          # without these two lines `docs-api` could never become a producer.
+          provenance: mode=max,version=${{ env.SLSA_PROVENANCE_VERSION }}
+          sbom: true
 
       - name: Install pinned cosign
         uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
         with:
           cosign-release: v2.6.3
+
+      # The three predicates `xema.deploy-service/v3` requires. Extracted from
+      # the image BuildKit just produced rather than re-derived, so what is
+      # signed is what was actually built.
+      #
+      # Every `jq -e … | select(…)` below is an assertion, not a filter: a
+      # predicate that does not match the expected shape yields empty output and
+      # the following `test -s` fails the step. Silently attesting a
+      # wrong-shaped predicate is worse than not attesting — it produces a
+      # signature over nothing that a verifier accepts.
+      - name: Export exact BuildKit provenance and SBOM predicates
+        id: predicates
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SUBJECT="${IMAGE}@${DIGEST}"
+          PROVENANCE_RAW="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.provenance-raw.json"
+          PROVENANCE="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.slsa-provenance.json"
+          SBOM="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.spdx.json"
+          SOURCE_BINDING="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.xema-source-binding.json"
+
+          docker buildx imagetools inspect "${SUBJECT}" \
+            --format '{{json .Provenance}}' > "${PROVENANCE_RAW}"
+          # `--format '{{json .Provenance}}'` renders `{"SLSA": <predicate>}`
+          # for a SINGLE-platform subject and `{"<platform>": {"SLSA": …}}` once
+          # the subject is a multi-platform index. Assert the single-platform
+          # shape so adding a second platform to THIS job fails here instead of
+          # silently attesting one platform's provenance as if it covered the
+          # whole index. (`release-arm64.yaml` merges the index afterwards and
+          # is a separate subject.)
+          jq -e 'keys == ["SLSA"]' "${PROVENANCE_RAW}" >/dev/null
+          # SLSA v1.0 field names (`buildDefinition` / `runDetails`), matching
+          # the pinned BuildKit's emitted version. BuildKit records the VCS
+          # revision in its v1 extension field
+          # `runDetails.metadata.buildkit_metadata.vcs` — NOT
+          # `runDetails.metadata.vcs`.
+          jq -e --arg sha "${SOURCE_SHA}" \
+              '.SLSA
+               | select(.buildDefinition.buildType | type == "string")
+               | select(.runDetails.metadata.buildkit_metadata.vcs.revision
+                        == $sha)' \
+            "${PROVENANCE_RAW}" > "${PROVENANCE}"
+
+          docker buildx imagetools inspect "${SUBJECT}" \
+            --format '{{json .SBOM}}' \
+            | jq -e \
+                '.SPDX
+                 | select(.spdxVersion | startswith("SPDX-"))
+                 | select(.packages | type == "array")' \
+            > "${SBOM}"
+
+          test -s "${PROVENANCE}"
+          test -s "${SBOM}"
+
+          # The Xema source binding — the only signed statement tying the
+          # dispatch payload's own claims to the image digest.
+          #
+          # `deployServicesManifestSha256` is xema-base's hash of its GENERATED
+          # deploy-services manifest, which enumerates every service that repo
+          # ships. This repository ships exactly one, and has no such manifest,
+          # so the equivalent declaration is hashed inline: the service and the
+          # image repository it publishes to, canonically ordered. The verifier
+          # treats the field opaquely — it requires a sha256 and requires the
+          # payload and the signed binding to AGREE — so what matters is that it
+          # is deterministic and derived from a real declaration, which this is.
+          MANIFEST_SHA256="$(
+            jq -cnS --arg service "${SERVICE}" --arg image "${IMAGE}" \
+              '{services: [{service: $service, imageRepository: $image}]}' \
+              | sha256sum | cut -d' ' -f1
+          )"
+          jq -n \
+            --arg service "${SERVICE}" \
+            --arg sourceRepository "${GITHUB_REPOSITORY}" \
+            --arg sourceRef "${GITHUB_REF}" \
+            --arg sourceSha "${SOURCE_SHA}" \
+            --arg deployServicesManifestSha256 "${MANIFEST_SHA256}" \
+            --arg imageSubject "${SUBJECT}" \
+            '{
+              service: $service,
+              sourceRepository: $sourceRepository,
+              sourceRef: $sourceRef,
+              sourceSha: $sourceSha,
+              deployServicesManifestSha256: $deployServicesManifestSha256,
+              imageSubject: $imageSubject
+            }' > "${SOURCE_BINDING}"
+          test -s "${SOURCE_BINDING}"
+
+          {
+            echo "provenance=${PROVENANCE}"
+            echo "sbom=${SBOM}"
+            echo "source_binding=${SOURCE_BINDING}"
+            echo "manifest_sha256=${MANIFEST_SHA256}"
+          } >> "$GITHUB_OUTPUT"
 
       # `docs-api` is a subject in the appliance distribution locks, and the
       # fleet's ClusterImagePolicy
@@ -208,12 +351,15 @@ jobs:
       # one gate rather than two free to drift. The certificate identity is
       # `@${GITHUB_REF}`-bound anyway, so a branch signature could not satisfy
       # the main-pinned policy even if one were produced.
-      - name: Keyless-sign the image
+      - name: Keyless-sign and attest the image
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
           DIGEST: ${{ steps.build.outputs.digest }}
-          OIDC_ISSUER: https://token.actions.githubusercontent.com
+          PROVENANCE: ${{ steps.predicates.outputs.provenance }}
+          SBOM: ${{ steps.predicates.outputs.sbom }}
+          SOURCE_BINDING: ${{ steps.predicates.outputs.source_binding }}
+          OIDC_ISSUER: ${{ env.ATTESTATION_OIDC_ISSUER }}
         run: |
           set -euo pipefail
           if [[ ! "${DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
@@ -223,9 +369,27 @@ jobs:
           SUBJECT="${IMAGE}@${DIGEST}"
           CERTIFICATE_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/build-image.yaml@${GITHUB_REF}"
           cosign sign --yes "${SUBJECT}"
+          # The three MANDATORY predicates of `xema.deploy-service/v3`: the SLSA
+          # provenance proves HOW the image was built, the SBOM proves WHAT is
+          # in it, and the Xema source binding is the only signed statement
+          # tying a dispatch payload's claims to this digest.
+          cosign attest --yes \
+            --type "${COSIGN_SLSA_PREDICATE_FLAG}" \
+            --predicate "${PROVENANCE}" \
+            "${SUBJECT}"
+          cosign attest --yes \
+            --type "${COSIGN_SBOM_PREDICATE_FLAG}" \
+            --predicate "${SBOM}" \
+            "${SUBJECT}"
+          cosign attest --yes \
+            --type "${SOURCE_BINDING_PREDICATE_TYPE}" \
+            --predicate "${SOURCE_BINDING}" \
+            "${SUBJECT}"
           # Re-assert HERE, in the producing run: a signature that does not
           # verify against the exact identity the policy pins is worth nothing,
-          # and an appliance install is far too late to find that out.
+          # and an appliance install is far too late to find that out. The same
+          # applies to each attestation — an unverifiable one would only be
+          # discovered by the deploy gate refusing every future dispatch.
           cosign verify \
             --certificate-identity "${CERTIFICATE_IDENTITY}" \
             --certificate-oidc-issuer "${OIDC_ISSUER}" \
@@ -233,7 +397,19 @@ jobs:
             --certificate-github-workflow-ref "${GITHUB_REF}" \
             --certificate-github-workflow-sha "${GITHUB_SHA}" \
             "${SUBJECT}" >/dev/null
-          echo "::notice::${SUBJECT} is keyless-signed as ${CERTIFICATE_IDENTITY}."
+          for PREDICATE_TYPE in \
+            "${COSIGN_SLSA_PREDICATE_FLAG}" \
+            "${COSIGN_SBOM_PREDICATE_FLAG}" \
+            "${SOURCE_BINDING_PREDICATE_TYPE}"; do
+            cosign verify-attestation \
+              --certificate-identity "${CERTIFICATE_IDENTITY}" \
+              --certificate-oidc-issuer "${OIDC_ISSUER}" \
+              --certificate-github-workflow-repository "${GITHUB_REPOSITORY}" \
+              --certificate-github-workflow-ref "${GITHUB_REF}" \
+              --certificate-github-workflow-sha "${GITHUB_SHA}" \
+              --type "${PREDICATE_TYPE}" "${SUBJECT}" >/dev/null
+          done
+          echo "::notice::${SUBJECT} is keyless-signed and carries all three v3 attestations as ${CERTIFICATE_IDENTITY}."
 
       - name: Report the published coordinates
         env:

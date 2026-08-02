@@ -65,6 +65,14 @@ env:
   REGISTRY_ORG: xema-dev
   SERVICE: docs-api
 
+  # Must stay value-identical to `build-image.yaml`'s attestation contract: the
+  # two lanes attach attestations to the two halves of ONE index, and a
+  # predicate shape that differs between them is a difference no consumer can
+  # see until verification fails. BuildKit — not cosign — decides the SLSA
+  # predicate version, which is why the image is pinned rather than floating.
+  BUILDKIT_IMAGE: moby/buildkit:v0.31.2
+  SLSA_PROVENANCE_VERSION: v1
+
 jobs:
   arm64:
     name: arm64 supplement
@@ -150,6 +158,10 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          # Same pin as the amd64 lane, for the same reason: BuildKit decides
+          # the emitted SLSA provenance version.
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -178,11 +190,18 @@ jobs:
           # Arch-independent layers (metadata, config) are reused where
           # BuildKit can; the compiled layers cannot be, by definition.
           cache-from: type=registry,ref=${{ steps.img.outputs.amd64_source }}
-          # Symmetric with the amd64 build, which also attaches no
-          # provenance/SBOM. A half-attested index (arm64 attested, amd64 not)
-          # would be worse than an unattested one: it reads as evidence that
-          # covers the whole index when it covers one platform.
-          provenance: false
+          # Symmetric with the amd64 build, which now attaches provenance and an
+          # SBOM so `docs-api` can satisfy the `xema.deploy-service/v3` contract.
+          #
+          # The symmetry is the point, and it is why this changed in the same
+          # commit. This lane used to attach nothing BECAUSE the amd64 lane
+          # attached nothing; the moment that stopped being true, leaving this
+          # at `false` would have produced exactly the half-attested index the
+          # previous comment here warned about — evidence that reads as covering
+          # the whole index while covering one platform — merely with the two
+          # halves swapped.
+          provenance: mode=max,version=${{ env.SLSA_PROVENANCE_VERSION }}
+          sbom: true
 
       - name: Install pinned cosign
         uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
