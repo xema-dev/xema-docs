@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "sourceRepository": "xema-dev/xema-docs",
+  "sourceRef": "refs/heads/main",
+  "services": [
+    {
+      "service": "docs-api",
+      "path": ".",
+      "workspace": false,
+      "runtimeImage": false,
+      "imageRepository": "ghcr.io/xema-dev/docs-api"
+    }
+  ]
+}

@@ -38,29 +38,31 @@
 #   neither of which a fork can cause, so the secret is never exposed to
 #   untrusted code.
 #
-# WHAT THIS DOES NOT DO YET: dispatch a deploy.
+# WHAT THIS DOES: builds, attests, and hands the coordinate to xema-deploy.
 #
-#   `xema-deploy`'s `deploy-service-producers.json` still carries no
-#   `xema-dev/xema-docs` source profile, so `docs-api` is not yet a v3 producer
-#   and nothing here emits a dispatch.
+#   `docs-api` is now a full `xema.deploy-service/v3` producer, so a push to
+#   main builds the image, signs it, attests it, and dispatches a deploy. Before
+#   that last part the image was built and pushed and then nothing carried it
+#   anywhere — the deployed revision moved only when an operator or a reconcile
+#   happened to re-apply it, so main and the cluster diverged silently.
 #
-#   Until 2026-08-02 the blocker was this file: the `xema.deploy-service/v3`
-#   contract verifies THREE cosign attestations (SLSA provenance, SBOM, and the
-#   Xema source binding), and this workflow produced none of them — it built
-#   with `provenance: false` and only `cosign sign`ed the image, which proves
-#   "this workflow pushed it" and nothing about how it was built or what is in
-#   it. Adding the producer profile then would have failed the deploy gate on
-#   every push.
+#   It was onboarded in two steps, in this order, on purpose:
 #
-#   All three are now produced, signed and verified in-run. The remaining step
-#   is the xema-deploy-side profile, and it is deliberately NOT landed in the
-#   same change: a producer profile is a FENCE, and a fence that lands ahead of
-#   proof that its caller can satisfy it turns every subsequent push red. Land
-#   it once one green run here has demonstrated the attestations verify —
-#   the run logs the notice below on success.
+#   1. The THREE attestations the v3 contract verifies (SLSA provenance, SBOM,
+#      Xema source binding). This workflow previously produced none — it built
+#      with `provenance: false` and only `cosign sign`ed the image, which proves
+#      "this workflow pushed it" and nothing about how it was built or what is
+#      in it.
+#   2. The producer profile in xema-deploy, and only after a green run had
+#      demonstrated all three attestations VERIFY against the exact certificate
+#      identity the gate pins.
 #
-#   The image lands at its lock coordinate regardless, which is what an
-#   appliance install resolves.
+#   That order is the whole point. A producer profile is a FENCE, and a fence
+#   landing ahead of proof that its caller can satisfy it turns every subsequent
+#   push red — which is the failure this fleet hit repeatedly on 2026-08-02.
+#
+#   The image lands at its lock coordinate regardless of the deploy, which is
+#   what an appliance install resolves.
 name: Build docs-api image
 
 on:
@@ -113,6 +115,13 @@ env:
   SOURCE_BINDING_PREDICATE_TYPE: https://xema.dev/attestations/deploy-source/v1
   ATTESTATION_OIDC_ISSUER: https://token.actions.githubusercontent.com
 
+  # Deploy hand-off. Value-identical to xema-base's, because xema-deploy
+  # compares these against its own constants and a drift is refused, not
+  # tolerated.
+  DEPLOY_REPO: xema-dev/xema-deploy
+  DEPLOY_TARGET: xema-prod
+  DEPLOY_SERVICE_PAYLOAD_VERSION: xema.deploy-service/v3
+
 jobs:
   build:
     name: Build & push docs-api
@@ -132,6 +141,39 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
+
+      # The manifest is the reviewed declaration of what this repo produces, and
+      # xema-deploy's producer contract is checked against it. The env literals
+      # above say the same thing a second time, so they can drift from it — and a
+      # drift would be silent: the image would build and push under one name
+      # while the signed source binding hashed a manifest naming another.
+      #
+      # One assertion removes that. It is cheap, it runs before anything is
+      # pushed, and it is the reason the manifest can be called the single
+      # declaration rather than one of two.
+      - name: Assert the env matches the declared build universe
+        env:
+          MANIFEST: tooling/release/deploy-services-manifest.json
+        run: |
+          set -euo pipefail
+          IMAGE="$(printf '%s' "${REGISTRY}/${REGISTRY_ORG}/${SERVICE}" \
+            | tr '[:upper:]' '[:lower:]')"
+          COUNT="$(jq '.services | length' "${MANIFEST}")"
+          if [ "${COUNT}" != "1" ]; then
+            echo "::error::${MANIFEST} declares ${COUNT} services; this workflow builds exactly one."
+            echo "::error::Adding a service means teaching this workflow to build it AND adding it to xema-deploy's producer contract."
+            exit 1
+          fi
+          DECLARED_SERVICE="$(jq -r '.services[0].service' "${MANIFEST}")"
+          DECLARED_IMAGE="$(jq -r '.services[0].imageRepository' "${MANIFEST}")"
+          DECLARED_REPO="$(jq -r '.sourceRepository' "${MANIFEST}")"
+          [ "${DECLARED_SERVICE}" = "${SERVICE}" ] || {
+            echo "::error::${MANIFEST} declares service '${DECLARED_SERVICE}', workflow builds '${SERVICE}'."; exit 1; }
+          [ "${DECLARED_IMAGE}" = "${IMAGE}" ] || {
+            echo "::error::${MANIFEST} declares image '${DECLARED_IMAGE}', workflow pushes '${IMAGE}'."; exit 1; }
+          [ "${DECLARED_REPO}" = "${GITHUB_REPOSITORY}" ] || {
+            echo "::error::${MANIFEST} declares sourceRepository '${DECLARED_REPO}', this is '${GITHUB_REPOSITORY}'."; exit 1; }
+          echo "::notice::Build universe agrees: ${DECLARED_SERVICE} -> ${DECLARED_IMAGE} from ${DECLARED_REPO}."
 
       - name: Compute image coordinates
         id: img
@@ -301,19 +343,20 @@ jobs:
           # The Xema source binding — the only signed statement tying the
           # dispatch payload's own claims to the image digest.
           #
-          # `deployServicesManifestSha256` is xema-base's hash of its GENERATED
-          # deploy-services manifest, which enumerates every service that repo
-          # ships. This repository ships exactly one, and has no such manifest,
-          # so the equivalent declaration is hashed inline: the service and the
-          # image repository it publishes to, canonically ordered. The verifier
-          # treats the field opaquely — it requires a sha256 and requires the
-          # payload and the signed binding to AGREE — so what matters is that it
-          # is deterministic and derived from a real declaration, which this is.
-          MANIFEST_SHA256="$(
-            jq -cnS --arg service "${SERVICE}" --arg image "${IMAGE}" \
-              '{services: [{service: $service, imageRepository: $image}]}' \
-              | sha256sum | cut -d' ' -f1
-          )"
+          # `deployServicesManifestSha256` hashes THE FILE, exactly as xema-base
+          # hashes its generated one. An earlier revision hashed an equivalent
+          # declaration assembled inline here, on the reasoning that this repo
+          # had no manifest and the verifier treats the field opaquely. Both
+          # halves were true and the result was still wrong: it created a SECOND
+          # notion of "this repo's deploy-services manifest" that no checker
+          # compared to the first, so the moment the real file landed for
+          # xema-deploy's producer contract, the signed binding would have gone
+          # on attesting a hash of something else. One file, one hash.
+          #
+          # `sha256sum` over the bytes on disk — not a canonicalised re-render —
+          # so what is attested is what a reviewer reads and what the producer
+          # contract is checked against.
+          MANIFEST_SHA256="$(sha256sum tooling/release/deploy-services-manifest.json | cut -d' ' -f1)"
           jq -n \
             --arg service "${SERVICE}" \
             --arg sourceRepository "${GITHUB_REPOSITORY}" \
@@ -410,6 +453,84 @@ jobs:
               --type "${PREDICATE_TYPE}" "${SUBJECT}" >/dev/null
           done
           echo "::notice::${SUBJECT} is keyless-signed and carries all three v3 attestations as ${CERTIFICATE_IDENTITY}."
+
+      # Hand the freshly-built coordinate to xema-deploy, which owns the deploy.
+      #
+      # This is what makes `docs-api` stop drifting behind main. Before it, the
+      # image was built and pushed and then nothing carried it anywhere: the
+      # deployed revision moved only when an operator or a reconcile happened to
+      # re-apply it, so main and the cluster diverged silently and indefinitely.
+      #
+      # EXACTLY EIGHT top-level properties, and that is a hard limit, not a
+      # style: GitHub rejects a `client_payload` with more than TEN and fails
+      # the whole request. xema-base shipped a fifteen-property payload that
+      # failed on every single build with "No more than 10 properties are
+      # allowed" — no dispatch ever arrived, and nothing noticed because the
+      # build itself stayed green. Adding a ninth field here is fine; a
+      # eleventh silently breaks every deploy.
+      #
+      # `imageDigest` is the pinned `repo@sha256:…`, never a tag: the tag can be
+      # repointed after the dispatch is sent, and the digest is what cosign
+      # signed and what the deploy gate verifies its three attestations against.
+      - name: Bind the immutable deployment digest
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        id: bind
+        run: |
+          set -euo pipefail
+          if [[ ! "${IMAGE}" =~ ^ghcr\.io/xema-dev/[a-z0-9][a-z0-9._-]*$ ]]; then
+            echo "::error::invalid image repository '${IMAGE}'"; exit 1
+          fi
+          if [[ ! "${DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::invalid immutable image digest '${DIGEST}'"; exit 1
+          fi
+          echo "image_digest=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      # Say WHICH secret is missing, rather than letting the dispatch action fail
+      # on an empty token with a bare 401 that names nothing.
+      #
+      # This is NOT `continue-on-error`, and that is a settled position in this
+      # fleet: identity-api carried exactly that allowance "so a
+      # not-yet-provisioned dispatch token never reds the build", and it expired
+      # the moment the token was provisioned — after which it only meant a failed
+      # hand-off could never be seen, because the image builds, the run reports
+      # success, and nothing is deployed.
+      #
+      # A red run here is the correct signal: a producer that cannot hand off IS
+      # broken. Nothing is lost by failing — the image and both its tags are
+      # already pushed by the time this runs, so the lock coordinate an appliance
+      # install resolves lands either way.
+      - name: Require the deploy dispatch credential
+        env:
+          DISPATCH_TOKEN: ${{ secrets.XEMA_DEPLOY_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISPATCH_TOKEN:-}" ]; then
+            echo "::error::XEMA_DEPLOY_DISPATCH_TOKEN is not configured on this repository."
+            echo "::error::docs-api is a registered xema.deploy-service/v3 producer, so this build must hand its coordinate to ${DEPLOY_REPO}; without the token it cannot."
+            echo "::error::Fix: add a PAT with repository-dispatch rights on ${DEPLOY_REPO} as the secret XEMA_DEPLOY_DISPATCH_TOKEN (gh secret set XEMA_DEPLOY_DISPATCH_TOKEN --repo ${GITHUB_REPOSITORY})."
+            echo "::error::The image and its tags are already pushed; only the deploy hand-off is missing."
+            exit 1
+          fi
+
+      - name: Dispatch deploy to xema-deploy
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
+        with:
+          token: ${{ secrets.XEMA_DEPLOY_DISPATCH_TOKEN }}
+          repository: ${{ env.DEPLOY_REPO }}
+          event-type: deploy-service
+          client-payload: |
+            {
+              "payloadVersion": "${{ env.DEPLOY_SERVICE_PAYLOAD_VERSION }}",
+              "deployment": "${{ env.DEPLOY_TARGET }}",
+              "service": "${{ env.SERVICE }}",
+              "sourceRepository": "${{ github.repository }}",
+              "sourceSha": "${{ github.sha }}",
+              "deployServicesManifestSha256": "${{ steps.predicates.outputs.manifest_sha256 }}",
+              "imageDigest": "${{ steps.bind.outputs.image_digest }}",
+              "sourceRunUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
 
       - name: Report the published coordinates
         env:
