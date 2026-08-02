@@ -6,8 +6,10 @@ Schema migrations in Xema are workflow-orchestrated and isolated per schema. Eve
 
 ## Migration runners
 
-The runner set is closed: a `MigrationRun` records exactly one of the two,
-and there is no third. Adding one is a platform change, not configuration.
+Two are implemented, and a `MigrationRun` records which one applied it.
+`MigrationRunnerKind` also declares `drizzle` and `flyway`, but nothing emits
+them — they are placeholders, not supported tooling. Adding a runner is a
+platform change, not configuration.
 
 The bundle-applying runner is handed a workspace and a short-lived
 connection, and reports the outcome of applying every pending migration in
