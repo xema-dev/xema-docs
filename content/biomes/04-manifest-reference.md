@@ -435,12 +435,12 @@ Biome content is discovered by **on-disk presence** — there is no per-kind dec
 | `icons` | `icons/` | Icon assets referenced by the biome display metadata. |
 | `mcpCatalog` | `mcp-catalog/` | MCP catalog entries the biome contributes. |
 | `mcpTools` | `mcp-tools/` | MCP tool descriptors. |
-| `openCodePlugins` | `opencode-plugins/` | Agent-runtime plugins. |
-| `openCodeSkills` | `skills/` | Skill folder bundles, one directory per skill with a `SKILL.md` at its root (sub-skills nest recursively). |
-| `openCodeTools` | `opencode-tools/` | Agent-runtime custom tools. |
 | `projectKits` | `project-kits/` | Project kit definitions. |
 | `provisioningScaffolds` | `provisioning/` | Workspace-provisioning scaffold recipes, one `<id>.yaml` per scaffold declared in `xema.provisioning[]`. |
 | `roleCapabilities` | `role-capabilities/` | Role-to-capability mappings. |
+| `runtimePlugins` | `plugins/` | Agent-runtime plugins, one directory per runtime id (`plugins/<runtimeId>/`). |
+| `runtimeTools` | `tools/` | Agent-runtime custom tools, one directory per runtime id (`tools/<runtimeId>/`). |
+| `skills` | `skills/` | Skill folder bundles, one directory per skill with a `SKILL.md` at its root (sub-skills nest recursively). Runtime-agnostic. |
 | `toolProfiles` | `tool-profiles/` | Tool profile definitions. |
 | `workflowConfig` | `workflow-config/` | Workflow YAML definitions and configuration. |
 | `workspaceManifestTemplates` | `workspace-manifest-templates/` | Reusable agent-workspace manifest templates. |
