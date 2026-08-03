@@ -58,7 +58,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
 | `signedBy` | string | no | — |
 | `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
@@ -295,6 +295,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `requiresServices` | string[] | no | — |
 | `optionalServices` | string[] | no | — |
 | `exposesCapabilities` | string[] | no | — |
+| `protocols` | array of objects — see **xema.ships.apis[].protocols[]** | no | — |
 | `database` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
 
 ### `xema.capabilities.network`
@@ -335,7 +336,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
 
@@ -370,6 +371,16 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `package` | string | yes | — |
 | `port` | number | yes | integer; min 1; max 65535 |
 
+### `xema.ships.apis[].protocols[]`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `protocol` | string | yes | pattern `/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9._-]*$/` |
+| `revision` | string | yes | — |
+| `operations` | string[] | yes | entries: pattern `/^[a-z][a-z0-9._-]*$/` |
+| `references` | string[] | no | — |
+| `endpointProtocols` | enum[] | no | entries one of: `http`, `grpc`, `event-hub`, `mcp` |
+
 ---
 
 ## Web biomes (`xema.target: "web"`)
@@ -393,7 +404,7 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
 | `signedBy` | string | no | — |
 | `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
