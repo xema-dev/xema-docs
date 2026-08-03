@@ -97,7 +97,7 @@ jobs:
         (github.event_name == 'workflow_dispatch' &&
          github.ref == 'refs/heads/main')
       )
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     # A job-level `permissions:` block REPLACES the workflow-level one rather
     # than merging with it, so `id-token: write` MUST be repeated here.
     permissions:

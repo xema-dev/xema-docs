@@ -16,7 +16,7 @@ jobs:
     # group has allows_public_repositories=false, so [self-hosted, linux] jobs
     # here queue forever (never scheduled). The Astro build has no private deps,
     # so a hosted runner is both correct and the recommended choice for public repos.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
