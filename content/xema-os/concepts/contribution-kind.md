@@ -69,6 +69,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `opencode-plugin` | `ContributionKind.OpenCodePlugin` | RESERVED — no contribution ingestion (category 3) | No parser, and the contribution-registrar deliberately does NOT route this kind — its own unit test uses this member as the canonical "not routed" fixture. |
 | `capability` | `ContributionKind.Capability` | biome-host parser (`CapabilityParser`) | A `CapabilityRef` descriptor contributed by a biome — title, summary, I/O schemas, risk tier, and approval flag. |
 | `resource-ownership` | `ContributionKind.ResourceOwnership` | biome-host parser (`ResourceOwnershipParser`) | A resource-instance ownership/visibility declaration contributed by a biome — `resourceType` + `resourceId` + a `ResourceVisibilityPattern` + the owning subjects (and optional explicit shares). |
+| `resource-definition` | `ContributionKind.ResourceDefinition` | declared category 1 — parser NOT shipped yet, contributions are ignored | A provider-neutral resource definition contributed by a biome: namespaced key, exact unit, measurement/aggregation semantics, bounded dimensions, supported limit kinds, and usage-export capability. |
 | `stage-machine` | `ContributionKind.StageMachine` | biome-host parser (`StageMachineParser`) | A deterministic asset stage machine contributed by a domain biome to a stage-machine host (today: `mailops-api`). |
 | `search-type` | `ContributionKind.SearchType` | biome-host parser (`SearchTypeParser`) | A search RESULT-TYPE declaration contributed by a biome — the `XemaObjectKind`/`docType` it covers, render/route hints (label, icon, deep-link template), the searchable-field set + embedding-eligibility default, and the authz mapping (`resourceType` + default `ResourceVisibilityPattern`). |
 | `credential-strategy` | `ContributionKind.CredentialStrategy` | biome-host parser (`CredentialStrategyParser`) | A DECLARATIVE credential-mint strategy contributed by a connector biome — the open credential-kind key it registers, the projection SCHEME (`bearer` / `basic` / `header`), and the field/template selectors that map a custody-resolved credential into an outbound token. |
@@ -88,6 +89,7 @@ Do not ship a contribution of these kinds expecting it to be picked up by
 - `provisioning-scaffold` — RESERVED — no contribution ingestion (category 3)
 - `opencode-tool` — RESERVED — no contribution ingestion (category 3)
 - `opencode-plugin` — RESERVED — no contribution ingestion (category 3)
+- `resource-definition` — declared category 1 — parser NOT shipped yet, contributions are ignored
 
 ## Adding a kind
 

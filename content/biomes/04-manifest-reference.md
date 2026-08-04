@@ -40,10 +40,9 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "server" | yes | — |
 | `capabilityDomain` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
-| `runtimeRequirements` | object — see **xema.runtimeRequirements** | no | — |
+| `components` | array of objects — see **xema.components[]** | yes | — |
 | `dependencies` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `extends` | string \| string[] | no | — |
-| `ships` | object — see **xema.ships** | no | — |
 | `capabilities` | object — see **xema.capabilities** | no | — |
 | `trustTier` | enum | no | one of: `first-party`, `third-party` |
 | `connectorRequirements` | array of objects — see **xema.connectorRequirements[]** | no | — |
@@ -53,7 +52,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `defaultToolSelection` | array of objects — see **xema.defaultToolSelection[] (kind: "provider")**, **xema.defaultToolSelection[] (kind: "tool")** | no | max 64 entries |
 | `agents` | array of objects — see **xema.agents[]** | no | — |
 | `provisioning` | array of objects — see **xema.provisioning[]** | no | — |
-| `database` | object — see **xema.database** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
 | `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
 | `signedBy` | string | no | — |
@@ -79,22 +77,18 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `summary` | string | no | — |
 | `accent` | string | no | — |
 
-### `xema.runtimeRequirements`
+### `xema.components[]`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `labels` | object — see **xema.runtimeRequirements.labels** | no | — |
-| `resources` | object — see **xema.runtimeRequirements.resources** | no | — |
-| `scaling` | object — see **xema.runtimeRequirements.scaling** | no | — |
-| `isolation` | object — see **xema.runtimeRequirements.isolation** | no | — |
-| `locality` | object — see **xema.runtimeRequirements.locality** | no | — |
-| `trustTier` | object — see **xema.runtimeRequirements.trustTier** | no | — |
-
-### `xema.ships`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `apis` | array of objects — see **xema.ships.apis[]** | no | — |
+| `key` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
+| `kind` | enum | yes | one of: `content`, `web`, `adapter`, `service`, `worker`, `job` |
+| `artifact` | object — see **xema.components[].artifact** | yes | — |
+| `entrypoint` | object (discriminated on `kind`) — see **xema.components[].entrypoint (kind: "materialize")**, **xema.components[].entrypoint (kind: "static-bundle")**, **xema.components[].entrypoint (kind: "module-export")**, **xema.components[].entrypoint (kind: "oci-default")** | yes | — |
+| `protocol` | object (discriminated on `kind`) — see **xema.components[].protocol (kind: "none")**, **xema.components[].protocol (kind: "web")**, **xema.components[].protocol (kind: "adapter")**, **xema.components[].protocol (kind: "http")**, **xema.components[].protocol (kind: "worker")**, **xema.components[].protocol (kind: "job")** | yes | — |
+| `hostAbi` | object — see **xema.components[].hostAbi** | no | — |
+| `executionModes` | enum[] | yes | entries one of: `materialized`, `web-hosted`, `shared-host`, `composed`, `isolated`, `runner` |
+| `requirements` | object — see **xema.components[].requirements** | yes | — |
 
 ### `xema.capabilities`
 
@@ -174,13 +168,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `guard` | enum | yes | one of: `repo_empty`, `path_absent`, `marker_absent`, `always` |
 | `selector` | object — see **xema.provisioning[].selector** | yes | — |
 
-### `xema.database`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `purpose` | literal "biome" | yes | — |
-| `runnerKind` | literal "prisma" | yes | — |
-
 ### `xema.signature`
 
 | Field | Type | Required | Notes |
@@ -238,65 +225,110 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `onEnable` | string | no | — |
 | `onDisable` | string | no | — |
 
-### `xema.runtimeRequirements.labels`
+### `xema.components[].artifact`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `required` | string[] | no | — |
-| `preferred` | string[] | no | — |
+| `kind` | enum | yes | one of: `package-content`, `web-bundle`, `host-module`, `oci-image` |
+| `path` | string | yes | — |
 
-### `xema.runtimeRequirements.resources`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `cpu` | string | no | — |
-| `memory` | string | no | — |
-| `gpu` | object — see **xema.runtimeRequirements.resources.gpu** | no | — |
-
-### `xema.runtimeRequirements.scaling`
+### `xema.components[].entrypoint (kind: "materialize")`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `min` | number | yes | integer; min 0 |
-| `max` | number | yes | integer; min 1 |
-| `cpuTargetPercent` | number | no | integer; min 1; max 100 |
+| `kind` | literal "materialize" | yes | — |
 
-### `xema.runtimeRequirements.isolation`
+### `xema.components[].entrypoint (kind: "static-bundle")`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `allowed` | enum[] | yes | entries one of: `none`, `process`, `container`, `vm` |
+| `kind` | literal "static-bundle" | yes | — |
+| `root` | string | yes | — |
 
-### `xema.runtimeRequirements.locality`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `allowed` | enum[] | yes | entries one of: `cloud`, `customer-private`, `gpu` |
-
-### `xema.runtimeRequirements.trustTier`
+### `xema.components[].entrypoint (kind: "module-export")`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `minimum` | enum | yes | one of: `untrusted`, `verified`, `trusted`, `system` |
+| `kind` | literal "module-export" | yes | — |
+| `module` | string | yes | — |
+| `exportName` | string | yes | — |
 
-### `xema.ships.apis[]`
+### `xema.components[].entrypoint (kind: "oci-default")`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `name` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
-| `basePath` | string | no | pattern `/^\/.*$/` |
-| `image` | object — see **xema.ships.apis[].image** | no | — |
-| `openapiSpec` | string | no | — |
-| `scopes` | enum[] | no | entries one of: `public`, `org`, `project`, `installation` |
-| `path` | string | no | — |
-| `workload` | enum | no | one of: `service`, `runtime-component`; default `"service"` |
-| `displayName` | string | no | — |
-| `serviceKind` | enum | no | one of: `platform-service`, `biome-api`, `cli` |
+| `kind` | literal "oci-default" | yes | — |
+
+### `xema.components[].protocol (kind: "none")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "none" | yes | — |
+
+### `xema.components[].protocol (kind: "web")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "web" | yes | — |
+| `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
+
+### `xema.components[].protocol (kind: "adapter")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "adapter" | yes | — |
+| `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
+
+### `xema.components[].protocol (kind: "http")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "http" | yes | — |
+| `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
+| `serviceName` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
+| `basePath` | string | no | pattern `/^\//` |
+| `openapi` | string | no | — |
+| `authScopes` | enum[] | yes | entries one of: `public`, `org`, `project`, `installation` |
 | `requiresServices` | string[] | no | — |
 | `optionalServices` | string[] | no | — |
 | `exposesCapabilities` | string[] | no | — |
-| `protocols` | array of objects — see **xema.ships.apis[].protocols[]** | no | — |
-| `database` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
+| `capabilities` | array of objects — see **xema.components[].protocol.capabilities[]** | no | — |
+| `databaseKey` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
+
+### `xema.components[].protocol (kind: "worker")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "worker" | yes | — |
+| `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
+
+### `xema.components[].protocol (kind: "job")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "job" | yes | — |
+| `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
+
+### `xema.components[].hostAbi`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | enum | yes | one of: `xema-web-host`, `xema-adapter-host`, `xema-service-host`, `xema-worker-runtime`, `xema-job-runner` |
+| `versionRange` | string | yes | — |
+
+### `xema.components[].requirements`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `tenancy` | object — see **xema.components[].requirements.tenancy** | yes | — |
+| `isolation` | object — see **xema.components[].requirements.isolation** | yes | — |
+| `trust` | object — see **xema.components[].requirements.trust** | yes | — |
+| `locality` | object — see **xema.components[].requirements.locality** | yes | — |
+| `state` | object (discriminated on `kind`) — see **xema.components[].requirements.state (kind: "stateless")**, **xema.components[].requirements.state (kind: "ephemeral")**, **xema.components[].requirements.state (kind: "durable")** | yes | — |
+| `resources` | object — see **xema.components[].requirements.resources** | yes | — |
+| `runtime` | object — see **xema.components[].requirements.runtime** | yes | — |
+| `io` | object — see **xema.components[].requirements.io** | yes | — |
+| `scaling` | object — see **xema.components[].requirements.scaling** | yes | — |
 
 ### `xema.capabilities.network`
 
@@ -357,21 +389,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `name` | string | yes | — |
 | `capabilities` | string[] | yes | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 
-### `xema.runtimeRequirements.resources.gpu`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `count` | number | yes | integer; min 1 |
-| `type` | string | no | — |
-
-### `xema.ships.apis[].image`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `package` | string | yes | — |
-| `port` | number | yes | integer; min 1; max 65535 |
-
-### `xema.ships.apis[].protocols[]`
+### `xema.components[].protocol.capabilities[]`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -380,6 +398,157 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `operations` | string[] | yes | entries: pattern `/^[a-z][a-z0-9._-]*$/` |
 | `references` | string[] | no | — |
 | `endpointProtocols` | enum[] | no | entries one of: `http`, `grpc`, `event-hub`, `mcp` |
+
+### `xema.components[].requirements.tenancy`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `allowed` | enum[] | yes | entries one of: `deployment`, `org`, `project`, `invocation` |
+| `tenantContext` | enum | yes | one of: `none`, `verified` |
+
+### `xema.components[].requirements.isolation`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `minimum` | enum | yes | one of: `none`, `process`, `container`, `vm` |
+
+### `xema.components[].requirements.trust`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `minimum` | enum | yes | one of: `untrusted`, `verified`, `trusted`, `system` |
+
+### `xema.components[].requirements.locality`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `allowed` | enum[] | yes | entries one of: `cloud`, `customer-private`, `gpu` |
+
+### `xema.components[].requirements.state (kind: "stateless")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "stateless" | yes | — |
+
+### `xema.components[].requirements.state (kind: "ephemeral")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "ephemeral" | yes | — |
+| `recovery` | enum | yes | one of: `rebuildable`, `checkpointed` |
+
+### `xema.components[].requirements.state (kind: "durable")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "durable" | yes | — |
+| `scope` | enum | yes | one of: `deployment`, `org`, `project` |
+| `persistence` | enum | yes | one of: `database`, `object-store`, `filesystem` |
+| `consistency` | enum | yes | one of: `eventual`, `strong` |
+| `tenantFencing` | literal "required" | yes | — |
+
+### `xema.components[].requirements.resources`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `minimum` | object — see **xema.components[].requirements.resources.minimum** | yes | — |
+| `preferred` | object — see **xema.components[].requirements.resources.minimum** | no | — |
+| `accelerator` | object — see **xema.components[].requirements.resources.accelerator** | no | — |
+
+### `xema.components[].requirements.runtime`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | enum | yes | one of: `none`, `node`, `python`, `go`, `wasm`, `native` |
+| `versionRange` | string | no | — |
+| `architectures` | enum[] | no | entries one of: `amd64`, `arm64` |
+| `nativeLibraries` | string[] | no | — |
+
+### `xema.components[].requirements.io`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `ingress` | enum | yes | one of: `none`, `http`, `webhook` |
+| `egress` | enum | yes | one of: `none`, `platform`, `internet` |
+| `rawBody` | boolean | yes | — |
+| `devices` | enum[] | yes | entries one of: `accelerator`, `camera`, `microphone`, `serial`, `usb` |
+
+### `xema.components[].requirements.scaling`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `mode` | enum | yes | one of: `singleton`, `horizontal`, `partitioned`, `invocation-only` |
+| `concurrency` | object — see **xema.components[].requirements.scaling.concurrency** | yes | — |
+| `readiness` | object (discriminated on `kind`) — see **xema.components[].requirements.scaling.readiness (kind: "none")**, **xema.components[].requirements.scaling.readiness (kind: "protocol")**, **xema.components[].requirements.scaling.readiness (kind: "host-signal")** | yes | — |
+| `drain` | object (discriminated on `kind`) — see **xema.components[].requirements.scaling.drain (kind: "none")**, **xema.components[].requirements.scaling.drain (kind: "graceful")** | yes | — |
+| `hints` | object — see **xema.components[].requirements.scaling.hints** | yes | — |
+
+### `xema.components[].requirements.resources.minimum`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `cpu` | string | yes | pattern `/^(?:[1-9]\d*m|0\.(?:00[1-9]|0[1-9]\d|[1-9]\d{0,2})|[1-9]\d*(?:\.\d{1,3})?)$/` |
+| `memory` | string | yes | pattern `/^[1-9]\d*(?:Ki|Mi|Gi|Ti)$/` |
+| `ephemeralStorage` | string | yes | pattern `/^[1-9]\d*(?:Ki|Mi|Gi|Ti)$/` |
+
+### `xema.components[].requirements.resources.accelerator`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `count` | number | yes | integer; > 0 |
+| `preferredCount` | number | no | integer; > 0 |
+| `vendor` | string | no | — |
+| `class` | string | no | — |
+| `minimumMemory` | string | no | pattern `/^[1-9]\d*(?:Ki|Mi|Gi|Ti)$/` |
+| `features` | string[] | no | — |
+
+### `xema.components[].requirements.scaling.concurrency`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `handling` | enum | yes | one of: `serial`, `parallel` |
+| `maximumPerInstance` | number | yes | integer; > 0 |
+
+### `xema.components[].requirements.scaling.readiness (kind: "none")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "none" | yes | — |
+
+### `xema.components[].requirements.scaling.readiness (kind: "protocol")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "protocol" | yes | — |
+| `initialDelaySeconds` | number | yes | integer; min 0 |
+
+### `xema.components[].requirements.scaling.readiness (kind: "host-signal")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "host-signal" | yes | — |
+| `initialDelaySeconds` | number | yes | integer; min 0 |
+
+### `xema.components[].requirements.scaling.drain (kind: "none")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "none" | yes | — |
+
+### `xema.components[].requirements.scaling.drain (kind: "graceful")`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | literal "graceful" | yes | — |
+| `maximumSeconds` | number | yes | integer; > 0 |
+
+### `xema.components[].requirements.scaling.hints`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `cpu` | enum | yes | one of: `latency`, `throughput`, `batch` |
+| `memory` | enum | yes | one of: `steady`, `burstable` |
+| `startup` | enum | yes | one of: `fast`, `warmup` |
 
 ---
 
@@ -396,6 +565,7 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `tags` | string[] | no | — |
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "web" | yes | — |
+| `components` | array of objects — see **xema.components[]** | yes | — |
 | `systemSurface` | boolean | no | — |
 | `requiresServerBiomes` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `optionalServerBiomes` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |

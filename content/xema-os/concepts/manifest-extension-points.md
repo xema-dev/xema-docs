@@ -39,7 +39,7 @@ Everything under `xema` is discriminated on `xema.target`.
 The roster of contribution kinds this biome declares. Values come from the closed
 [contribution-kind](./contribution-kind.md) catalog.
 
-Array of `ContributionKind` (29 legal values).
+Array of `ContributionKind` (30 legal values).
 
 ## `xema.contributions`
 
@@ -52,7 +52,7 @@ Array of `ContributionKind` (29 legal values).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
 
@@ -60,12 +60,12 @@ Array of `ContributionKind` (29 legal values).
 
 ### `xema.target: "server"`
 
-- **Required (4)**: `id`, `displayName`, `scope`, `target`
-- **Optional (33)**: `description`, `display`, `tags`, `capabilityDomain`, `runtimeRequirements`, `dependencies`, `extends`, `ships`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `database`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
+- **Required (5)**: `id`, `displayName`, `scope`, `target`, `components`
+- **Optional (30)**: `description`, `display`, `tags`, `capabilityDomain`, `dependencies`, `extends`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
 
 ### `xema.target: "web"`
 
-- **Required (4)**: `id`, `displayName`, `scope`, `target`
+- **Required (5)**: `id`, `displayName`, `scope`, `target`, `components`
 - **Optional (22)**: `description`, `display`, `tags`, `systemSurface`, `requiresServerBiomes`, `optionalServerBiomes`, `capabilities`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
 
 Field types, constraints, and semantics for every name above are in
