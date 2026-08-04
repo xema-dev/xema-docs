@@ -126,7 +126,11 @@ jobs:
   build:
     name: Build & push docs-api
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, linux]
+    # GitHub-hosted: xema-docs is a PUBLIC repo and the org self-hosted runner
+    # group sets allows_public_repositories=false, so [self-hosted, linux] jobs
+    # queue forever here. Public repos get free hosted minutes; secrets are only
+    # exposed to this repo's own push/tag events, never to fork PRs.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
