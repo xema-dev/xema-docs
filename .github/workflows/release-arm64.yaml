@@ -72,6 +72,12 @@ env:
   # predicate version, which is why the image is pinned rather than floating.
   BUILDKIT_IMAGE: moby/buildkit:v0.31.2
   SLSA_PROVENANCE_VERSION: v1
+  # `slsaprovenance1` is cosign's v1.0 alias. Plain `slsaprovenance` maps to
+  # SLSA v0.2, which would unmarshal a v1 predicate into the v0.2 struct and
+  # drop every field — an attestation that claims v0.2 and contains nothing.
+  COSIGN_SLSA_PREDICATE_FLAG: slsaprovenance1
+  COSIGN_SBOM_PREDICATE_FLAG: spdxjson
+  ATTESTATION_OIDC_ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
   arm64:
@@ -271,6 +277,7 @@ jobs:
       # exact amd64 and arm64 manifests it lists. Verifying per-platform
       # children instead would leave the admitted digest itself unsigned.
       - name: Keyless-sign the multi-arch index
+        id: sign_index
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
@@ -300,4 +307,102 @@ jobs:
             --certificate-github-workflow-ref "${GITHUB_REF}" \
             --certificate-github-workflow-sha "${GITHUB_SHA}" \
             "${IMAGE}@${INDEX_DIGEST}" >/dev/null
+          {
+            echo "index_digest=${INDEX_DIGEST}"
+            echo "subject=${IMAGE}@${INDEX_DIGEST}"
+          } >> "$GITHUB_OUTPUT"
           echo "::notice::${IMAGE}:${CONTENT_TAG} index ${INDEX_DIGEST} is keyless-signed."
+
+      # ─────────────────────────────────────────────────────────────────────
+      # ATTEST THE MERGED INDEX.
+      #
+      # The amd64 lane attested its pre-merge manifest; the arm64 build
+      # attached its own predicates to the per-arch tag. But the digest the
+      # lock coordinate resolves AFTER this merge is the INDEX digest, and
+      # the detached distribution-plane evidence (produced for this image by
+      # xema-deploy's produce-docs-image-evidence.yaml — a public repo cannot
+      # run the private evidence tooling itself) refuses a subject whose
+      # delivered digest carries no cosign SBOM + SLSA provenance
+      # attestations. So this merge step re-runs the attest calls on the
+      # merged index, exactly as the single-platform producers attest their
+      # delivered digest.
+      #
+      # The predicates re-attested are the linux/amd64 platform's, exported
+      # from the merged index itself: the amd64 build is the PRIMARY build
+      # of this image, and both per-arch predicates record the SAME source
+      # commit — the SLSA predicate's VCS revision is asserted equal to the
+      # built commit below, so the exported predicate describes exactly the
+      # build this index came from.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Export the amd64 SLSA provenance and SBOM predicates from the merged index
+        id: index_predicates
+        env:
+          SUBJECT: ${{ steps.sign_index.outputs.subject }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          PROVENANCE_RAW="${RUNNER_TEMP}/docs-api-index.provenance-raw.json"
+          PROVENANCE="${RUNNER_TEMP}/docs-api-index.slsa-provenance.json"
+          SBOM_RAW="${RUNNER_TEMP}/docs-api-index.sbom-raw.json"
+          SBOM="${RUNNER_TEMP}/docs-api-index.spdx.json"
+          docker buildx imagetools inspect "${SUBJECT}" \
+            --format '{{json .Provenance}}' > "${PROVENANCE_RAW}"
+          # A multi-platform subject renders `{"<platform>": {"SLSA": …}}` per
+          # platform; assert the exact two-platform shape this merge
+          # publishes, then take the amd64 platform's predicate (see the step
+          # comment). Any other shape fails here instead of attesting one
+          # platform's provenance as if it covered the whole index.
+          jq -e '(keys | sort) == ["linux/amd64", "linux/arm64"]' \
+            "${PROVENANCE_RAW}" >/dev/null
+          jq -e --arg sha "${SOURCE_SHA}" \
+              '."linux/amd64".SLSA
+               | select(.buildDefinition.buildType | type == "string")
+               | select(.runDetails.metadata.buildkit_metadata.vcs.revision
+                        == $sha)' \
+            "${PROVENANCE_RAW}" > "${PROVENANCE}"
+          docker buildx imagetools inspect "${SUBJECT}" \
+            --format '{{json .SBOM}}' > "${SBOM_RAW}"
+          jq -e '(keys | sort) == ["linux/amd64", "linux/arm64"]' \
+            "${SBOM_RAW}" >/dev/null
+          jq -e '."linux/amd64".SPDX
+                 | select(.spdxVersion | startswith("SPDX-"))
+                 | select(.packages | type == "array")' \
+            "${SBOM_RAW}" > "${SBOM}"
+          test -s "${PROVENANCE}"
+          test -s "${SBOM}"
+          {
+            echo "provenance=${PROVENANCE}"
+            echo "sbom=${SBOM}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Keyless-attest the merged multi-arch index
+        env:
+          SUBJECT: ${{ steps.sign_index.outputs.subject }}
+          PROVENANCE: ${{ steps.index_predicates.outputs.provenance }}
+          SBOM: ${{ steps.index_predicates.outputs.sbom }}
+          CERTIFICATE_IDENTITY: https://github.com/xema-dev/xema-docs/.github/workflows/release-arm64.yaml@refs/heads/main
+          OIDC_ISSUER: ${{ env.ATTESTATION_OIDC_ISSUER }}
+        run: |
+          set -euo pipefail
+          cosign attest --yes \
+            --type "${COSIGN_SLSA_PREDICATE_FLAG}" \
+            --predicate "${PROVENANCE}" \
+            "${SUBJECT}"
+          cosign attest --yes \
+            --type "${COSIGN_SBOM_PREDICATE_FLAG}" \
+            --predicate "${SBOM}" \
+            "${SUBJECT}"
+          # Re-assert HERE, in the producing run, exactly what the evidence
+          # assembler and every later verifier will demand.
+          for PREDICATE_TYPE in \
+            "${COSIGN_SLSA_PREDICATE_FLAG}" \
+            "${COSIGN_SBOM_PREDICATE_FLAG}"; do
+            cosign verify-attestation \
+              --certificate-identity "${CERTIFICATE_IDENTITY}" \
+              --certificate-oidc-issuer "${OIDC_ISSUER}" \
+              --certificate-github-workflow-repository "${GITHUB_REPOSITORY}" \
+              --certificate-github-workflow-ref "${GITHUB_REF}" \
+              --certificate-github-workflow-sha "${GITHUB_SHA}" \
+              --type "${PREDICATE_TYPE}" "${SUBJECT}" >/dev/null
+          done
+          echo "::notice::${SUBJECT} is keyless-attested (SLSA provenance + SBOM)."
