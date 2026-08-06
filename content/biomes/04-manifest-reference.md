@@ -87,6 +87,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `entrypoint` | object (discriminated on `kind`) — see **xema.components[].entrypoint (kind: "materialize")**, **xema.components[].entrypoint (kind: "static-bundle")**, **xema.components[].entrypoint (kind: "module-export")**, **xema.components[].entrypoint (kind: "oci-default")** | yes | — |
 | `protocol` | object (discriminated on `kind`) — see **xema.components[].protocol (kind: "none")**, **xema.components[].protocol (kind: "web")**, **xema.components[].protocol (kind: "adapter")**, **xema.components[].protocol (kind: "http")**, **xema.components[].protocol (kind: "worker")**, **xema.components[].protocol (kind: "job")** | yes | — |
 | `hostAbi` | object — see **xema.components[].hostAbi** | no | — |
+| `scheduler` | enum | no | one of: `platform`, `runtime` |
 | `executionModes` | enum[] | yes | entries one of: `materialized`, `web-hosted`, `shared-host`, `composed`, `isolated`, `runner` |
 | `requirements` | object — see **xema.components[].requirements** | yes | — |
 
