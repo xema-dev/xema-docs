@@ -2,6 +2,7 @@
   "name": "xema-docs",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "npm@11.17.0",
   "type": "module",
   "license": "Apache-2.0",
   "author": "Neuralchowder Inc. <developer@xema.dev> (https://xema.dev)",

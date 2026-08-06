@@ -26,7 +26,13 @@ jobs:
       # when it disagrees with package.json, so the published site would be
       # built from a dependency tree nobody committed — and the desync would
       # never surface here. `ci` fails instead, naming the drift.
-      - run: npm ci
+      # NOT the runner's own npm. `packageManager` in package.json is the single
+      # declaration of which npm this repository installs with, and the script
+      # below proves the CLI it resolved reports exactly that version before it
+      # installs anything — so a lockfile can never be authored under one npm
+      # and validated under another. It installs nothing globally: `npx --yes`
+      # writes only to the per-user npx cache.
+      - run: node tooling/ci/npm-toolchain.mjs ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

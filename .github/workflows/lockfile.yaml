@@ -52,5 +52,11 @@ jobs:
           node-version: 20
       # No `--ignore-scripts`, no `--no-audit` shortcut: this must be the same
       # install the build performs, or it proves something the build does not.
+      # NOT the runner's own npm. `packageManager` in package.json is the single
+      # declaration of which npm this repository installs with, and the script
+      # below proves the CLI it resolved reports exactly that version before it
+      # installs anything — so a lockfile can never be authored under one npm
+      # and validated under another. It installs nothing globally: `npx --yes`
+      # writes only to the per-user npx cache.
       - name: Install from the committed lockfile
-        run: npm ci
+        run: node tooling/ci/npm-toolchain.mjs ci
