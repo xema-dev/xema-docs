@@ -1,0 +1,56 @@
+name: Lockfile
+
+# ═══════════════════════════════════════════════════════════════════════════
+# `npm ci` IS the lockfile gate — it just had no home in this repository.
+#
+#   `npm ci` refuses to run when package.json and package-lock.json disagree,
+#   and it says exactly which dependency drifted. `npm install` does not: it
+#   silently REPAIRS the lockfile in place, so a desync passes and reappears as
+#   an unexplained diff in someone else's branch.
+#
+#   Until this workflow existed, this repository ran `npm install` on
+#   push-to-main (deploy-pages.yaml) and nothing at all on a pull request, and
+#   its Dockerfile has no npm step ("Zero npm dependencies — copy the server and
+#   the content bundle as-is"). So a package.json/package-lock.json desync
+#   could not fail anything here. It was caught instead by a scanner in the
+#   xema-monorepo aggregator, which compared the two files by hand — a second
+#   implementation of a check npm already performs, running in a repository
+#   that cannot fix what it finds.
+#
+#   This is that enforcement, moved to where the fix lives, using the tool that
+#   already knows how to do it.
+#
+# WHY ubuntu-24.04 AND NOT [self-hosted, linux]
+#
+#   xema-docs is a PUBLIC repository, and the org's self-hosted runner group
+#   sets allows_public_repositories=false — a `[self-hosted, linux]` job here
+#   queues forever and is never scheduled. Same reason deploy-pages.yaml uses a
+#   hosted runner.
+# ═══════════════════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lockfile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # No `--ignore-scripts`, no `--no-audit` shortcut: this must be the same
+      # install the build performs, or it proves something the build does not.
+      - name: Install from the committed lockfile
+        run: npm ci

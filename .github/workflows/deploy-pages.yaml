@@ -22,7 +22,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
+      # `npm ci`, not `npm install`. `install` silently REWRITES the lockfile
+      # when it disagrees with package.json, so the published site would be
+      # built from a dependency tree nobody committed — and the desync would
+      # never surface here. `ci` fails instead, naming the drift.
+      - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
