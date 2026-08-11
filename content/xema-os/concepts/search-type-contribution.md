@@ -53,7 +53,7 @@ anyone adding a per-kind branch to the frontend.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `resourceType` | string | yes | max 200 chars |
-| `defaultVisibility` | enum | yes | one of: `owner-only`, `org-shared`, `project-shared`, `space-shared`, `explicit-share` |
+| `defaultVisibility` | enum | yes | one of: `owner-only`, `org-shared`, `explicit-share` |
 
 ## The `routeTemplate` grammar
 

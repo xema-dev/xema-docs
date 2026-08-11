@@ -20,7 +20,8 @@ kb:page.write@1
 artifact:blob.read@1
 workflow:run.start@1
 workflow:publish@1
-interactive-session:create@1
+workspace:session.create@1
+workspace:session.invite@1
 agent-session:drive@1
 document:render.pdf@1
 document:template.resolve@1
