@@ -1,0 +1,211 @@
+# Capability refs this site publishes that NO producer in the platform publishes.
+#
+# Enforced by `tooling/boundaries/check-docs-capability-refs.mjs` in the
+# xema-monorepo aggregator (`pnpm run check:docs-capability-refs`). That check
+# reads every `<domain>:<name>@<major>` printed under `content/` and `src/` and
+# requires each one to be produced somewhere in code — an authorization-api seed,
+# `INITIAL_CAPABILITY_SEED`, a `*.capability.contribution.json`, a
+# `@XemaCapability` decorator or ref table, a manifest's `exposesCapabilities`,
+# a Shell built-in, or a public HTTP route annotated so the ref is DERIVED at
+# boot. Anything else must be declared here, or the gate fails.
+#
+# WHY A SIDECAR AND NOT AN INLINE MARKER
+# --------------------------------------
+# This repository publishes externally, and `content/**` is served as raw
+# Markdown to renderers this repo does not own — an HTML comment is invisible in
+# some and printed verbatim in others. A frontmatter key was the other candidate
+# and does not work either: ~15 content files have no frontmatter at all, and two
+# of them (`content/xema-os/shell.md`, `content/xema-os/cli.md`) are among the
+# heaviest ref users. A sidecar changes no published byte.
+#
+# TWO CATEGORIES, DELIBERATELY SEPARATE
+# -------------------------------------
+#   illustrative: invented to teach. No producer will ever exist and none is
+#                 owed. `hello:greet@1` is the canonical case.
+#   unpublished:  named as a REAL capability — by this site and usually by the
+#                 platform's own contracts and API descriptions too — and
+#                 produced by nothing. That is a debt, so each entry must say
+#                 what is `owed:`, and the gate prints the whole list on every
+#                 successful run.
+#
+# Both are scoped by `files:`. The same string on a page that did not invent it
+# is a different claim and may well be a typo for a real ref, so a declaration
+# never silences a ref site-wide. Entries go STALE and fail when the ref gains a
+# producer, disappears from the docs, or leaves one of its listed files.
+
+illustrative:
+  hello:greet@1:
+    reason: >-
+      The capability the "hello biome" tutorial scaffolds and then invokes. It is the worked example
+      the getting-started page builds from scratch, so a producer in this platform would defeat the
+      exercise.
+    files:
+      - content/xema-os/cli.md
+      - content/xema-os/sdk/getting-started.md
+
+  my:something@1:
+    reason: >-
+      A stand-in ref in the `xema run` synopsis. The `my:` domain is the documentation convention for
+      "your own biome's domain here" and names nothing that could exist.
+    files:
+      - content/xema-os/cli.md
+
+  my-domain:thing@2:
+    reason: >-
+      Demonstrates a MAJOR version bump — it is the only `@2` on the site and exists to show that a
+      v2 ref is declared alongside its v1. `my-domain:` is a placeholder domain.
+    files:
+      - content/xema-os/versioning.md
+
+  github-mcp:create-issue@1:
+    reason: >-
+      Written immediately after the abstract grammar `<provider-id>:<tool-name>@1` and introduced by
+      "e.g." — it illustrates how an MCP tool NAME is translated into a ref, not a ref Xema ships.
+      The real shipped ref for that path is `mcp-tool:invoke@1`.
+    files:
+      - content/xema-os/mcp-and-capabilities.md
+
+  mcp-tool:sonarqube.read@1:
+    reason: >-
+      Same translated-MCP-tool family as `github-mcp:create-issue@1`, used to show a composition node
+      attaching a third-party tool. SonarQube is not a Xema integration; `mcp-tool:invoke@1` is the
+      ref that actually exists.
+    files:
+      - content/xema-os/agent-composition/01-concepts.md
+
+  biome:incidents.list@1:
+    reason: >-
+      Introduced by "e.g." inside the cross-biome data-access procedure, standing for whatever read
+      capability a reader's own source biome would expose. There is no incidents biome.
+    files:
+      - content/xema-os/sdk/storage.md
+
+  biome:acme.support.ingestor.write@1:
+    reason: >-
+      `acme.support` is this site's standing fictional tenant biome, used to show what a
+      biome-shipped backend's own capability namespace looks like once it is installed.
+    files:
+      - content/xema-os/sdk/backend-i-ship.md
+
+  biome:acme.support.ingestor.read@1:
+    reason: >-
+      Second verb of the same fictional `acme.support` biome — the read side of the ingestor the
+      backend-authoring page walks through.
+    files:
+      - content/xema-os/sdk/backend-i-ship.md
+
+  biome:acme.support.renderer.execute@1:
+    reason: >-
+      Third verb of the same fictional `acme.support` biome, showing a second component in one
+      biome's namespace.
+    files:
+      - content/xema-os/sdk/backend-i-ship.md
+
+  connector:bank.transfer@1:
+    reason: >-
+      The site's standing fictional HIGH-RISK capability, used across four pages to make environment
+      denial, execution-context scoping and policy evaluation concrete. Every use is prefixed
+      "Example:" / "Worked example:". Xema ships no banking connector, and the only occurrence in
+      code is a policy TEST fixture (authorization-api `policies/xema_test.rego`).
+    files:
+      - content/xema-os/environments.md
+      - content/xema-os/execution-contexts.md
+      - content/xema-os/mcp-and-capabilities.md
+      - content/xema-os/policy.md
+
+  connector:erp.create-invoice-draft@1:
+    reason: >-
+      The low-risk counterpart to `connector:bank.transfer@1` in the same sentence — the environment
+      example needs one capability it denies and one it allows. Xema ships no ERP connector.
+    files:
+      - content/xema-os/environments.md
+
+  invoice:extract@1:
+    reason: >-
+      Appears inside a fictitious runner registration (`xema-runner-eu-west-gpu-04`) illustrating that
+      a remote runner advertises several capabilities. It sits beside the real `document:render.pdf@1`
+      precisely to show a mixed list; only the second one is a Xema capability.
+    files:
+      - content/xema-os/runners.md
+
+unpublished:
+  xema-shell:run@1:
+    reason: >-
+      The agent-facing Shell dispatch surface. This is NOT a docs typo — the platform names the same
+      ref in its own contracts and wire descriptions (`kernel-contracts` shell-command-descriptor,
+      `xema-shell-api` shell-run.dto.ts, its `openapi.public.json`, and both generated clients) — but
+      every one of those is prose. No producer publishes it: the Shell's built-in verbs are registered
+      as `shellCap('<verb>')` and there is no `run` verb, and the `POST /shell/run` route derives
+      `xema-shell:shell.run.run@1` instead.
+    owed: >-
+      Publish `xema-shell:run@1` from xema-shell-api (a `@XemaCapability` on the dispatch handler, which
+      also wins over the derived ref), or rename every mention across the kernel contract, the DTO, the
+      OpenAPI description and these docs to the ref that is actually published. Renaming the docs alone
+      would make them disagree with the platform's own contracts, which is why this is recorded rather
+      than "fixed" here.
+    files:
+      - content/xema-os/shell.md
+      - content/xema-os/concepts/xema-shell.md
+
+  biome-storage:collection.write@1:
+    reason: >-
+      The write half of the biome-storage SDK surface. Documented with copy-pasteable
+      `ctx.callCapability(...)` samples and a `requiresCapabilities[]` declaration, and routed in the
+      prose to `biome-storage-api` — a service the aggregator's own CLAUDE.md records as one of three
+      the charter names but that does not exist. Nothing produces the ref.
+    owed: >-
+      Ship biome-storage-api and publish the ref, or mark the storage SDK pages as not-yet-available so
+      a reader does not build against a capability that cannot resolve. Deleting the pages is not the
+      fix — they describe an intended surface, and the samples would have to be rewritten by whoever
+      owns it, not removed by a gate.
+    files:
+      - content/xema-os/sdk/storage.md
+      - content/xema-os/sdk/lifecycle-hooks.md
+      - content/xema-os/sdk/testing.md
+
+  biome-storage:collection.read@1:
+    reason: >-
+      The read half of the same unbuilt biome-storage SDK surface, documented in the same capability
+      table as its write sibling.
+    owed: >-
+      Same as `biome-storage:collection.write@1` — ship the service and publish the ref, or mark the
+      surface not-yet-available. The two must move together; a table listing one and not the other is
+      worse than either.
+    files:
+      - content/xema-os/sdk/storage.md
+
+  org-db:database.create@1:
+    reason: >-
+      Presented as a capability GATE on org-database provisioning, and described as "held exclusively
+      by platform internals". The `org-db` domain has no producer of any kind — no seed, no
+      contribution, no decorator, no annotated public route. The nearest real thing is the
+      authorization-api seed row `org_database:provision`, which is a different id space (snake_case,
+      no `@major`) and not a capability ref.
+    owed: >-
+      Publish the org-db capability family from org-database-pool-api, or rewrite the provisioning
+      table to name the authorization rows that actually gate it. Until then the table describes gates
+      that cannot be granted.
+    files:
+      - content/databases/02-provisioning.md
+
+  org-db:database.use@1:
+    reason: >-
+      Documented as the capability a biome declares to read and write its own schema, and as something
+      granted at install time via `BiomeInstallGrant`. Named only in the `org-db-explorer` MCP catalog
+      TOOL DESCRIPTIONS, which are prose, not a declaration. No producer.
+    owed: >-
+      Publish it with the rest of the org-db family, or correct the provisioning table. This one is the
+      most load-bearing of the three — an author following the page will declare it in a manifest and
+      the install grant will have nothing to bind.
+    files:
+      - content/databases/02-provisioning.md
+
+  org-db:database.migrate@1:
+    reason: >-
+      The migration gate of the same unpublished org-db family, declared by biomes alongside
+      `org-db:database.use@1` per the same paragraph. Named only in MCP catalog tool description prose.
+    owed: >-
+      Publish it with the rest of the org-db family, or correct the provisioning table. It moves with
+      `org-db:database.use@1`; the docs grant them together.
+    files:
+      - content/databases/02-provisioning.md

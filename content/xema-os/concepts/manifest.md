@@ -3,7 +3,7 @@ slug: manifest
 title: Manifest
 summary: The single declarative document at the root of a biome (or biome-shipped service) that declares its identity, version, dependencies, contributions, required zones, and optional sidecar services. The manifest is the contract between the biome and the kernel.
 relatedCommands: ["biome install", "biome publish"]
-relatedCapabilities: ["biome:install@1", "biome:publish@1"]
+relatedCapabilities: ["biome:install@1", "biome:submit-to-store@1"]
 relatedZones: ["store-review"]
 stability: stable
 ---

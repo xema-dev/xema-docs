@@ -17,19 +17,17 @@ The pilot set:
 ```
 kb:page.read@1
 kb:page.write@1
-artifact:blob.read@1
+artifact:read@1
 workflow:run.start@1
-workflow:publish@1
+workflow:control@1
 workspace:session.create@1
 workspace:session.invite@1
-agent-session:drive@1
 document:render.pdf@1
-document:template.resolve@1
-workspace:mount.apply@1
 memory:recall@1
 memory:store@1
 biome:install@1
-biome:publish@1
+biome:promote@1
+biome:submit-to-store@1
 store:biome.list@1
 connector:scm.create-pull-request@1
 connector:scm.merge@1
@@ -38,7 +36,6 @@ connector:docs.publish-page@1
 connector:chat.send-message@1
 connector:llm.invoke@1
 mcp-tool:invoke@1
-model-resolution:select@1
 ```
 
 The `@<major>` is intentional. Capability refs version like syscalls, not like packages: minor and patch changes to an implementation never break the ref. A major bump is a deliberate, additive event — v1 stays alive until callers migrate. This is the only thing in Xema that auto-versions; everything else respects the user-controlled versioning policy.

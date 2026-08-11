@@ -3,7 +3,7 @@ slug: biome
 title: Biome
 summary: The Layer-3 installable software bundle in Xema. A biome can ship agents, skills, tools, workflows, document templates, themes, deliverable specs, mount sources, artifact types, connector bindings, frontend slot contributions, optional backend services, migrations, and OS-level controllers — all declared through a single manifest.
 relatedCommands: ["biome install", "biome publish", "biome uninstall"]
-relatedCapabilities: ["biome:install@1", "biome:publish@1"]
+relatedCapabilities: ["biome:install@1", "biome:submit-to-store@1"]
 relatedZones: ["org", "sandbox", "store-review"]
 stability: stable
 ---

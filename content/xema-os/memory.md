@@ -4,7 +4,7 @@
 
 **Memory** is the structured, scoped, recall-able knowledge plane of Xema OS. It is how agents accumulate durable context across sessions and workflows without having to re-upload that context on every prompt. Memory is owned by `memory-api`; every memory document is typed, anchored to a [Space](./spaces.md), and carries provenance.
 
-Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, a scope, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:write@1`) — never through raw blob reads.
+Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, a scope, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:store@1`) — never through raw blob reads.
 
 ---
 
@@ -89,7 +89,7 @@ Reads and writes route to the correct shard via `CommitmentCacheService`, mirror
 
 - [Spaces](./spaces.md) — the broader hierarchy memory scopes mirror.
 - [Skills](./skills/) — durable how-to knowledge owned by `skill-registry-api`, complementary to memory.
-- [Capabilities](./capabilities.md) — `memory:recall@1` and `memory:write@1` are the only documented entry points.
+- [Capabilities](./capabilities.md) — `memory:recall@1` and `memory:store@1` are the only documented entry points.
 - [Policy](./policy.md) — every recall and write is policy-decided like any other capability call.
 
 ---

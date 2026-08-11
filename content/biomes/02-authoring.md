@@ -67,7 +67,7 @@ A realistic server-biome manifest:
     "description": "PR review workflows and AI reviewer agents for engineering teams.",
     "scope": "platform",
     "target": "server",
-    "requiresCapabilities": ["kb:page.write@1", "artifact:blob.read@1"],
+    "requiresCapabilities": ["kb:page.write@1", "artifact:read@1"],
     "exposesCapabilities": [],
     "permissions": {
       "defaultProfile": "internal-agent",
@@ -78,7 +78,7 @@ A realistic server-biome manifest:
           "riskTier": "medium"
         },
         {
-          "capability": "artifact:blob.read@1",
+          "capability": "artifact:read@1",
           "reason": "Reads the PR diff artifact produced by the trigger workflow.",
           "riskTier": "low"
         }

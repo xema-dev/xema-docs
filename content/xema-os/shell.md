@@ -98,12 +98,12 @@ All built-in. None are biome-contributed. Each is a thin capability:
 | `xema inspect <path-or-ref>` | `xema-shell:inspect@1` | Structured dump (manifest, grants, lifecycle, versions) |
 | `xema ls <xvfs-path>` | `xema-shell:ls@1` | List children of an XVFS path |
 | `xema cat <xvfs-path>` | `xema-shell:cat@1` | Read object payload |
-| `xema run <ref>` | `xema-shell:run-target@1` | Invoke a workflow / composition |
+| `xema run <ref>` | `xema-shell:run-object@1` | Invoke a workflow / composition |
 | `xema grant <subject> <capability> ...` | `xema-shell:grant@1` | Issue a capability grant |
 | `xema capabilities explain <ref>` | `xema-shell:capability.explain@1` | Required zones, default grants, audit policy |
 | `xema environment explain <env>` | `xema-shell:environment.explain@1` | Environment semantics + allowed capabilities |
 | `xema biome install <ref>` | `biome:install@1` | Install a biome into a environment |
-| `xema biome publish <path>` | `biome:publish@1` | Submit a biome to the [Store](./store.md) |
+| `xema biome publish <path>` | `biome:submit-to-store@1` | Submit a biome to the [Store](./store.md) |
 | `xema memory recall <query>` | `memory:recall@1` | Search subject-scoped memory |
 | `xema why-denied <auditId>` | `xema-shell:audit.read@1` | Structured "why was this call denied" |
 | `xema doctor [target]` | `xema-shell:doctor@1` | Static + runtime health check |
@@ -132,7 +132,7 @@ Hard constraints:
 - The PTY runs in the `sandbox` execution environment only. Production zones are refused at the gateway.
 - The PTY has no org credentials and no production data access.
 - The PTY is the **only** place in Xema where a literal shell exists. Every other "terminal" surface is the structured Xema Shell.
-- Authorization: a sandbox-environment grant for `biome:sandbox-terminal.open@1` is required; the grant is scoped to the calling subject's own draft biome installation.
+- Authorization: a sandbox-environment grant for `biome:sandbox.terminal@1` is required; the grant is scoped to the calling subject's own draft biome installation.
 
 The split is deliberate: the Xema Shell stays auditable, replayable, and parseable; sandbox terminals stay isolated, ephemeral, and bounded to biome authoring.
 
