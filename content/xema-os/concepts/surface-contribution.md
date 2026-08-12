@@ -5,7 +5,7 @@ summary: "The manifest a biome ships to register a render kind a Vista preview t
 relatedCommands: ["biome install","biome publish"]
 relatedCapabilities: []
 relatedZones: []
-stability: experimental
+stability: stable
 ---
 
 <!--
@@ -16,11 +16,7 @@ stability: experimental
     pnpm run docs:extension-surface
 -->
 
-Contribution kind: `surface-kind`. Ingestion: declared category 1 — parser NOT shipped yet, contributions are ignored.
-
-> **Not yet ingested.** The kernel owns this contribution shape, but the per-kind
-> parser is not shipped. A contribution of this kind is currently a no-op — the
-> schema below is the contract to author against, not a live delivery path.
+Contribution kind: `surface-kind`. Ingestion: biome-host parser (`SurfaceKindParser`).
 
 A **surface** is what the agent opens in a preview tab. A biome contributes its own
 render kind so its frontend can register a renderer for it. The catalogue namespaces

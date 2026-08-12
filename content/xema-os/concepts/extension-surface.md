@@ -36,8 +36,8 @@ loads implicitly:
 ## The state of the contribution protocol
 
 The kernel declares **30** contribution kinds.
-**21** are ingested today by a `biome-host-api` parser;
-**9** are not — they are either handled by a domain service
+**23** are ingested today by a `biome-host-api` parser;
+**7** are not — they are either handled by a domain service
 directly, or reserved for protocol completeness with a different (content-directory)
 delivery path. Shipping a contribution of a kind with no ingestion path is a silent
 no-op, which is why the catalog states the fact per kind rather than implying

@@ -51,7 +51,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `agent-kernel` | `ContributionKind.AgentKernel` | biome-host parser (`AgentKernelParser`) | — |
 | `model-resolution-dimension` | `ContributionKind.ModelResolutionDimension` | domain-service handler / self-registration (category 2) | Ingested by `llm-registry-api`'s `ModelStrategyBootstrapService` — a `BootstrapContributionsService` handler that loads the kernel-shipped `strategies/*.yaml` and upserts model-resolution strategies. |
 | `widget-kind` | `ContributionKind.WidgetKind` | biome-host parser (`WidgetKindParser`) | — |
-| `surface-kind` | `ContributionKind.SurfaceKind` | declared category 1 — parser NOT shipped yet, contributions are ignored | A VISTA SURFACE KIND contributed by a biome: the render kind a Vista preview tab can hold, declared as a bare biome-local slug plus a version, display name, summary, and an opaque JSON `payloadSchema`. |
+| `surface-kind` | `ContributionKind.SurfaceKind` | biome-host parser (`SurfaceKindParser`) | A VISTA SURFACE KIND contributed by a biome: the render kind a Vista preview tab can hold, declared as a bare biome-local slug plus a version, display name, summary, and an opaque JSON `payloadSchema`. |
 | `artifact-type` | `ContributionKind.ArtifactType` | biome-host parser (`ArtifactTypeParser`) | An artifact type contributed by a biome to the artifact-store schema-version registry (`ArtifactTypeRegistryService`). |
 | `inquiry-kind` | `ContributionKind.InquiryKind` | biome-host parser (`InquiryKindParser`) | An inquiry kind contributed by a biome to the inquiry-contracts `InquiryKindSchemaRegistry` (`kind-registry.ts`). |
 | `role-capability` | `ContributionKind.RoleCapability` | biome-host parser (`RoleCapabilityParser`) | A role capability bundle contributed by a biome. |
@@ -69,7 +69,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `opencode-plugin` | `ContributionKind.OpenCodePlugin` | RESERVED — no contribution ingestion (category 3) | No parser, and the contribution-registrar deliberately does NOT route this kind — its own unit test uses this member as the canonical "not routed" fixture. |
 | `capability` | `ContributionKind.Capability` | biome-host parser (`CapabilityParser`) | A `CapabilityRef` descriptor contributed by a biome — title, summary, I/O schemas, risk tier, and approval flag. |
 | `resource-ownership` | `ContributionKind.ResourceOwnership` | biome-host parser (`ResourceOwnershipParser`) | A resource-instance ownership/visibility declaration contributed by a biome — `resourceType` + `resourceId` + a `ResourceVisibilityPattern` + the owning subjects (and optional explicit shares). |
-| `resource-definition` | `ContributionKind.ResourceDefinition` | declared category 1 — parser NOT shipped yet, contributions are ignored | A provider-neutral resource definition contributed by a biome: namespaced key, exact unit, measurement/aggregation semantics, bounded dimensions, supported limit kinds, and usage-export capability. |
+| `resource-definition` | `ContributionKind.ResourceDefinition` | biome-host parser (`ResourceDefinitionParser`) | A provider-neutral resource definition contributed by a biome: namespaced key, exact unit, measurement/aggregation semantics, bounded dimensions, supported limit kinds, and usage-export capability. |
 | `stage-machine` | `ContributionKind.StageMachine` | biome-host parser (`StageMachineParser`) | A deterministic asset stage machine contributed by a domain biome to a stage-machine host (today: `mailops-api`). |
 | `search-type` | `ContributionKind.SearchType` | biome-host parser (`SearchTypeParser`) | A search RESULT-TYPE declaration contributed by a biome — the `XemaObjectKind`/`docType` it covers, render/route hints (label, icon, deep-link template), the searchable-field set + embedding-eligibility default, and the authz mapping (`resourceType` + default `ResourceVisibilityPattern`). |
 | `credential-strategy` | `ContributionKind.CredentialStrategy` | biome-host parser (`CredentialStrategyParser`) | A DECLARATIVE credential-mint strategy contributed by a connector biome — the open credential-kind key it registers, the projection SCHEME (`bearer` / `basic` / `header`), and the field/template selectors that map a custody-resolved credential into an outbound token. |
@@ -83,13 +83,11 @@ Do not ship a contribution of these kinds expecting it to be picked up by
 
 - `mount-source` — domain-service handler / self-registration (category 2)
 - `model-resolution-dimension` — domain-service handler / self-registration (category 2)
-- `surface-kind` — declared category 1 — parser NOT shipped yet, contributions are ignored
 - `biome-install-schema` — RESERVED — no contribution ingestion (category 3)
 - `icon` — RESERVED — no contribution ingestion (category 3)
 - `provisioning-scaffold` — RESERVED — no contribution ingestion (category 3)
 - `opencode-tool` — RESERVED — no contribution ingestion (category 3)
 - `opencode-plugin` — RESERVED — no contribution ingestion (category 3)
-- `resource-definition` — declared category 1 — parser NOT shipped yet, contributions are ignored
 
 ## Adding a kind
 
