@@ -49,7 +49,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, not 20: `astro` declares `engines.node: >=22.12.0`, as do
+          # `@astrojs/compiler-rs` and `@astrojs/prism`. Node 20 is excluded
+          # outright, so an install here would not be the install the build
+          # performs — which is the one thing this job exists to prove. Keep
+          # this in lockstep with deploy-pages.yaml.
+          node-version: 22
       # No `--ignore-scripts`, no `--no-audit` shortcut: this must be the same
       # install the build performs, or it proves something the build does not.
       # NOT the runner's own npm. `packageManager` in package.json is the single
