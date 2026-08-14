@@ -27,7 +27,7 @@ ergonomic:
 1. **Contribution file** — `contributions/<slug>.capability.contribution.json`
    with `{ "kind": "capability", "manifest": { … } }`, or the equivalent
    `xema.contributions.inline[]` entry. No codegen step.
-2. **Decorator** — annotate a NestJS provider method with the full `@XemaCapability`
+2. **Decorator** — annotate a service provider method with the full `@XemaCapability`
    option set and opt the service into the boot-time registration scanner. A partial
    descriptor is skipped, never silently defaulted.
 
