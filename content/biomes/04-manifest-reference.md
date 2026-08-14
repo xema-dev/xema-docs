@@ -288,6 +288,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `revision` | string | yes | pattern `/^v[1-9]\d*$/` |
 | `serviceName` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
 | `displayName` | string | no | — |
+| `description` | string | no | — |
 | `basePath` | string | no | pattern `/^\//` |
 | `openapi` | string | no | — |
 | `authScopes` | enum[] | yes | entries one of: `public`, `org`, `project`, `installation` |
