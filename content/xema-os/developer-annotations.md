@@ -1,6 +1,6 @@
 # Developer Annotations
 
-Xema OS replaces handwritten permission manifests, route manifests, and capability manifests with **NestJS decorators that are the source of truth**. A developer writes a controller; convention inference turns it into a registered set of permissions, capabilities, and route entries at boot. The admin manages policy around those generated entries; the developer writes minimal annotations.
+Xema OS replaces handwritten permission manifests, route manifests, and capability manifests with **decorators that are the source of truth**. A developer writes a controller; convention inference turns it into a registered set of permissions, capabilities, and route entries at boot. The admin manages policy around those generated entries; the developer writes minimal annotations.
 
 This page documents the decorator set, the convention-inference rules, and the escape hatches.
 
@@ -212,7 +212,7 @@ import { XemaRuntimeModule } from '@xemahq/xema-decorators';
     XemaRuntimeModule.forService({
       serviceName: 'invoice-api',
       serviceKind:  'biome-api',       // 'platform-service' | 'biome-api' | 'cli'
-      discovery:    'decorators',      // or 'manual' for non-NestJS services
+      discovery:    'decorators',      // or 'manual' where decorator scanning is unavailable
       policy:       'fail-closed',     // or 'fail-open' (dev only)
     }),
   ],

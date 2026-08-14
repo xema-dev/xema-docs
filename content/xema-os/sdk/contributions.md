@@ -82,7 +82,7 @@ The contribution kinds that benefit from a directory:
 }
 ```
 
-The runtime mounts the entire directory contents at the appropriate location — for `agent-skill`, that is `/workspace/.opencode/skills/<slug>/`. The platform reads only the contract files in the bundle (`SKILL.md` for skills); everything else is mounted as-is for the agent to discover.
+The runtime mounts the entire directory contents at the appropriate location — for `agent-skill`, that is the agent runtime's skills location inside the workspace, under a directory named after the contribution's `slug`. The platform reads only the contract files in the bundle (`SKILL.md` for skills); everything else is mounted as-is for the agent to discover.
 
 ---
 

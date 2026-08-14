@@ -34,7 +34,7 @@ Consumption is three pieces of code inside the biome's shipped service:
 
 1. **A descriptor** — declare the event you consume with `defineEvent` from `@xemahq/events`, giving its `type`, `source`, and a Zod schema for `data`. This is the runtime contract the transport validates delivered payloads against.
 2. **A consumed-events registry** — collect the descriptors your service consumes into a `consumed-events.registry.ts` array. The service module registers this array so the event hub knows which types to deliver to this service.
-3. **A handler** — a NestJS provider method decorated with `@OnCloudEvent(<descriptor>)` that receives the validated envelope and does the work.
+3. **A handler** — a provider method in your service decorated with `@OnCloudEvent(<descriptor>)` that receives the validated envelope and does the work.
 
 ### 1. Declare the descriptor
 
@@ -70,7 +70,6 @@ The service's `@xemahq/events` module registration takes the descriptor array so
 ### 3. Handle the delivered event
 
 ```ts
-import { Injectable } from '@nestjs/common';
 import { OnCloudEvent } from '@xemahq/events';
 
 import { StoreInstallCreatedConsumed } from '../events/consumed/consumed-events.registry';
@@ -87,6 +86,8 @@ export class StoreInstallConsumerService {
   }
 }
 ```
+
+Only the Xema import is shown. `@Injectable()` comes from your service framework's own package — register the handler class as a provider in your module the usual way, and the SDK discovers its `@OnCloudEvent` methods at boot.
 
 Rules:
 

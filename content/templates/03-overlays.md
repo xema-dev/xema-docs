@@ -7,7 +7,7 @@ Overlays extend deliverable specs with additional requirements — without modif
 ## Why Overlays?
 
 Consider a `requirements-standard` spec used by all teams. Some requirements vary:
-- Teams building NestJS/Prisma services need database migration requirements
+- Teams building Spring Boot / JPA services need database migration requirements
 - Security-sensitive work needs threat model sections
 - User-facing features need accessibility criteria
 
@@ -42,7 +42,7 @@ The platform ships these overlays out of the box:
 
 | Tag | Category | Added Requirements |
 |-----|----------|-------------------|
-| `stack:nestjs-prisma` | stack | API endpoints, Prisma schema changes, DB migrations |
+| `stack:spring-jpa` | stack | API endpoints, JPA entity changes, DB migrations |
 | `stack:nextjs-vercel` | stack | Next.js page changes, Vercel config, edge compatibility |
 | `concern:security` | concern | Threat model, auth/authz, input validation, OWASP checklist |
 | `concern:performance` | concern | Performance budgets, profiling guidance, caching strategy |
@@ -64,7 +64,7 @@ The platform automatically applies overlays when:
 Tags have two parts: `category:value`.
 
 **Stack tags** (`stack:*`) — Technology stack the project uses:
-- `stack:nestjs-prisma`
+- `stack:spring-jpa`
 - `stack:nextjs-vercel`
 - `stack:react-native`
 - `stack:python-fastapi`
@@ -79,7 +79,7 @@ Tags have two parts: `category:value`.
 
 ### Setting Project Tags
 
-Project tags are configured in the Project Registry. When a workflow runs in a project tagged `stack:nestjs-prisma`, all overlays with that tag are automatically applied to specs used in that project.
+Project tags are configured in the Project Registry. When a workflow runs in a project tagged `stack:spring-jpa`, all overlays with that tag are automatically applied to specs used in that project.
 
 ---
 
@@ -93,17 +93,17 @@ curl -X POST "https://deliverable-specs-api.xema.dev/deliverable-specs/{specId}/
   -H "Content-Type: application/json" \
   -d '{
     "tagCategory": "stack",
-    "tagValue": "nestjs-prisma",
-    "content": "## NestJS/Prisma Implementation Requirements\n\n### API Endpoints\n...\n\n### Prisma Schema\n..."
+    "tagValue": "spring-jpa",
+    "content": "## Spring Boot / JPA Implementation Requirements\n\n### API Endpoints\n...\n\n### JPA Entities\n..."
   }'
 ```
 
 ### Overlay Content Examples
 
-**NestJS/Prisma overlay** (appended to any spec with `stack:nestjs-prisma` match):
+**Spring Boot / JPA overlay** (appended to any spec with `stack:spring-jpa` match):
 
 ```markdown
-## NestJS/Prisma Specific Requirements
+## Spring Boot / JPA Specific Requirements
 
 ### New API Endpoints
 
@@ -114,9 +114,9 @@ For each new endpoint, document:
 - Authorization requirements
 - Error response codes
 
-### Prisma Schema Changes
+### JPA Entity Changes
 
-List all new/modified Prisma models:
+List all new/modified JPA entities:
 - New fields with types and constraints
 - New relations and their cardinality
 - Indexes required for query performance
@@ -234,21 +234,21 @@ curl -X DELETE "https://deliverable-specs-api.xema.dev/deliverable-specs/{specId
 
 ```
 requirements-standard@1.0.0 (base)
-├── stack:nestjs-prisma overlay     → appends NestJS/DB requirements
+├── stack:spring-jpa overlay        → appends Spring Boot/DB requirements
 ├── stack:nextjs-vercel overlay     → appends Next.js/Vercel requirements
 ├── concern:security overlay        → appends threat model section
 ├── concern:performance overlay     → appends performance budgets
 └── concern:accessibility overlay   → appends WCAG checklist
 ```
 
-**When a NestJS project with security requirements runs:**
+**When a Spring Boot project with security requirements runs:**
 
 ```
 requirements-standard@1.0.0
-  + stack:nestjs-prisma overlay
+  + stack:spring-jpa overlay
   + concern:security overlay
   ═══════════════════════════
-  = Full requirements doc with NestJS and security sections
+  = Full requirements doc with Spring Boot and security sections
 ```
 
 **When a Next.js frontend runs:**

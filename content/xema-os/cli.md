@@ -68,7 +68,7 @@ Stop with `Ctrl+C`. Data persists across runs unless `--ephemeral` is passed.
 
 ### `xema serve`
 
-Run Xema in a multi-process self-host profile (Postgres + state store + cache + event hub + identity provider already provisioned by you). Used for single-VM and cluster deployments — the same binary, a different profile.
+Run Xema in a multi-process self-host profile (SQL database + state store + cache + event hub + identity provider already provisioned by you). Used for single-VM and cluster deployments — the same binary, a different profile.
 
 ```bash
 xema serve --profile=single-instance

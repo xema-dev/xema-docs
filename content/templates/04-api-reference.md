@@ -182,7 +182,7 @@ Returns distinct filter values for building search UIs.
   "phases": ["requirements", "design", "implementation", "review"],
   "workTypes": ["documentation", "architecture", "feature", "bugfix"],
   "complexities": ["low", "medium", "high"],
-  "tags": ["security", "architecture", "nestjs", "performance", ...]
+  "tags": ["security", "architecture", "spring-jpa", "performance", ...]
 }
 ```
 
@@ -278,7 +278,7 @@ POST /deliverable-specs/{id}/overlay-bindings
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `tagCategory` | string | Yes | `stack` \| `concern` |
-| `tagValue` | string | Yes | Tag value (e.g., `nestjs-prisma`) |
+| `tagValue` | string | Yes | Tag value (e.g., `spring-jpa`) |
 | `content` | string | Yes | Markdown content to append |
 | `scope` | string | No | `org` \| `org_override` (default `org`) |
 
@@ -312,9 +312,9 @@ GET /deliverable-specs/{id}/overlay-bindings
       "id": "binding_xyz",
       "specId": "spec_abc123",
       "tagCategory": "stack",
-      "tagValue": "nestjs-prisma",
+      "tagValue": "spring-jpa",
       "scope": "org",
-      "content": "## NestJS/Prisma Requirements...",
+      "content": "## Spring Boot / JPA Requirements...",
       "createdAt": "2026-04-27T10:00:00Z"
     }
   ]

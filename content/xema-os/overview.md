@@ -93,9 +93,9 @@ Xema OS deploys in three shapes from the same codebase. There is no fork between
 | Profile | Use case | KernelState | Service data DB | Cache | Event substrate | Identity |
 |---|---|---|---|---|---|---|
 | `dev` | Single developer, `xema dev` single binary | SQLite (in-process) | SQLite (per-service file) | in-memory | in-process event hub | stub OIDC |
-| `single-instance` | Small org self-hosting on one VM | SQLite (file at `/var/lib/xema/kernel-state.sqlite`) | Postgres | Redis | event hub | Keycloak |
-| `cluster` | Production multi-node | etcd cluster | Postgres | Redis | event hub | Keycloak |
-| `managed-cloud` | Hosted Xema, multi-tenant | etcd cluster | Postgres (multi-tenant) | Redis | event hub | Keycloak federated |
+| `single-instance` | Small org self-hosting on one VM | SQLite (file at `/var/lib/xema/kernel-state.sqlite`) | SQL database | Redis | event hub | Keycloak |
+| `cluster` | Production multi-node | etcd cluster | SQL database | Redis | event hub | Keycloak |
+| `managed-cloud` | Hosted Xema, multi-tenant | etcd cluster | SQL database (multi-tenant) | Redis | event hub | Keycloak federated |
 
 Three deployment shapes, one codebase. Capability calls produce identical `PolicyDecision` outputs across all four profiles for the same `ExecutionContext`.
 

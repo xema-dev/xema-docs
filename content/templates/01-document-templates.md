@@ -351,7 +351,7 @@ Or set at session creation if the spec is known upfront.
 
 | Tag | Applied When |
 |-----|-------------|
-| `stack:nestjs-prisma` | NestJS + Prisma projects |
+| `stack:spring-jpa` | Spring Boot + JPA projects |
 | `stack:nextjs-vercel` | Next.js + Vercel projects |
 | `concern:security` | Security-sensitive workflows |
 | `concern:performance` | Performance-critical systems |
@@ -368,10 +368,10 @@ An overlay appends content to a base spec:
 ...
 ```
 
-**Overlay** (`stack:nestjs-prisma`):
+**Overlay** (`stack:spring-jpa`):
 ```markdown
-## NestJS/Prisma Specific Requirements
-- Describe Prisma schema changes
+## Spring Boot / JPA Specific Requirements
+- Describe JPA entity changes
 - List new API endpoints and their contracts
 - Document database migration requirements
 ```
@@ -381,7 +381,7 @@ An overlay appends content to a base spec:
 # Requirements Document
 ...
 
-## NestJS/Prisma Specific Requirements
+## Spring Boot / JPA Specific Requirements
 ...
 ```
 
@@ -394,7 +394,7 @@ The platform evaluates the project's stack tags and automatically applies matchi
 POST /deliverable-specs/{specId}/overlay-bindings
 {
   "tagCategory": "stack",
-  "tagValue": "nestjs-prisma",
+  "tagValue": "spring-jpa",
   "content": "## Database Schema Requirements\n\n..."
 }
 ```

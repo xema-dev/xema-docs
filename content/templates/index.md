@@ -22,7 +22,7 @@ Without a spec, an agent produces **free-form output** — which may be inconsis
 - The agent understands exactly what sections a document should have
 - The platform validates the output automatically
 - Org-specific overrides can tailor the spec to your standards
-- Overlays automatically extend specs for NestJS, security, accessibility, etc.
+- Overlays automatically extend specs for a project's technology stack, security, accessibility, etc.
 
 ---
 
