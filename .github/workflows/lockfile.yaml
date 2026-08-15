@@ -65,3 +65,9 @@ jobs:
       # writes only to the per-user npx cache.
       - name: Install from the committed lockfile
         run: node tooling/ci/npm-toolchain.mjs ci
+      # `node` directly, not `npm run`: the gate is self-contained (node
+      # builtins only) and must stay runnable from a bare checkout with no
+      # install, so it can never become a check that only runs once something
+      # else has already succeeded.
+      - name: Every tracked source file is readable by search
+        run: node tooling/boundaries/lib/source-readability.mjs

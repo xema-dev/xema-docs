@@ -15,7 +15,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "check:source-readability": "node tooling/boundaries/lib/source-readability.mjs"
   },
   "devDependencies": {
     "astro": "^7.2.2"
