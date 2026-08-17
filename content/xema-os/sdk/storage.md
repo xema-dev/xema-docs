@@ -58,7 +58,7 @@ The `storage` block sits inside the `xema` block of `xema-biome.json`:
 | `isolation` | yes | Closed enum: `org` \| `project` \| `sandbox` — the tenant grain rows are partitioned on |
 | `uninstallPolicy` | yes | Closed enum: `retain` \| `drop-on-uninstall` — what `biome-host-api` does to the collection when the biome is removed |
 
-Schemas declared in `xema-biome.json` are forwarded to `biome-storage-api` at install time. Breaking-schema upgrades (incompatible field type changes, dropped indexed columns) are rejected with a 409 — bump the biome's major version and ship a migration through `onUpgrade` (see [Lifecycle Hooks](./lifecycle-hooks.md)).
+Schemas declared in `xema-biome.json` are forwarded to `biome-storage-api` at install time. Breaking-schema upgrades (incompatible field type changes, dropped indexed columns) are rejected with a 409 — bump the biome's major version and run the migration from your biome service on startup, guarded by a stored schema version. (The manifest's `onUpgrade` hook is declared but never invoked — see [Lifecycle Hooks](./lifecycle-hooks.md).)
 
 ---
 
@@ -145,7 +145,7 @@ The Object Registry indexes exposed datasets so they appear in [XVFS](../concept
 
 - [Manifest reference](./manifest.md) — the `storage` block
 - [Backend I ship](./backend-i-ship.md) — when to ship a relational database schema instead
-- [Lifecycle Hooks](./lifecycle-hooks.md) — `onUpgrade` for schema migrations, `onUninstall` for explicit cleanup
+- [Lifecycle Hooks](./lifecycle-hooks.md) — why `onUpgrade` / `onUninstall` cannot carry migrations or cleanup yet
 - [Capabilities](../capabilities.md) — the gateway every read / write routes through
 
 ---

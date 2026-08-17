@@ -160,32 +160,9 @@ The parser enforces the closed field-type set, the `enum` requirement of a non-e
 
 ## Lifecycle hook tests
 
-Test hooks the same way as event handlers — pass a mock `BiomeLifecycleHookContext`, assert on capability calls:
+There is nothing to test. The manifest's `lifecycle` block is **declared but never invoked** — no host resolves the module paths it names, so a hook module has no caller to test against. See [Lifecycle Hooks](./lifecycle-hooks.md).
 
-```ts
-import onInstall from '../dist/hooks/on-install.js';
-
-it('seeds the default incident row', async () => {
-  const callCapability = vi.fn().mockResolvedValue({});
-
-  await onInstall({
-    installationId: 'inst-1',
-    orgId: 'org_acme',
-    projectId: 'proj_main',
-    previousVersion: null,
-    currentVersion: '1.0.0',
-    environment: 'environment:org',
-    callCapability,
-  } as any);
-
-  expect(callCapability).toHaveBeenCalledWith(
-    'biome-storage:collection.write@1',
-    expect.objectContaining({ collection: 'incidents' }),
-  );
-});
-```
-
-Run the same call twice to assert idempotency — the host may retry a failed transition, and the hook must not double-write.
+Install-time work that actually runs belongs in your biome service's startup path; test it the same way you test any other service startup.
 
 ---
 
@@ -200,7 +177,7 @@ The platform's own test-suite (`test-suite/`) gives a working local stack. See t
 ## Related pages
 
 - [Manifest reference](./manifest.md) — what to validate
-- [Lifecycle Hooks](./lifecycle-hooks.md) — what to stub-test
+- [Lifecycle Hooks](./lifecycle-hooks.md) — why there is nothing to stub-test yet
 - [Events I subscribe](./events-i-subscribe.md) — the event envelope shape
 - [Storage](./storage.md) — the collection-schema parser
 - [Publishing](./publishing.md) — why catching errors here matters

@@ -128,7 +128,7 @@ The full registry is exposed via `xema concepts` and `xema concept event-type` i
 
 - [Backend I ship](./backend-i-ship.md) — the service a biome needs before it can consume events
 - [Capabilities](../capabilities.md) — how the calls a handler makes are authorised
-- [Lifecycle Hooks](./lifecycle-hooks.md) — for transitions tied to a biome's own lifecycle (not platform events)
+- [Lifecycle Hooks](./lifecycle-hooks.md) — the biome's own lifecycle transitions, and why nothing fires on them yet
 
 ---
 

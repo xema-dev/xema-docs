@@ -17,8 +17,9 @@ A biome ships its own API when it needs:
 
 A biome should **not** ship an API when its needs fit:
 
-- a few collections of structured rows — use [biome-storage-api collections](./storage.md);
-- one-shot install / uninstall housekeeping — use [lifecycle hooks](./lifecycle-hooks.md).
+- a few collections of structured rows — use [biome-storage-api collections](./storage.md).
+
+One-shot install / uninstall housekeeping is **not** an exception today: the manifest's [lifecycle hooks](./lifecycle-hooks.md) are declared but never invoked, so that work needs a shipped service to run it on startup.
 
 Consuming platform events, by contrast, **does** require a shipped service — the event consumers register inside it. See [Events I consume](./events-i-subscribe.md).
 

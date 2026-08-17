@@ -165,7 +165,7 @@ The `defaultProfile` (e.g. `read-only-assistant`, `support-chatbot`, `connector-
 
 ## `lifecycle` (Phase 6)
 
-Optional hook modules invoked at biome lifecycle transitions. Each hook runs in the biome's own capability set — it cannot do anything the biome itself cannot do at runtime.
+Optional module paths, one per biome lifecycle transition. **Declared but never invoked** — the manifest parser validates that each value is a non-empty string, and nothing else happens. No host resolves the paths, so declaring this block has no runtime effect. See [Lifecycle Hooks](./lifecycle-hooks.md).
 
 ```jsonc
 "lifecycle": {
@@ -177,7 +177,7 @@ Optional hook modules invoked at biome lifecycle transitions. Each hook runs in 
 }
 ```
 
-The kernel calls these at the corresponding `BiomeLifecycle` transitions inside the biome's owning environment.
+The field names above record the intended `BiomeLifecycle` transition for each path. Until a host invokes them, put install-time work in the biome's own service startup.
 
 ---
 

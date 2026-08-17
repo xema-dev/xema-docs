@@ -1,14 +1,16 @@
 # SDK — Lifecycle Hooks
 
-Biomes may declare optional **lifecycle hooks** — module entry points that `biome-host-api` invokes at the corresponding [biome lifecycle](../biomes.md#the-biome-lifecycle) transitions. Hooks run with the biome's own capability set; they can do nothing the biome itself cannot do at runtime.
+> **Status: declared, not yet invoked.** The `lifecycle` block is a real, validated field of `xema-biome.json`, and a manifest that declares it is accepted today. **Nothing loads or runs the modules it names.** There is no host that resolves a hook path, no context object, and no transition at which a hook fires. Declaring the block has no runtime effect whatsoever.
+>
+> This page documents the **declaration** so the field's meaning is unambiguous and manifests written against it stay valid. Do not build a biome that depends on a hook running — it will not run, and it will not error either. Put install-time work in the biome's own service startup instead (see [Backend I ship](./backend-i-ship.md)).
 
-The hook contract is declared in the `lifecycle` block of `xema-biome.json`. The kernel schema is `BiomeLifecycleHooksSchema` in `@xemahq/biome-contracts`.
+Biomes may declare a **`lifecycle` block** naming module entry points intended to run at [biome lifecycle](../biomes.md#the-biome-lifecycle) transitions. The schema is `BiomeLifecycleHooksSchema`, exported from `@xemahq/kernel-contracts`.
 
 ---
 
 ## The `lifecycle` block
 
-Five optional hook fields, each one a module path relative to the biome package root:
+Five optional fields, each a module path relative to the biome package root:
 
 ```jsonc
 "lifecycle": {
@@ -20,81 +22,46 @@ Five optional hook fields, each one a module path relative to the biome package 
 }
 ```
 
-| Field | Fires on | Typical use |
-|---|---|---|
-| `onInstall` | `draft → sandbox-installed` or `store-approved → org-installed` for a new install | Seed default rows in the biome's storage, register MCP tools, create connector binding shells |
-| `onUninstall` | `org-installed → archived` or explicit uninstall | Drop the biome's collections (subject to `storage.uninstallPolicy`); clean external connector shells |
-| `onUpgrade` | Major / minor / patch swap of a published version | Run data-migration code; rewrite stored documents to the new schema |
-| `onEnable` | An admin re-enables a previously disabled installation | Resubscribe to events, rehydrate caches |
-| `onDisable` | An admin disables an installation without uninstalling | Pause subscriptions, mark caches stale |
+| Field | Intended transition |
+|---|---|
+| `onInstall` | A new installation is created |
+| `onUninstall` | An installation is archived or explicitly uninstalled |
+| `onUpgrade` | A published version is swapped for another |
+| `onEnable` | An admin re-enables a previously disabled installation |
+| `onDisable` | An admin disables an installation without uninstalling |
 
-Every field is optional. The kernel does not load the module at manifest-parse time — it only validates that the manifest declares well-formed strings. The host loads the module at the transition.
-
----
-
-## Where hooks run
-
-- Each hook runs in the same execution environment the biome itself runs in for that installation (typically `org` or `sandbox`).
-- The hook process inherits the biome's `BiomeInstallGrant` — every capability call it makes goes through `xema-capability-router` exactly like any other biome call.
-- Hooks never receive raw credentials. To call an external service (push a webhook, post to Slack), they invoke the matching `connector:*` [capability](../capabilities.md).
-
-The hook is **not** a free-form privilege escalation — if the biome itself cannot do something at runtime, the hook cannot either. This is by design.
+Every field is optional, and the table above describes **intent, not behaviour** — no transition currently invokes anything.
 
 ---
 
-## Hook module shape
+## What actually happens today
 
-A hook module is a CommonJS or ESM module that default-exports an async function:
+Exactly one thing: **validation of the strings**.
 
-```ts
-// dist/hooks/on-install.js
-import type { BiomeLifecycleHookContext } from '@xemahq/biome-host-sdk';
+- The manifest parser checks that each declared value is a non-empty string. That is the whole of it.
+- The module path is never resolved. The file it names need not exist — a `lifecycle` block pointing at a path that was never built parses clean.
+- No transition loads a module, so a hook cannot fail, cannot be retried, and produces no audit entry.
 
-export default async function onInstall(ctx: BiomeLifecycleHookContext): Promise<void> {
-  // ctx.installationId  — string
-  // ctx.orgId           — string
-  // ctx.projectId       — string | null (null when scope=org)
-  // ctx.previousVersion — semver | null (null on fresh install)
-  // ctx.currentVersion  — semver
-  // ctx.environment            — ExecutionZoneRef
-  // ctx.callCapability  — (ref, input) => Promise<unknown>
-  await ctx.callCapability('biome-storage:collection.write@1', {
-    collection: 'incidents',
-    row: { id: 'seed-1', body: 'welcome', status: 'open' },
-  });
-}
-```
-
-The context object is the only thing the kernel passes to the hook. There are no globals, no `process.env` access beyond what the canonical service Dockerfile permits, and no direct DB handles. The hook talks to Xema through `ctx.callCapability` and nothing else.
+Because the block is validated but inert, a biome that declares it is not broken; it simply gets nothing. The field is kept in the schema — rather than deleted — because it is part of the published manifest surface that third-party bundles are parsed against, and removing it would reject manifests already written to it.
 
 ---
 
-## Idempotency and retries
+## If you need install-time work now
 
-Lifecycle transitions are mediated by capability calls (`biome:install@1`, `biome:promote@1`, …) and audited; the host retries failed transitions with exponential backoff. Hooks **must** be idempotent — the host may invoke them more than once for one logical transition. Reasonable patterns:
+Until hooks are invoked, use a mechanism that actually runs:
 
-- Upsert-or-noop on every `onInstall` write.
-- Read the current schema version before running `onUpgrade` migrations; skip when already at the target version.
-- Delete with `WHERE … AND not-yet-deleted` predicates on `onUninstall`.
-
-The host wraps hook invocation in a structured audit-log entry — failures are visible via `xema why-denied <auditId>` (see [Shell](../shell.md)).
-
----
-
-## Capability requirements
-
-Hooks count against the biome's `requiresCapabilities[]` like any other code path. If `onInstall` calls `connector:tracker.issue.create@1`, that ref must appear in the manifest's `requiresCapabilities[]` and in the Stage-1 [permission digest](../biomes.md#install--stage-1-consent). Otherwise the gateway denies the call at runtime.
-
-The boundary check ensures hook modules import only from `@xemahq/*` published packages and the biome's own files — cross-biome imports are rejected.
+- **Seeding, migrations, and one-shot setup** — do it in your biome service's own startup path. The service runs; a hook does not. See [Backend I ship](./backend-i-ship.md).
+- **Reacting to platform state changes** — subscribe to events. See [Events I subscribe](./events-i-subscribe.md).
+- **Schema changes across versions** — run the migration from the service on boot, guarded by a stored schema version. See [Storage](./storage.md).
 
 ---
 
 ## Related pages
 
-- [Biomes — lifecycle](../biomes.md#the-biome-lifecycle) — the state machine the hooks attach to
-- [Manifest reference](./manifest.md) — the `lifecycle` block field-by-field
-- [Backend I ship](./backend-i-ship.md) — when to ship a full backend service vs lifecycle hooks
-- [Storage](./storage.md) — how `onInstall` / `onUninstall` interact with the data plane
+- [Biomes — lifecycle](../biomes.md#the-biome-lifecycle) — the state machine this block is intended to attach to
+- [Manifest](./manifest.md) — every field of `xema-biome.json`
+- [Backend I ship](./backend-i-ship.md) — where install-time work belongs today
+- [Storage](./storage.md) — declared collections and `uninstallPolicy`
 
 ---
 

@@ -35,7 +35,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [SDK / Getting Started](./sdk/getting-started.md) | Author your first biome with the `xema` CLI |
 | [SDK / Manifest](./sdk/manifest.md) | Every field of `xema-biome.json`, contribution kinds, lifecycle |
 | [SDK / Contributions](./sdk/contributions.md) | Authoring the Contribution Protocol — `*.contribution.json` files |
-| [SDK / Lifecycle Hooks](./sdk/lifecycle-hooks.md) | `onInstall`, `onUninstall`, `onUpgrade`, `onEnable`, `onDisable` |
+| [SDK / Lifecycle Hooks](./sdk/lifecycle-hooks.md) | `onInstall`, `onUninstall`, `onUpgrade`, `onEnable`, `onDisable` — declared, not yet invoked |
 | [SDK / Backend I ship](./sdk/backend-i-ship.md) | Multi-API biomes, base-path conventions, capability namespaces |
 | [SDK / Storage](./sdk/storage.md) | Declared collections, isolation, `uninstallPolicy` |
 | [SDK / Publishing](./sdk/publishing.md) | The four publishing transitions, bundle format, signing intent |
