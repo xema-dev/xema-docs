@@ -36,20 +36,17 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `displayName` | string | yes | — |
 | `description` | string | no | — |
 | `display` | object — see **xema.display** | no | — |
-| `tags` | string[] | no | — |
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "server" | yes | — |
 | `capabilityDomain` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
 | `components` | array of objects — see **xema.components[]** | yes | — |
 | `dependencies` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `extends` | string \| string[] | no | — |
-| `capabilities` | object — see **xema.capabilities** | no | — |
 | `trustTier` | enum | no | one of: `first-party`, `third-party` |
 | `connectorRequirements` | array of objects — see **xema.connectorRequirements[]** | no | — |
 | `webhookFilters` | array of objects — see **xema.webhookFilters[]** | no | — |
 | `mcpWorkflowTools` | array of objects — see **xema.mcpWorkflowTools[]** | no | — |
 | `mcpTools` | array of objects — see **xema.mcpTools[]** | no | — |
-| `defaultToolSelection` | array of objects — see **xema.defaultToolSelection[] (kind: "provider")**, **xema.defaultToolSelection[] (kind: "tool")** | no | max 64 entries |
 | `agents` | array of objects — see **xema.agents[]** | no | — |
 | `provisioning` | array of objects — see **xema.provisioning[]** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
@@ -90,14 +87,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `executionModes` | enum[] | yes | entries one of: `materialized`, `web-hosted`, `shared-host`, `composed`, `isolated`, `runner` |
 | `requirements` | object — see **xema.components[].requirements** | yes | — |
 
-### `xema.capabilities`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `mcp` | string[] | no | — |
-| `network` | object — see **xema.capabilities.network** | no | — |
-| `secrets` | string[] | no | — |
-
 ### `xema.connectorRequirements[]`
 
 | Field | Type | Required | Notes |
@@ -133,23 +122,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 |---|---|---|---|
 | `key` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
 | `handler` | object — see **xema.mcpTools[].handler** | yes | — |
-
-### `xema.defaultToolSelection[] (kind: "provider")`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `kind` | literal "provider" | yes | — |
-| `providerKind` | enum | yes | one of: `mcp_server`, `catalog`, `biome_workflow_tools`, `biome_code_tools` |
-| `resourceId` | string | yes | max 256 chars |
-
-### `xema.defaultToolSelection[] (kind: "tool")`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `kind` | literal "tool" | yes | — |
-| `providerKind` | enum | yes | one of: `mcp_server`, `catalog`, `biome_workflow_tools`, `biome_code_tools` |
-| `resourceId` | string | yes | max 256 chars |
-| `toolName` | string | yes | max 256 chars |
 
 ### `xema.agents[]`
 
@@ -331,12 +303,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `runtime` | object — see **xema.components[].requirements.runtime** | yes | — |
 | `io` | object — see **xema.components[].requirements.io** | yes | — |
 | `scaling` | object — see **xema.components[].requirements.scaling** | yes | — |
-
-### `xema.capabilities.network`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `allowList` | string[] | yes | — |
 
 ### `xema.mcpWorkflowTools[].outputProjection`
 
@@ -564,7 +530,6 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `displayName` | string | yes | — |
 | `description` | string | no | — |
 | `display` | object — see **xema.display** | no | — |
-| `tags` | string[] | no | — |
 | `scope` | enum | yes | one of: `kernel`, `system`, `base`, `platform` |
 | `target` | literal "web" | yes | — |
 | `components` | array of objects — see **xema.components[]** | yes | — |
@@ -592,7 +557,6 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `slots` | string[] | no | — |
-| `apiClients` | string[] | no | — |
 
 ### `xema.signature`
 
