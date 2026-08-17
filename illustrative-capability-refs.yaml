@@ -160,7 +160,6 @@ unpublished:
       owns it, not removed by a gate.
     files:
       - content/xema-os/sdk/storage.md
-      - content/xema-os/sdk/lifecycle-hooks.md
       - content/xema-os/sdk/testing.md
 
   biome-storage:collection.read@1:
