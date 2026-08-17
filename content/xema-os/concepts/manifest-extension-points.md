@@ -61,12 +61,12 @@ Array of `ContributionKind` (30 legal values).
 ### `xema.target: "server"`
 
 - **Required (5)**: `id`, `displayName`, `scope`, `target`, `components`
-- **Optional (30)**: `description`, `display`, `tags`, `capabilityDomain`, `dependencies`, `extends`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
+- **Optional (29)**: `description`, `display`, `tags`, `capabilityDomain`, `dependencies`, `extends`, `capabilities`, `trustTier`, `connectorRequirements`, `webhookFilters`, `mcpWorkflowTools`, `mcpTools`, `defaultToolSelection`, `agents`, `provisioning`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `audience`, `storeListed`, `kind`
 
 ### `xema.target: "web"`
 
 - **Required (5)**: `id`, `displayName`, `scope`, `target`, `components`
-- **Optional (22)**: `description`, `display`, `tags`, `systemSurface`, `requiresServerBiomes`, `optionalServerBiomes`, `capabilities`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `mandatory`, `audience`, `storeListed`, `kind`
+- **Optional (21)**: `description`, `display`, `tags`, `systemSurface`, `requiresServerBiomes`, `optionalServerBiomes`, `capabilities`, `signature`, `bundleSource`, `signedBy`, `requires`, `contributes`, `contributions`, `requiresCapabilities`, `exposesCapabilities`, `ownsCapabilityDomains`, `permissions`, `lifecycle`, `audience`, `storeListed`, `kind`
 
 Field types, constraints, and semantics for every name above are in
 [Biomes → Manifest Reference](../../biomes/04-manifest-reference.md).

@@ -63,7 +63,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `permissions` | object — see **xema.permissions** | no | — |
 | `lifecycle` | object — see **xema.lifecycle** | no | — |
-| `mandatory` | boolean | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
 | `kind` | enum | no | one of: `app`, `connector`, `library` |
@@ -584,7 +583,6 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `permissions` | object — see **xema.permissions** | no | — |
 | `lifecycle` | object — see **xema.lifecycle** | no | — |
-| `mandatory` | boolean | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
 | `kind` | enum | no | one of: `app`, `connector`, `library` |
