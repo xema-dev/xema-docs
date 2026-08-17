@@ -12,13 +12,15 @@ The Store sits under `/store/...` in [XVFS](./concepts/xvfs.md). The owning serv
 
 | Capability | Purpose | Endpoints that enforce it |
 |---|---|---|
-| `store:biome.list@1` | Catalog list / detail / version read; review-log read | `GET /listings`, `GET /listings/:id`, `GET /listings/:id/versions`, `GET /listings/:id/versions/:version` |
-| `store:biome.submit@1` | Create a listing (admin); submit a version; comment on a submission | `POST /listings`, `POST /submissions`, `POST /submissions/:version/comment` |
-| `store:biome.approve@1` | Approve or reject a submitted version | `POST /submissions/:version/approve`, `POST /submissions/:version/reject` |
-| `store:biome.install@1` | Install a `store-approved` version into an org / project | `POST /listings/:id/versions/:version/install`, `POST /installs/:id/uninstall` |
-| `store:biome.archive@1` | Archive a listing or submission | `POST /listings/:id/archive`, `POST /submissions/:version/archive` |
+| `store:biome.list@1` | Catalog list / detail / version read; review-log read; install and license listing | `GET /listings`, `GET /listings/:id`, `GET /listings/:id/versions`, `GET /listings/:id/versions/:version`, `GET /listings/:id/versions/:version/review-log`, `GET /installs`, `GET /licenses` |
+| `store:biome.submit@1` | Create or update a listing; submit a version; comment on a submission | `POST /listings`, `PATCH /listings/:id`, `POST /listings/:id/versions`, `POST /listings/:id/versions/:version/comment` |
+| `store:biome.approve@1` | Approve or reject a submitted version | `POST /listings/:id/versions/:version/approve`, `POST /listings/:id/versions/:version/reject` |
+| `store:biome.install@1` | Install a `store-approved` version into an org / project | `POST /listings/:id/versions/:version/install` |
+| `store:biome.archive@1` | Archive a listing or a version; uninstall an install; revoke a license | `POST /listings/:id/archive`, `POST /listings/:id/versions/:version/archive`, `POST /installs/:id/uninstall`, `POST /licenses/:id/revoke` |
 
-Every privileged endpoint validates through `xema-capability-router` before the DB write. The five refs are the only authorization surface — there is no implicit admin override.
+Every version lives under its listing — there is no separate top-level submission route. A submission is `POST /listings/:id/versions`, and every reviewer action addresses that version at `/listings/:id/versions/:version/...`.
+
+Every privileged endpoint asks the Xema policy decision point for a verdict before the write, and fails closed if it cannot get one. The five refs are the only authorization surface — there is no implicit admin override.
 
 ---
 
@@ -45,14 +47,14 @@ Listings themselves can also be archived; archive of a listing implicitly hides 
 `POST /listings/:id/versions/:version/install` is the single install entry point:
 
 1. Caller hands `{ orgId, projectId?, environment, scope }` to `xema-store-api`.
-2. The service validates the caller's `store:biome.install@1` grant through `xema-capability-router`.
+2. The service asks the Xema policy decision point whether the caller holds `store:biome.install@1`, and refuses if no verdict comes back.
 3. It refuses when the version is not in lifecycle `store-approved` or when the listing is archived — fail-fast, no silent fallback.
 4. It writes a `StoreInstall` row and emits the CloudEvent `xema.store.install.created.v1` on `event-hub-api`.
 5. `biome-host-api` subscribes to that event, fetches the bundle, computes the permission digest, and proceeds with the [Stage 1 install flow](./biomes.md#install--stage-1-consent).
 
 The `BiomeInstallation.storeInstallId` natural-key column closes the loop — a Store install and a Biome installation row share one stable identifier.
 
-`POST /installs/:id/uninstall` records the reverse transition; cleanup of the biome installation itself is the biome host's responsibility, again event-driven.
+`POST /installs/:id/uninstall` records the reverse transition; cleanup of the biome installation itself is the biome host's responsibility, again event-driven. It is gated on `store:biome.archive@1`, not on the install capability — tearing an install down is an archive-class action, so a subject who can install is not thereby able to uninstall.
 
 ---
 
@@ -60,7 +62,7 @@ The `BiomeInstallation.storeInstallId` natural-key column closes the loop — a 
 
 Submission writes the manifest + bundle + permission digest into a `StoreListingVersion` row in lifecycle `store-submitted`. While in that lifecycle the version runs only in the `store-review` execution environment — no production org data, no production credentials, no network beyond what the environment allows.
 
-The reviewer surface (`POST /submissions/:version/approve` | `/reject` | `/comment`) writes `ReviewLog` rows that are the audit trail for the decision. Comments are not free-form admin notes — every comment is structurally addressable via `GET /submissions/:version/review-log` for the publisher to read and respond to.
+The reviewer surface (`POST /listings/:id/versions/:version/approve` | `/reject` | `/comment`) writes `ReviewLog` rows that are the audit trail for the decision. Comments are not free-form admin notes — every comment is structurally addressable via `GET /listings/:id/versions/:version/review-log` for the publisher to read and respond to.
 
 ---
 

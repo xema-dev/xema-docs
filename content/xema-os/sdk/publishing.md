@@ -39,7 +39,7 @@ Once the review-required state holds the version you want to publish, submit:
 xema biome submit <installation-ref> --as <listing-id>
 ```
 
-Submission writes a `StoreListingVersion` row with lifecycle `store-submitted` via `POST /submissions` on `xema-store-api`. The submission carries:
+Submission writes a `StoreListingVersion` row with lifecycle `store-submitted` via `POST /listings/:id/versions` on `xema-store-api` — a version is always addressed under its listing, never through a separate top-level submission route. The submission carries:
 
 - the immutable manifest;
 - the bundle, as a signed OCI artifact (see [Bundle format](#bundle-format--oci-artifacts) below);
@@ -56,11 +56,11 @@ The Store reviewer interacts with the submission through three endpoints on `xem
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /submissions/:version/comment` | Structured comment, recorded in the `ReviewLog` |
-| `POST /submissions/:version/approve` | Flip to `store-approved`; the version becomes installable by any org |
-| `POST /submissions/:version/reject` | Terminal rejection; the publisher must submit a new version |
+| `POST /listings/:id/versions/:version/comment` | Structured comment, recorded in the `ReviewLog` |
+| `POST /listings/:id/versions/:version/approve` | Flip to `store-approved`; the version becomes installable by any org |
+| `POST /listings/:id/versions/:version/reject` | Terminal rejection; the publisher must submit a new version |
 
-`GET /submissions/:version/review-log` is the audit trail. Comments are not free-form admin notes — every comment is structurally addressable so the publisher can read and respond.
+`GET /listings/:id/versions/:version/review-log` is the audit trail. Comments are not free-form admin notes — every comment is structurally addressable so the publisher can read and respond.
 
 Approval is the publisher's signal that the version is ready for general install. There is no "soft-launch" or "preview" intermediate state; the version is either `store-submitted`, `store-approved`, archived, or rejected.
 

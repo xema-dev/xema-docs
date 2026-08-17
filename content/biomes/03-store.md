@@ -8,13 +8,13 @@ The **Xema Store** lets your biome reach any Xema organization. This page covers
 
 | Capability | Who uses it | What it does |
 |---|---|---|
-| `store:biome.list@1` | Anyone | Browse published listings |
+| `store:biome.list@1` | Anyone | Browse published listings — the only Store capability granted by default |
 | `store:biome.install@1` | Org admin | Install a store-approved biome |
 | `store:biome.submit@1` | Biome author | Submit a biome for review |
 | `store:biome.approve@1` | Xema store reviewer | Approve a submitted biome |
 | `store:biome.archive@1` | Author or reviewer | Archive a published listing |
 
-You need `store:biome.submit@1` to publish. This capability is available to any authenticated Xema user.
+You need `store:biome.submit@1` to publish. It is **not** granted by default — the only Store capability every authenticated user holds out of the box is the catalog read, `store:biome.list@1`. Ask an organization administrator to grant `store:biome.submit@1` before you submit; without it, every submit call is refused.
 
 ---
 
@@ -68,7 +68,7 @@ A Xema store reviewer inspects the automated report, checks the sandbox executio
 
 ### 4. Approval
 
-When approved, the biome moves to `store-approved`. The Store listing becomes visible to all orgs. Any org admin can now install it with `store:biome.install@1`.
+When approved, the biome moves to `store-approved`. The Store listing becomes visible to all orgs. Installing it takes `store:biome.install@1`, which — like `store:biome.submit@1` — is **not** granted by default: an organization administrator grants it explicitly to whoever installs biomes for the org.
 
 ---
 
