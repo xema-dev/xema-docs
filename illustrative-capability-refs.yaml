@@ -236,8 +236,18 @@ unpublished:
       claim that Xema ships it, but it is the same name and the same debt, so it is declared once
       here rather than split across two categories.
     owed: >-
-      Build the chat connector and publish the ref, or drop it from the pilot set and rewrite the
-      testing example around a ref that exists. Moves with the other two.
+      "Build the chat connector and publish this ref" is NOT one of the available remedies here, and
+      that is measured rather than assumed: `connector-slack` already ships the outbound send
+      action, and its adapter module records why the ref that action projects is
+      `connector:slack.send@1` and not this name. Two structural reasons, both in the platform's own
+      connector ref grammar (`<provider>.<verb>`): the native executor derives the ACTION SLUG from
+      the ref's VERB, so `send-message` resolves to an action that does not exist — a 404 at first
+      use; and `ConnectorRegistryService.findOperationByCapabilityRef` is keyed by the ref ALONE, so
+      a `chat.*` ref shared by every conversation connector would make two installed chat connectors
+      shadow each other. So the remedy is either a registry change that can disambiguate a
+      provider-neutral ref, or rewriting the pilot set (and the testing example) around the
+      provider-scoped refs that exist. It still moves with the other two — one table declared all
+      three — but its first remedy is not the same one.
     files:
       - content/xema-os/capabilities.md
       - content/xema-os/connectors.md
