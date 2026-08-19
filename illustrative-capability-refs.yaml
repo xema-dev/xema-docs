@@ -208,3 +208,49 @@ unpublished:
       `org-db:database.use@1`; the docs grant them together.
     files:
       - content/databases/02-provisioning.md
+
+  connector:docs.publish-page@1:
+    reason: >-
+      One of the six refs the "1B pilot capability set" names as the canonical example of what a
+      connector ships. It was declared in the platform's own contracts until 2026-08-18, in
+      `kernel-contracts` `connector/lib/capability-refs.ts` — a table deleted as unreachable code,
+      which it was: not re-exported from the `connector` barrel, referenced nowhere in `src`, and
+      unresolvable through the `"./*": "./dist/*/index.js"` wildcard. Unreachable to a COMPILER and
+      load-bearing for these docs, which is how the deletion left the claim standing with nothing
+      behind it. Three of the six pilot refs shipped real producers; this is one of the three that
+      did not.
+    owed: >-
+      Build the docs connector and publish the ref, or drop it from the pilot set in
+      `capabilities.md` and `connectors.md`. It moves with `connector:chat.send-message@1` and
+      `connector:llm.invoke@1` — the same table declared all three and the same paragraph advertises
+      them.
+    files:
+      - content/xema-os/capabilities.md
+      - content/xema-os/connectors.md
+
+  connector:chat.send-message@1:
+    reason: >-
+      Same 1B pilot set and the same deleted contracts table as `connector:docs.publish-page@1`. It
+      additionally appears in the SDK testing guide as the subject of a handler unit test, asserting
+      `callCapability` was called with it — there the ref is the example's subject rather than a
+      claim that Xema ships it, but it is the same name and the same debt, so it is declared once
+      here rather than split across two categories.
+    owed: >-
+      Build the chat connector and publish the ref, or drop it from the pilot set and rewrite the
+      testing example around a ref that exists. Moves with the other two.
+    files:
+      - content/xema-os/capabilities.md
+      - content/xema-os/connectors.md
+      - content/xema-os/sdk/testing.md
+
+  connector:llm.invoke@1:
+    reason: >-
+      The third of the 1B pilot refs from the same deleted table. Note this is NOT the LLM gateway:
+      first-party LLM traffic egresses through `llm-gateway-api`, which publishes no
+      `connector:`-domain ref. Nothing in the fleet produces this name.
+    owed: >-
+      Build the connector and publish the ref, or drop it from the pilot set. Moves with the other
+      two.
+    files:
+      - content/xema-os/capabilities.md
+      - content/xema-os/connectors.md
