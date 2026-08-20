@@ -20,7 +20,7 @@ interface XemaObject<TKind extends XemaObjectKind, TPayload> {
 }
 ```
 
-The contract lives in the kernel package `@xemahq/xema-object-contracts` (Phase 1A) — biome authors and platform services consume the same types.
+The contract lives in `@xemahq/kernel-contracts` under the `/object` subpath — biome authors and platform services consume the same types.
 
 ### Refs — the universal address
 
@@ -63,11 +63,16 @@ Three orthogonal axes describe every object.
 
 ### Scope — who owns it
 
-`ScopeRef` mirrors the 5-tier scope used by `SkillScope` and `CompositionScope`:
+`SpaceRef` is the ownership reference shared with `SkillSpace` and `AgentSpace`.
+`SpaceKind` has seven members; skill and agent resolution use the five that
+carry a precedence ladder:
 
 ```
 User > Project > Org > Biome > System
 ```
+
+`App` and `Session` are addressable Space kinds that take no part in that
+ladder.
 
 Precedence is "most specific wins". A user-authored agent shadows a project-authored agent of the same slug; a project-authored agent shadows the org's; the org's shadows a biome-shipped one; biome-shipped shadows kernel-shipped.
 
@@ -77,7 +82,7 @@ Precedence is "most specific wins". A user-authored agent shadows a project-auth
 
 ### Version — immutable identity
 
-Every object carries a semver `version`. Published versions are immutable; draft revisions live alongside the latest published version. Run-, session-, and app-level lockfiles pin exact versions so re-runs are reproducible — see the Versioning page (lands in Phase 8).
+Every object carries a semver `version`. Published versions are immutable; draft revisions live alongside the latest published version. Run-, session-, and app-level lockfiles pin exact versions so re-runs are reproducible — see [Lockfiles](./concepts/lockfile.md).
 
 ---
 
@@ -85,31 +90,69 @@ Every object carries a semver `version`. Published versions are immutable; draft
 
 Xema OS projects the Object Model into a path-addressable namespace called **XVFS** (Xema Virtual Filesystem). Nothing lives on disk — paths resolve to `XemaObjectRef`.
 
+The path segment after the scope is the **singular, kebab-case
+`XemaObjectKind`** — `agent`, `skill`, `workflow`, `concept`,
+`execution-environment` — never a plural noun:
+
 ```
-/system/capabilities/<ref>
-/system/zones/<environment>
-/orgs/<org>/projects/<project>/agents/<slug>
-/orgs/<org>/projects/<project>/workflows/<slug>
-/orgs/<org>/projects/<project>/biomes/<biomeId>
-/orgs/<org>/projects/<project>/artifacts/<artifactRef>
-/orgs/<org>/projects/<project>/sessions/<sessionId>
-/store/biomes/<biomeId>/versions/<v>
+/system/<kind>/<slug>[@<version>]
+/orgs/<org>/<kind>/<slug>[@<version>]
+/orgs/<org>/projects/<project>/<kind>/<slug>[@<version>]
+/users/<userId>/<kind>/<slug>[@<version>]
+/biomes/<biomeId>/<kind>/<slug>[@<version>]
 ```
+
+`/store/biomes/<biomeId>` is recognised by the parser but not yet routable —
+it fails with `XVFS_PATH_NOT_IMPLEMENTED`.
 
 "Everything is a file" is a discovery metaphor, not a literal claim. The Shell, the Object Browser, and agents use XVFS paths to navigate; underneath, every path resolves to a typed `XemaObject`.
 
 ---
 
-## Phase rollout
+## How objects reach the registry
 
-Phase 1A ships **only the contracts** — `@xemahq/xema-object-contracts` with `XemaObjectRef`, `XemaObjectKind`, `XemaObject`, and `ScopeRef`. There is no Object Registry service and no live resolver yet.
+Objects are not stored twice. `object-registry-api` is a **read-mostly union
+catalog**: the source of truth stays with the owning service, and each owner
+projects a complete snapshot of its own slice.
 
-The runtime arrives in two later phases:
+Ownership is single-writer — exactly one service owns each `source` slice, and
+a projection **replaces** that slice atomically. Thirteen services publish
+today, among them `biome-host-api` (biomes), `skill-registry-api` (skills),
+`llm-registry-api` (agents and models), `knowledge-base-api` (spaces and
+pages), `artifact-store-api` (artifacts) and `xema-shell-api` (the concept
+pages you are reading).
 
-- **Phase 2** ships `object-registry-api` (the read-mostly union catalog over the existing per-domain registries) and the XVFS read path (`GET /xvfs/resolve?path=...`). The frontend Biome Registry and Skills pages begin to consume the projection.
-- **Phase 5** ships the XVFS write path, the Shell command surface, and the verb-noun grammar that maps 1:1 onto capability calls.
+There are two ingestion paths, deliberately both:
 
-Until then, the typed surface is authoritative even though the projection layer is not yet live. Biome authors can already declare `XemaObjectKind` values in their manifests; resolution happens against the existing per-domain registries.
+- **Push** — the owner emits `xema.object-registry.projection.published.v1`
+  when its data changes.
+- **Pull** — the registry fans out `GET /describe-objects` to every owner at
+  boot and on `POST /sync`. This closes the window a freshly restarted replica
+  would otherwise sit blind in, and it is the only path for owners that wire no
+  event transport.
+
+A missing owner degrades freshness for its own slice alone; it never gates the
+registry's boot.
+
+### Reading
+
+`GET /xema-objects` (filter by `kind`, or by `scope` as an XVFS scope-path
+prefix), `GET /xema-objects/by-ref`, and `GET /objects/by-space` (a `SpaceRef`
+and every descendant). A tenant-scoped BFF mirror of all three sits under
+`/bff`.
+
+In practice you reach them through `xema objects list` and `xema objects get`
+in the CLI, `xema ls` / `xema cat` / `xema concepts` in the Shell, the Object
+Browser and Concepts pages in the web host, and lockfile resolution — the
+registry backs the `agent`, `workflow`, `deliverable-spec` and `skill` lockfile
+source kinds.
+
+### Writing
+
+`POST /xvfs/write` upserts through the Shell and is gated on the
+`xema:object.write@1` capability; a denial returns `XVFS_WRITE_DENIED` (403).
+Write paths must not carry an `@version` suffix — the registry assigns the
+version on upsert.
 
 ---
 

@@ -29,6 +29,6 @@ capability call (`biome:install@1`, `biome:promote@1`,
 gated by the [capability](./capability.md) gateway and audited as one
 decision. The full state machine lives in the
 [Biomes overview](../biomes.md). See
-`packages/kernel/xema-object-contracts/src/lib/object-lifecycle.ts` for
-the universal triad and `packages/clients/biome-host-api/src/models/biomeLifecycle.ts`
-for the biome-specific enum.
+`@xemahq/kernel-contracts/object` for the universal triad and the
+`biomeLifecycle` model in the generated `biome-host-api` client for the
+biome-specific enum.

@@ -8,7 +8,7 @@ relatedZones: []
 stability: stable
 ---
 
-The Object Model is plane 1 of the Xema Surface Interface (XSI). Each
+The Object Model is plane 1 of the Xema System Interface (XSI). Each
 object is identified by a `XemaObjectRef` of the shape
 `xema://<scope-path>/<kind>/<slug>[@<version>]`. The kind is drawn from
 the closed [object-kind](./object-kind.md) enum; the scope path is
@@ -19,4 +19,4 @@ publishes a complete projection via the
 read refs through `object-registry-api`. Objects move through the
 [lifecycle](./lifecycle.md) `draft → published → archived`; only
 `published` versions can be resolved. See the kernel
-package `@xemahq/xema-object-contracts`.
+package `@xemahq/kernel-contracts/object`.
