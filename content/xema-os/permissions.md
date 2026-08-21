@@ -14,7 +14,7 @@ Five concepts compose the whole system. Only the first four are ever named in th
 |---|---|
 | **Capability** | One specific action, named by a ref (e.g. `kb:page.read@1`). The atom of permission — see [Capabilities](./capabilities.md). |
 | **Grant** | "This subject may use this capability, in this environment." The one thing the verdict checks. |
-| **Role** | A reusable *bundle* of grants. A **[Profile](./profiles.md)** is a ready-made, named role. |
+| **Role** | A reusable *bundle* of grants — an org role or a team. (A named, attachable **[Profile](./profiles.md)** is planned, not implemented.) |
 | **Team** | A group of subjects, with nesting. Assign a role to a team → every member (and sub-team) inherits it. |
 | **Environment** | *Where* a call runs — `session`, `org`, `sandbox`, `public`, … A grant is scoped to one. See [Environments](./environments.md). |
 
@@ -48,7 +48,7 @@ A subject's initial access is never hand-assembled. It comes from exactly three 
 | **Org-role sync** | On membership change or login, the org's owner / admin / member roles are materialised and assigned — a new member is usable immediately. |
 | **Declared by the thing** | A tool, skill, or agent declares the capabilities it needs; the platform provisions them under policy (see [Arming is permission](#arming-is-permission)). |
 
-This is the same 5-tier ownership/scope model used across the platform — **User > Project > Org > Biome > System**, most-specific wins. Re-scoping (promote to org, move to a team) *is* the "share it" action; there is no separate binding subsystem.
+This is the same ownership model used across the platform — the kernel's one `SpaceKind` vocabulary, of which the resolution tiers are **User > Project > Org > Biome > System**, most-specific wins. Re-scoping (promote to org, move to a team) *is* the "share it" action; there is no separate binding subsystem.
 
 ---
 
@@ -112,10 +112,40 @@ The model is least-privilege by construction and auditable end to end:
 - **Owner-bounded** — an agent never exceeds the person behind it.
 - **Tenant-isolated** — access granted in one org never leaks into another; every decision is org-aware.
 - **Human approvals** — sensitive or destructive calls pause for a named approver; the run is durable across the wait.
-- **Private stays private** — personal data can be *owner-only*: an org admin may hold the action but not a specific user's instance (e.g. a personal mailbox). Resource ownership is enforced at the verdict, not bolted on.
-- **Fully audited** — every allow, deny, and approval carries a structured, queryable reason.
+- **Ownership is not access** — holding a capability is not the same as reaching a specific instance of a resource. An org admin may hold `mailbox:read@1` and still not reach a particular person's mailbox. Resource ownership is a registered fact the verdict consults, not an afterthought. (Instance-level *sharing* — granting one person access to one object, with a level and an expiry — is being consolidated onto one plane; today several surfaces each carry their own.)
+- **Audited at the funnel** — every capability invocation that routes through the router records a decision: which subject, which capability, allow or deny, and the structured reason. See [The audit journal](#the-audit-journal) for what that does and does not currently cover.
 
 Tightening controls roll out **safely**: tenant-isolated verdicts, the delegation clamp, and arming-based auto-provisioning each activate per environment after verification, and default to *no behavior change* until an org turns them on. Nothing flips silently.
+
+---
+
+## The audit journal
+
+`audit-log-api` owns the journal. Every capability invocation that routes through the capability router writes an entry — subject, capability, verdict, structured reason.
+
+Two properties are worth stating precisely, because both are easy to over-read.
+
+**Coverage is the capability funnel.** An action taken *through* a capability is recorded. An equivalent read taken through a service's own browser-facing route is not necessarily recorded by the same journal — the funnel is what the journal watches, so "was it audited?" is really "did it go through the router?".
+
+**The read surface is operator-tier today.** The journal's browser route is gated to the *installation* operator, not the organization admin. An org-facing audit surface — filterable by resource, showing the delegation chain — is planned and not yet shipped.
+
+### Retention and legal hold
+
+Audit data is a **first-class retention subject class**. `RetentionSubjectClass` is a closed enum, and `audit_entry` is a member of it alongside `agent_session`, `artifact`, `app_run`, `notification`, `activity_feed_entry`, `search_trace` and `workload_record`.
+
+That membership is what makes a legal hold able to *name* audit data: a hold's scope may be an entire org, a single subject, or a **subject class** — so "preserve this org's audit journal" is expressible, rather than being a category the retention system cannot see.
+
+### Erasure is gated, and audit gets a veto
+
+`audit-log-api` participates in the platform's gated org-erasure framework. When an org is erased, the audit journal's erasure runner:
+
+1. probes the legal-hold register for a hold naming the audit subject class, and **refuses** if one exists;
+2. erases the org's entries;
+3. re-counts, and **refuses** if any residue remains.
+
+Every refusal is fail-closed, including when the legal-hold register cannot be reached: an unresolvable hold check stops the erasure rather than proceeding on the assumption that no hold exists. A destructive operation that cannot prove it is permitted does not run.
+
+The complementary half — a retention *sweeper* that ages entries out on their own deadline — is not yet shipped. Audit data is preserved and erasure-gated; it is not yet automatically reaped.
 
 ---
 
@@ -123,8 +153,8 @@ Tightening controls roll out **safely**: tenant-isolated verdicts, the delegatio
 
 - [Capabilities](./capabilities.md) — the invocation surface every grant names.
 - [Policy](./policy.md) — the full decision shape, obligations, route hints, and approval flow.
-- [Environments](./environments.md) — the trust zones a grant is scoped to.
-- [Profiles](./profiles.md) — named, reusable grant bundles attached to subjects.
+- [Environments](./environments.md) — the trust profile a grant is scoped to.
+- [Profiles](./profiles.md) — named, reusable grant bundles attached to subjects. Planned; not implemented.
 - [Agent Composition](./agent-composition/) — the agent + sub-agent tree a reach tier governs.
 - [Spaces](./spaces.md) — where data lives and the classification that flows into the verdict.
 

@@ -1,19 +1,26 @@
 ---
 slug: profile
 title: Profile
-summary: A named bundle of grants and configuration that can be attached to a subject (user, service account, agent) in one step. Profiles are how Xema avoids ad-hoc per-subject grant sprawl; they compose with audiences but are not the same thing.
+summary: A PLANNED concept, not a shipped one. A named bundle of grants and configuration an org admin would attach to a subject in one step. Nothing in the platform implements it today — there is no profile object kind, no assignment table, and no lifecycle enum. Use explicit capability grants and roles.
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["org"]
 stability: experimental
 ---
 
-A profile is a reusable assignment unit: a set of
-[permission](./permission.md) grants, default [environment-grants](./environment-grant.md),
-and optional configuration that an org administrator attaches to a
-subject. Compared to an [audience](./audience.md), which is a typed
-*group* used for routing and bulk-targeting, a profile is a typed
-*role* assigned to one subject at a time. Profiles compose with
-audiences — a subject may be in multiple audiences and hold multiple
-profiles. Profiles are first-class [objects](./object.md) of kind
-`profile`.
+**Not implemented.** There is no `profile` object kind, no profile table, and
+no assignment surface anywhere in the platform. This entry records a design
+direction so it is not reinvented, not a capability you can use.
+
+The idea: a reusable assignment unit — a set of [permission](./permission.md)
+grants plus default [environment grants](./environment-grant.md) — that an org
+administrator attaches to a subject in one step, instead of writing the same
+twenty grants for every new hire.
+
+It is deliberately distinct from an [audience](./audience.md), which is a typed
+*group* used for routing and bulk targeting. A profile would be a typed *role*
+held by one subject. The two answer different questions: "where does this event
+fan out to?" versus "what can this subject do?".
+
+Until it ships, the supported path is explicit capability grants, org roles and
+team membership. See [permission](./permission.md).

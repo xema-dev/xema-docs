@@ -2,7 +2,7 @@
 slug: store
 title: Store
 summary: Xema's canonical distribution surface for biomes. Published biomes live in the Store, addressable as `xema://store/biome/<id>@<version>`. Every listing, submission, approval, and install operation is one of the five `store:biome.*@1` capability calls, and submissions run only in the `store-review` execution environment.
-relatedCommands: ["biome install", "biome publish"]
+relatedCommands: ["xema biome install", "xema biome publish"]
 relatedCapabilities: ["store:biome.list@1", "store:biome.submit@1", "store:biome.approve@1", "store:biome.install@1", "store:biome.archive@1"]
 relatedZones: ["store-review"]
 stability: stable

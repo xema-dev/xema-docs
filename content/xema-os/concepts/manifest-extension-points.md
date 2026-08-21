@@ -2,7 +2,7 @@
 slug: manifest-extension-points
 title: "Manifest Extension Points"
 summary: "The parts of xema-biome.json that decide what a biome extends: the target discriminator, the declared contribution roster, and the contributions block that points at the envelopes. The full field-by-field reference lives in the biome authoring docs; this is the extension-relevant subset."
-relatedCommands: ["biome install","biome publish"]
+relatedCommands: ["xema biome install", "xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable

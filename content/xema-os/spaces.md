@@ -88,10 +88,10 @@ A child Space inherits its parent's classification floor and may **raise** it (a
 Spaces are first-class in every product surface:
 
 - **Object Registry** — every object is indexed by its `SpaceRef`; the Object Browser groups objects by Space.
-- **Memory** — memory chunks are scoped by `SpaceRef`; `xema memory recall` filters to the calling subject's reachable Spaces.
+- **Memory** — memory chunks are scoped by `SpaceRef`; `memory recall` filters to the calling subject's reachable Spaces.
 - **Knowledge Base** — pages live in a Space; cross-Space reads are policy-mediated.
 - **Artifacts** — every artifact version stamps its emitting Space.
-- **Skills** — `SkillSpace` names the owning Space; resolution precedence is most-specific-wins.
+- **Skills** — a skill's owning Space is one of five admissible `SpaceKind` tiers; resolution precedence is most-specific-wins.
 - **Compositions** — `CompositionSpace` mirrors the Skill model.
 - **Frontend routing** — the product URL grammar is `/spaces/orgs/:org/projects/:project/...`, mirroring the SpaceRef path.
 
@@ -112,8 +112,8 @@ The same object in `xema://orgs/acme/projects/billing` may be touched from the `
 
 | Command | What it shows |
 |---|---|
-| `xema spaces list` | All Spaces the calling subject can reach |
-| `xema explain xema://orgs/acme/projects/billing` | Owner, classification, descendant count, recent activity |
+| `ls xema://orgs/<org>` | The Spaces and objects reachable under an org |
+| `explain xema://orgs/acme/projects/billing` | Owner, classification, descendant count, recent activity |
 | `xema objects list xema://orgs/acme/projects/billing` | Typed objects anchored to the Space |
 
 ---
@@ -124,7 +124,7 @@ The same object in `xema://orgs/acme/projects/billing` may be touched from the `
 - [Execution contexts](./execution-contexts.md) — every invocation carries one Space and one Environment.
 - [Objects](./objects.md) — each `XemaObject` declares its owning Space.
 - [Policy](./policy.md) — Space classification feeds into every decision.
-- [Skills](./skills/) — `SkillSpace` precedence drives skill resolution.
+- [Skills](./skills/) — Space precedence drives skill resolution.
 
 ---
 

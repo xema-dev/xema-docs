@@ -119,7 +119,7 @@ The kinds that benefit from inline:
 
 ## The closed `ContributionKind` enum
 
-A short, illustrative slice. The authoritative list is the `ContributionKind` enum in `@xemahq/contribution-contracts`.
+A short, illustrative slice. The authoritative list is the `ContributionKind` enum in `@xemahq/kernel-contracts/contribution`.
 
 | Kind | Body shape | Typical layout |
 |---|---|---|

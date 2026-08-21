@@ -2,7 +2,7 @@
 slug: object-kind
 title: XemaObjectKind
 summary: The closed enum of every addressable kind in the Xema universe. New kinds are added by one-line kernel PRs. Examples include `biome`, `capability`, `skill`, `agent`, `workflow`, `concept`, `mount-source`, `connector`, and `execution-environment`.
-relatedCommands: ["xema concepts", "xema explain"]
+relatedCommands: ["xema run xema-shell:concepts.list@1", "xema run xema-shell:explain@1"]
 relatedCapabilities: ["xema-shell:concepts.list@1"]
 relatedZones: []
 stability: stable

@@ -51,7 +51,7 @@ The loop is **level-triggered**, not edge-triggered: a controller reads the curr
 | **Desired** | What the user / admin / upstream object asked for | The owning object's spec fields |
 | **Observed** | What is actually true right now in the world | The owning object's status fields + external system probes |
 
-A controller writes only to `status`. A human, an admin tool, or an upstream controller writes only to `spec`. This separation is enforced at the object-registry layer — a controller that tries to write `spec` is refused with `CONTROLLER_SPEC_WRITE_DENIED`.
+A controller writes only to `status`. A human, an admin tool, or an upstream controller writes only to `spec`. This separation is a design rule of the controller model. **It is not enforced by a registry-level guard today** — the object registry has no spec/status write split, so a controller that writes to the desired surface is a bug the reviewer catches, not a request the platform refuses. Treat the rule as binding on the code you write.
 
 ---
 

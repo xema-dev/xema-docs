@@ -30,11 +30,13 @@ Everything else in `SKILL.md` (body, additional frontmatter keys) is free-form c
 
 ---
 
-## SkillScope — the 5-tier ownership model
+## Ownership — five tiers of the one Space vocabulary
 
-Every skill has a scope that determines who owns it and who can see it. More-specific wins when resolving conflicts.
+Every skill is owned at a Space, and that determines who can see it. More-specific wins when resolving conflicts.
 
-| Scope | Owner | Visibility |
+There is no skill-specific ownership enum. The skill registry declares an **admissible subset** of the kernel's one `SpaceKind` — the five tiers below — and refuses anything outside it at every seam. That is deliberate: a private copy per registry is what made "publish my project skill to my organization" inexpressible, because there was no shared address a re-scope could name.
+
+| Tier | Owner | Visibility |
 |---|---|---|
 | `System` | Platform-shipped (immutable) | All orgs, all users |
 | `Biome` | Contributed by an installed biome's `skills/` folder | The org where the biome is installed |
@@ -42,20 +44,22 @@ Every skill has a scope that determines who owns it and who can see it. More-spe
 | `Project` | Scoped to a single project | Members of that project |
 | `User` | Authored by a single user | That user only |
 
-`System > Biome > Org > Project > User` in specificity. When a `Project`-scoped `code-review` and an `Org`-scoped `code-review` both exist, the project-scoped version is mounted.
+`User > Project > Org > Biome > System`, most specific first. When a project-owned `code-review` and an org-owned `code-review` both exist, the project-owned one is mounted.
+
+That order is a **declared rank map**, not something derived from the Space tree — and it has to be. `user`, `org` and `biome` are root-addressable siblings under `system`, so the tree does not order a biome-owned row against an org-owned one *at all*. Deriving precedence from ancestry would leave both in an agent's resolved config, visible only as a doubled entry.
 
 ---
 
 ## SkillLayer — resolution layers
 
-`SkillLayer` describes which resolution layer selected a skill at mount time. It is separate from `SkillScope` (ownership):
+`SkillLayer` is a flat **provenance tag** naming which producer put a skill into a resolution response. It is separate from ownership, and it is deliberately *not* a precedence ladder — it carries no rank map and nothing sorts by it.
 
 | Layer | Meaning |
 |---|---|
-| `System` | A system skill was mounted (comes from `packages/kernel/system-skills/`) |
+| `System` | A platform-shipped system skill |
 | `Base` | The agent definition's intrinsic skills |
-| `Pinned` | Explicitly pinned by a composition node or workflow job |
-| `Context` | Resolved from context at invocation time (active project, active biome) |
+
+Two members, because those are the two producers that exist. A `Pinned` and a `Context` member were declared once, assigned by nothing, and deleted.
 
 ---
 
@@ -86,7 +90,7 @@ Xema ships 14 built-in system skills under `packages/kernel/system-skills/`. The
 | `biome-authoring` | Writing and validating biome manifests |
 | `skill-authoring` | Writing skill bundles and sub-skills |
 | `agent-composition` | Composing multi-agent workflows |
-| `xema-os-concepts` | The six-layer model, zones, capabilities |
+| `xema-os-concepts` | The six-layer model, execution environments, capabilities |
 | `code-review-foundations` | Core code review patterns |
 | `security-review-foundations` | OWASP, threat modelling, secure coding |
 | `spec-writing-foundations` | Writing clear functional and technical specs |

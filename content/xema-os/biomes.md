@@ -2,7 +2,7 @@
 
 A **biome** is the Xema OS unit of distribution. Where a traditional extension model extends one surface, a biome may ship agents, skills, tools, workflows, deliverable specs, document templates and themes, mount sources, artifact types, connector bindings, frontend slot contributions, optional backend services, controllers, and storage schemas — all through one declarative manifest and one lifecycle.
 
-A biome is *installed* into an organization, *zoned* into one or more execution zones, *versioned* under the user-controlled lifecycle, and *governed* by the two-stage permission model, backed by a fully-specified state machine.
+A biome is *installed* into an organization, *scoped* to one or more execution environments, *versioned* under the user-controlled lifecycle, and *governed* by the two-stage permission model, backed by a fully-specified state machine.
 
 ---
 
@@ -55,7 +55,7 @@ The install capability `biome:install@1` is paired with `store:biome.install@1` 
 
 1. Caller invokes `biome:install@1` (or `store:biome.install@1`) with `{ biomeRef, version, environment, scope }`.
 2. `biome-host-api` parses the manifest, computes a **permission digest** — capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version.
-3. The digest is presented to an org admin; the admin chooses a built-in profile (`read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`) or customizes per-capability resource scopes, zones, and rate limits.
+3. The digest is presented to an org admin; the admin chooses a built-in profile (`read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`) or customizes per-capability resource scopes, execution environments, and rate limits.
 4. Approval writes a `BiomeInstallGrant` row in `authorization-api`. The grant is the authoritative answer to "what may this biome do, in which environment?".
 
 Until the admin approves, the biome stays in `sandbox-installed`. No runtime call ever consults a manifest field — every check goes through the grant.
@@ -70,7 +70,7 @@ Every capability invocation by the installed biome routes through `xema-capabili
 2. Gateway looks up the `BiomeInstallGrant`.
 3. Gateway checks: capability in the grant set, resource glob matches, environment allowed, subject covered, audience policy compatible, within rate / quota, no human approval required.
 4. Allowed → the resolver dispatches to the bound contribution or kernel handler.
-5. Denied → typed denial with an `auditId`. Run `xema why-denied <auditId>` (see [Shell](./shell.md)) for the structured reason and a suggested fix.
+5. Denied → typed denial with an `auditId`. Run `why-denied <auditId>` in the [Shell](./shell.md) for the structured reason and a suggested fix.
 
 The biome never holds raw credentials. The gateway resolves the binding for the active environment and calls the connector itself; the biome sees the capability ref and the input only.
 
@@ -161,7 +161,7 @@ Biomes are packaged and distributed as **OCI artifacts** through the same regist
 - [lifecycle](./concepts/lifecycle.md) — the `BiomeLifecycle` state machine
 - [manifest](./concepts/manifest.md) — the `xema-biome.json` contract
 - [capability](./concepts/capability.md) — the call surface every transition uses
-- [execution-environment](./concepts/execution-environment.md) — the zones biomes run in
+- [execution-environment](./concepts/execution-environment.md) — the environments biomes run in
 - [store](./store.md) — the publish/install pipeline
 - [versioning](./versioning.md) — draft vs published vs lockfile
 - [apps](./apps.md) — composing biomes into product surfaces

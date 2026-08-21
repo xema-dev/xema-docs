@@ -9,7 +9,7 @@ stability: stable
 ---
 
 A workflow is the structural backbone of automated work in Xema. It is
-written in the `@xemahq/workflow-dsl` grammar, compiled to a typed IR,
+written in the `@xemahq/dsl` grammar, compiled to a typed IR,
 and executed on the Xema Workflow Runtime. Each job in the workflow may call an
 [agent](./agent.md) or a full [composition](./composition.md), emit
 [artifacts](#), pass through a gate, or branch on matrix outputs.

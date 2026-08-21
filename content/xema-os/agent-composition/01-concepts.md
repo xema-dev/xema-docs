@@ -50,9 +50,9 @@ Each node is resolved independently. The `orchestrator-agent` does not need to k
 
 ---
 
-## CompositionLifecycle
+## Lifecycle
 
-Compositions move through the same lifecycle as all Xema objects:
+There is no separate composition lifecycle enum. A composition is an Agent, and it moves through the one `AgentLifecycle` every versioned Xema object uses:
 
 | State | Meaning |
 |---|---|
@@ -62,14 +62,14 @@ Compositions move through the same lifecycle as all Xema objects:
 
 The state machine is **one-directional**: `draft → published → archived`. Publishing is a deliberate act; archiving is explicit. There is no auto-publish, no silent state change.
 
-Resolution always refuses a non-`published` version — the runtime returns `COMPOSITION_NOT_PUBLISHED` and fails fast. This is intentional: production execution must always use an inspectable, immutable composition.
+Resolution always refuses a non-`published` version and fails fast. This is intentional: production execution must always use an inspectable, immutable composition.
 
 ### Publishing a composition
 
 Publishing requires the `composition:publish@1` capability:
 
 ```bash
-xema composition publish my-composition --version 1.0.0
+xema run composition:publish@1 --input '{"slug":"my-composition","version":"1.0.0"}'
 ```
 
 Or via the Agent Studio UI: **Agent Composition → [composition name] → Publish**.

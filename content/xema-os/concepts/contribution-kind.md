@@ -2,7 +2,7 @@
 slug: contribution-kind
 title: "Contribution Kind"
 summary: "The closed catalog of things a biome may contribute through the contribution protocol, and — per kind — whether an ingestion parser actually consumes it today. Derived from the ContributionKind enum and the biome-host parser registry, so \"declared\" is never mistaken for \"supported\"."
-relatedCommands: ["biome install","biome publish"]
+relatedCommands: ["xema biome install", "xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable

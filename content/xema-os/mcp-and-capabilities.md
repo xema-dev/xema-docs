@@ -55,7 +55,7 @@ There is no full-catalogue listing. Page through results with `cursor`.
 }
 ```
 
-Filtering happens server-side, and a capability the agent may not invoke is **absent** — not returned with a denial marker. An agent in a `public-app` environment never sees `connector:bank.transfer@1` even if some other subject can invoke it. Compare `consideredCount` with the number of results to see how much authorization removed.
+Filtering happens server-side, and a capability the agent may not invoke is **absent** — not returned with a denial marker. An agent in the `public` environment never sees `connector:bank.transfer@1` even if some other subject can invoke it. Compare `consideredCount` with the number of results to see how much authorization removed.
 
 ### `xema.capabilities.describe`
 

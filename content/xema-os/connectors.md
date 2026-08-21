@@ -75,6 +75,8 @@ The gateway supports a fixed set of credential kinds. Each kind is a strategy: a
 | `SignatureOnly` | Webhook secret only — no minted credential | Inbound-only providers (verify, no outbound) |
 | `ImapAuth` / `SmtpAuth` | Email wallet | Email-provider connectors |
 
+The enum lives in `@xemahq/kernel-contracts` (`CredentialKind`); its wire values are snake-case (`oauth_user`, `app_install`, `signature_only`, …).
+
 Credential rotation is **not** performed on the mint hot path. Strategies are pure projections; rotation runs out-of-band on a schedule. A token whose `expiresAt` is past is refused with a typed denial — there is no silent fallback to a stale token.
 
 ---
@@ -98,25 +100,58 @@ Every inbound webhook from an external provider enters the gateway through a sin
 
 1. Verifies the provider signature using the binding's `SignatureOnly` payload (or the bound credential's signing key).
 2. Looks up the binding from the provider's `(provider, deliveryId, accountId)` tuple.
-3. Translates the raw payload into a canonical `IntegrationWebhookEnvelope<TPayload>` typed per `WebhookEntityKind`.
+3. Translates the raw payload into a canonical `ConnectorWebhookEnvelopeDto<TPayload>` (`@xemahq/platform-common`) typed per `WebhookEntityKind`.
 4. Forwards the envelope to the owning domain service with a deterministic `Idempotency-Key = {provider}:{deliveryId}`.
 
 Domain services receive canonical envelopes only — they never parse provider-specific payloads, never touch raw signatures, never see the binding's secret. Adding a new provider is a gateway-side change; downstream consumers are untouched as long as the canonical envelope is unchanged.
 
 ---
 
-## Binding lifecycle
+## Connection status
 
-`ConnectorBindingState` is a closed enum:
+`ConnectorStatus` is a closed enum with three members:
 
-| State | Meaning | Next states |
-|---|---|---|
-| `pending` | Binding row created; OAuth or wallet step not complete | `ready`, `failed` |
-| `ready` | Credentials present and validated; mint serves tokens | `degraded`, `revoked` |
-| `degraded` | Last mint or webhook failed signature/auth; gateway probes on a schedule | `ready`, `revoked` |
-| `revoked` | Admin or provider revoked the binding; mint refuses, audit retained | terminal |
+| Status | Meaning |
+|---|---|
+| `ACTIVE` | Credentials present and validated; the gateway mints from this connection |
+| `ERROR` | The last mint, refresh, or webhook verification failed |
+| `REVOKED` | An admin or the provider revoked it; mint refuses, audit is retained |
 
-A revoked binding is **never** silently restored. The admin re-runs the install flow to produce a new binding row.
+A revoked connection is **never** silently restored. The admin re-runs the install flow to produce a new one.
+
+---
+
+## Multiple accounts per provider
+
+An organization routinely has more than one account with the same provider — two Slack workspaces, a personal GitHub identity alongside an org app install, a project-specific Jira. A connection therefore carries a **name** and a **default flag**, at a declared **scope tier**.
+
+| Field | What it does |
+|---|---|
+| `name` | Distinguishes connections to the same provider. Defaults to `default` |
+| `isDefault` | Exactly one connection per (owner, provider) is the default |
+| `scopeTier` | Which tier owns it — `platform`, `org`, `project`, or `user` |
+
+The invariant is *N named connections per (owner, provider), exactly one default*, and it is enforced by eight partial unique indexes in the database rather than by application code — one name-uniqueness index and one single-default index per tier. It is not possible to write two defaults, and it is not possible to write two connections with the same name at the same tier.
+
+`scopeTier` uses the platform's one credential-ownership vocabulary (`CredentialOwnerScope` in `@xemahq/kernel-contracts`), so a connection tier means the same thing here as it does in the credential broker.
+
+### Resolution — narrowest wins, and ambiguity is an error
+
+The resolver walks the ladder `user → project → org → platform` and takes the **default** connection at the narrowest tier that has one.
+
+What it never does is pick arbitrarily. If a tier has candidate connections but none of them is declared the default, resolution stops with a typed **409 `CONNECTION_AMBIGUOUS`** — it does not fall through to a wider owner, because falling through is how a call silently reads the wrong mailbox. If no tier has a candidate at all, the answer is **404 `CONNECTION_UNRESOLVED`**.
+
+A caller that wants a specific account names its connection id; a caller that wants "the org's" names nothing and gets the default.
+
+### Who can see a connection
+
+Listing is fenced by a query predicate, not only by a route guard, and the rule differs by tier:
+
+- `org`- and `project`-tier connections are visible to any member of the org.
+- `user`-tier connections are visible **only to the user who owns them** — including against an org admin.
+- `platform`-tier connections never appear in an org listing at all.
+
+Mutation paths resolve the connection through the same predicate, so a connection you cannot see is also one you cannot delete, rotate or make default.
 
 ---
 
@@ -124,7 +159,7 @@ A revoked binding is **never** silently restored. The admin re-runs the install 
 
 - [Capabilities](./capabilities.md) — connectors expose capability refs; the connector pilot section shows the end-to-end flow.
 - [Spaces](./spaces.md) — bindings live in an Org or Project Space and inherit its data-classification floor.
-- [Policy](./policy.md) — every connector capability call passes through a policy decision and may carry `BindResidency` / `BindRegion` obligations.
+- [Policy](./policy.md) — every connector capability call passes through a policy decision.
 - [Execution Environments](./environments.md) — connector capabilities declare the environment they run under (e.g. `project` for project-scoped SCM).
 - [Biomes](./biomes.md) — connectors are contributed by biomes through the `connector` contribution kind.
 

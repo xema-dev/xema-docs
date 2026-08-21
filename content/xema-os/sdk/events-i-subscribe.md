@@ -120,7 +120,7 @@ A contributions-only biome — one that ships agents, skills, workflows, or conn
 | `agent-session.completed.v1` | `agent-session-api` | Capture transcripts to long-term memory |
 | `connector.scm.pull-request.opened.v1` | connector gateway | Drive a review workflow |
 
-The full registry is exposed via `xema concepts` and `xema concept event-type` in the Shell (see [Shell built-in commands](../shell.md#built-in-commands)).
+The full registry is exposed via the Shell's `concepts` and `concept <slug>` commands (see [Shell built-in commands](../shell.md#built-in-commands)).
 
 ---
 

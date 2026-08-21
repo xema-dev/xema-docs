@@ -33,7 +33,7 @@ Xema OS does not add a fifth primitive. The Object Model, Capability Protocol, a
 Every capability call in Xema OS is described by exactly four concepts working together:
 
 - **[Space](./spaces.md)** — *where* the data lives and *who* owns it (a hierarchical URI from `System` down to `User`, with a data-classification floor).
-- **[Execution Environment](./environments.md)** — *which trust profile* applies to this call (`system`, `org`, `project`, `app`, `session`, `sandbox`, `store-review`, `public-app`).
+- **[Execution Environment](./environments.md)** — *which trust profile* applies to this call (`system`, `org`, `project`, `app`, `session`, `sandbox`, `public`, `store-review`, `trusted-dev`).
 - **[Execution Context](./execution-contexts.md)** — the per-invocation envelope binding subject, Space, Environment, capability, and input.
 - **[Policy](./policy.md)** — the decision protocol that turns an Execution Context into `allow` / `deny` / `needs_approval` plus obligations and route hints.
 
@@ -64,7 +64,7 @@ XSI is the stable external interface every biome, app, agent, workflow, and exte
 1. **[Object Model](./objects.md)** — the typed universe of things Xema knows about (`XemaObject`, `XemaObjectKind`), each anchored to a [Space](./spaces.md).
 2. **[Contribution Protocol](./sdk/contributions.md)** — how new objects and behaviors enter the OS (kernel-typed envelope, closed `ContributionKind` enum, backend slot registry).
 3. **[Capability Protocol](./capabilities.md)** — how those objects are invoked. Every call carries an [Execution Context](./execution-contexts.md) and routes through the capability router.
-4. **[Execution Environment Protocol](./environments.md)** — which trust profile applies to a call. Eight built-in environments: `system`, `org`, `project`, `app`, `session`, `sandbox`, `store-review`, `public-app`.
+4. **[Execution Environment Protocol](./environments.md)** — which trust profile applies to a call. Nine built-in environments: `system`, `org`, `project`, `app`, `session`, `sandbox`, `public`, `store-review`, `trusted-dev`.
 5. **Manifest / Wire** — how all of the above are declared in the biome manifest through `requires`, `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`.
 
 ---

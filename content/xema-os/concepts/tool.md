@@ -14,6 +14,6 @@ invoke a workflow. Tool selection is part of the agent's intrinsic
 definition or attached at an [composition](./composition.md) node. The
 [mcp-catalog](#) is the runtime-injectable index; the mcp-gateway
 brokers the actual transport with authentication and audit. Like every
-other primitive, tools are scoped through the 5-tier
+other primitive, tools are scoped through the five-tier
 [object](./object.md) model and may be shipped by biomes via
 [contribution](./contribution.md).

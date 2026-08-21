@@ -12,7 +12,7 @@ Every object carries the same shape:
 interface XemaObject<TKind extends XemaObjectKind, TPayload> {
   readonly ref: XemaObjectRef;
   readonly kind: TKind;
-  readonly scope: ScopeRef;            // 5-tier: system / biome / org / project / user
+  readonly scope: SpaceRef;            // xema://… — one address, one owner tier
   readonly owner: SubjectRef;
   readonly version: SemverVersion;
   readonly lifecycle: ObjectLifecycle; // draft | published | archived
@@ -63,9 +63,10 @@ Three orthogonal axes describe every object.
 
 ### Scope — who owns it
 
-`SpaceRef` is the ownership reference shared with `SkillSpace` and `AgentSpace`.
-`SpaceKind` has seven members; skill and agent resolution use the five that
-carry a precedence ladder:
+`SpaceRef` is the one ownership reference, and `SpaceKind` its one closed
+vocabulary of seven tiers. A registry that owns fewer declares an admissible
+subset over it, never a copy of it. Skill and agent resolution use these five,
+ranked most-specific-first:
 
 ```
 User > Project > Org > Biome > System
@@ -142,7 +143,7 @@ and every descendant). A tenant-scoped BFF mirror of all three sits under
 `/bff`.
 
 In practice you reach them through `xema objects list` and `xema objects get`
-in the CLI, `xema ls` / `xema cat` / `xema concepts` in the Shell, the Object
+in the CLI, `ls` / `cat` / `concepts` in the Shell, the Object
 Browser and Concepts pages in the web host, and lockfile resolution — the
 registry backs the `agent`, `workflow`, `deliverable-spec` and `skill` lockfile
 source kinds.

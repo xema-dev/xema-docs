@@ -2,7 +2,7 @@
 slug: capability-contribution
 title: "Capability Contribution"
 summary: "The manifest a biome ships to register an agent-invocable capability: ref, title, summary, side effects, I/O JSON Schemas, risk tier, and approval flag. One wire shape for both authoring paths — a contribution file and the @XemaCapability decorator both end on the same sync endpoint."
-relatedCommands: ["biome install","biome publish"]
+relatedCommands: ["xema biome install", "xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable

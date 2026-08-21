@@ -2,7 +2,7 @@
 slug: search-type-contribution
 title: "Search Type Contribution"
 summary: "The manifest a biome ships to register a search result-type: the object kind and facet it covers, render and deep-link hints, the searchable-field set, the embedding-eligibility default, and the authorization mapping. Result-types are contributed at boot; document instances are event-fed at runtime."
-relatedCommands: ["biome install","biome publish"]
+relatedCommands: ["xema biome install", "xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable

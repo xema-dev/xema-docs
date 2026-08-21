@@ -4,13 +4,13 @@
 
 A **skill** is a folder bundle that teaches an agent how to do something. Skills are the primary way to give agents domain knowledge, style guides, reference material, and specialized instructions without modifying the agent definition itself.
 
-Skills are owned by `skill-registry-api`, resolved through a 5-tier scope model, and mounted into agent workspaces at runtime.
+Skills are owned by `skill-registry-api`, resolved through a five-tier slice of the one Space ownership model, and mounted into agent workspaces at runtime.
 
 ## Quick Links
 
 | Page | What it covers |
 |---|---|
-| [Concepts](./01-concepts.md) | SkillScope, SkillLayer, SkillSourceKind, SKILL.md contract |
+| [Concepts](./01-concepts.md) | Space ownership, `SkillLayer`, `SkillSourceKind`, the SKILL.md contract |
 | [Authoring](./02-authoring.md) | Writing skill bundles, sub-skills, slash commands |
 
 ## Getting Started

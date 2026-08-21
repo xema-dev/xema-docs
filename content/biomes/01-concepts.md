@@ -76,12 +76,12 @@ The biome manifest is a *declaration*, not a permission. Every runtime invocatio
 
 1. The biome is submitted for install.
 2. The platform computes a **permission digest**: capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version.
-3. An org admin reviews the digest, optionally choosing a built-in profile or customizing per-capability resource scopes, zones, and rate limits.
+3. An org admin reviews the digest, optionally choosing a built-in profile or customizing per-capability resource scopes, execution environments, and rate limits.
 4. Approval creates a `BiomeInstallGrant` row. This grant is the single authoritative answer to "what may this biome do, in which environment?".
 
 ### Stage 2 — runtime
 
-Every call from the biome goes through the capability gateway with `{ ref, subject, environment, input }`. The gateway checks the grant, verifies the resource glob, the environment, the rate limit, and any required approval. Allowed calls proceed; denied calls return a typed denial with an `auditId` you can inspect with `xema why-denied <auditId>`.
+Every call from the biome goes through the capability gateway with `{ ref, subject, environment, input }`. The gateway checks the grant, verifies the resource glob, the environment, the rate limit, and any required approval. Allowed calls proceed; denied calls return a typed denial with an `auditId` you can inspect with the Shell's `why-denied <auditId>`.
 
 ---
 

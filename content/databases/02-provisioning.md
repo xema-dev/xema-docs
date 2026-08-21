@@ -6,7 +6,7 @@ Org databases are provisioned automatically during org creation. Biome and app s
 
 ## Org database provisioning
 
-When a new org is created, the platform runs the `ProvisionOrgDatabase` workflow:
+When a new org is created, the platform runs the `ProvisionDatabaseWorkflow` workflow:
 
 1. Select an available database cluster from the pool.
 2. Create the database: `CREATE DATABASE xema_org_<orgUlid>`.

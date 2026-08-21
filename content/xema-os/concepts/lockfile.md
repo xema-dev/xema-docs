@@ -2,7 +2,7 @@
 slug: lockfile
 title: Lockfile
 summary: A deterministic record, written at biome install time, of the exact versions of every contributed object the install pinned. Lockfiles make installs reproducible, drift detectable, and rollbacks possible.
-relatedCommands: ["biome install"]
+relatedCommands: ["xema biome install"]
 relatedCapabilities: ["biome:install@1"]
 relatedZones: ["org"]
 stability: stable

@@ -254,29 +254,36 @@ jobs:
 
 All webhooks are normalized to this format:
 
+The base class is `ConnectorWebhookEnvelopeDto<TPayload>` in `@xemahq/platform-common`. Each owning domain service declares one concrete subclass per `WebhookEntityKind`.
+
 ```typescript
-interface IntegrationWebhookEnvelope<TPayload = unknown> {
-  // Provider and adapter info
-  provider: ConnectorKind
-    // GITHUB | GITLAB | GITEA | AZURE_DEVOPS | ATLASSIAN | SLACK
+class ConnectorWebhookEnvelopeDto<TPayload = unknown> {
+  provider: string
+    // Curated providers use the ConnectorKind vocabulary — GITHUB, GITLAB,
+    // GITEA, XEMA_GITEA, AZURE_DEVOPS, ATLASSIAN, SLACK, TELEGRAM, ...
+    // The column is open so an installed biome can contribute its own.
 
   adapterKey: AdapterKey
-    // SCM | TRACKER | DOC
-
-  // Event identification
-  entityKind: WebhookEntityKind
-    // Discriminator: scm.push, scm.pull_request, tracker.issue, etc.
+    // SCM | TRACKER | DOCUMENTATION | ...
 
   event: string
-    // Canonical event name (e.g., "scm.push")
+    // Canonical event name (e.g. "scm.push")
 
-  // Event-specific data
-  payload: TPayload
-    // Typed based on event kind
+  entityKind: WebhookEntityKind
+    // Discriminator: scm.push, scm.pull_request, tracker.issue, ...
 
-  // Idempotency
   deliveryId: string
-    // Unique per webhook delivery (for deduplication)
+    // Unique per webhook delivery — the idempotency input
+
+  occurredAt: string
+  correlationId: string
+  externalId?: string
+  externalSpaceKey?: string
+  connectionId?: string
+    // Which named connection this delivery arrived on
+
+  payload: TPayload
+    // Typed per entityKind
 }
 ```
 

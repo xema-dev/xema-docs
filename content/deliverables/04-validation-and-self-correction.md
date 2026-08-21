@@ -48,7 +48,7 @@ The bound is deterministic: exactly one retry, ever. There is no third attempt a
 
 ## What the user sees
 
-The run-detail UI renders a `DeliverableFailureCard` inline on the failing activity span:
+The run-detail UI renders the failure inline on the failing activity span:
 
 - **Reason badges** — typed codes from the closed set above, with per-reason `expected:` and `actual:` lines.
 - **Expected** — the spec's contract summary: required file paths, content kinds, schema refs, multi-page slugs.

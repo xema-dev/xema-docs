@@ -84,10 +84,10 @@ Only the Xema import is shown. The class-level and module-level decorators (`@In
 
 `@InjectService` returns a generated Orval client whose `baseUrl` is **live** — the underlying HTTP transport reads the resolved URL from the registry on every call, with a short in-process cache. When the target service scales out, restarts, or moves, callers do not reconnect; the next request resolves to the new instance.
 
-Auth headers are attached automatically. The registry SDK ships a default `ServiceAuthInterceptor` that:
+Auth headers are attached automatically. The typed client obtains its bearer from a **service-token provider**; the default implementation is identity-backed and:
 
 - Mints a service-account token at first use.
-- Refreshes at ~80% of the token's lifetime with jitter.
+- Refreshes ahead of expiry.
 - Attaches `Authorization: Bearer <token>` to every outbound request.
 
 No service speaks plain HTTP to another service; every call carries an identity-provider-issued token verified by the receiver's auth guard.
@@ -96,20 +96,17 @@ No service speaks plain HTTP to another service; every call carries an identity-
 
 ## Discovery for callers outside the service SDK
 
-Callers that do not run the service SDK (the `xema` CLI, runners, scripts) use the lower-level `ServiceRegistryClient` directly:
+Callers that do not run the service SDK (runners, scripts) resolve through the registry directly. The registry is injected with the `SERVICE_REGISTRY_TOKEN` provided by `ServiceRegistryModule`, from `@xemahq/service-registry-nest`; its implementation reads KernelState over etcd.
 
 ```ts
-import { ServiceRegistryClient } from '@xemahq/service-registry-contracts';
+import { SERVICE_REGISTRY_TOKEN, type ServiceRegistry } from '@xemahq/service-registry-nest';
 
-const registry = ServiceRegistryClient.fromKernelState({
-  adapter: process.env.XEMA_KERNEL_STATE === 'etcd' ? 'etcd' : 'sqlite',
-});
+constructor(@Inject(SERVICE_REGISTRY_TOKEN) private readonly registry: ServiceRegistry) {}
 
-const memoryApi = await registry.resolve('memory-api');
-console.log(memoryApi.endpoints[0].baseUrl);
+const url = await resolveHttpUrl(this.registry, 'memory-api');
 ```
 
-The same descriptor shape, the same auth attachment rules — no app-specific glue.
+The same descriptor shape, the same auth attachment rules — no app-specific glue. There is exactly one discovery mechanism; a `<SERVICE>_API_URL` environment variable for a peer is never the answer.
 
 ---
 
@@ -144,9 +141,9 @@ Adding a service meant editing dozens of consumers. Renaming a service meant a c
 
 | Command | What it shows |
 |---|---|
-| `xema services list` | Every registered service, with its current status and lease |
+| `doctor` (Shell) | Kernel health checks, including every registered service and its lease |
 | `xema services describe <name>` | Full descriptor including capabilities and labels |
-| `xema doctor services` | Health check across every required dependency edge |
+| `xema doctor --infra` (CLI) | TCP-probe the backing dependencies — Postgres, Redis, etcd, event-hub-api |
 
 The Object Browser also exposes the registry: each service appears as a typed `XemaObject` of kind `service-instance` anchored to `xema://system`.
 

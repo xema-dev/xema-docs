@@ -15,9 +15,11 @@ and may add its own UI shell or backend service. Apps consume
 and the shell use — there is no private back door. Apps may register
 `app-client` records to support [delegated-session](./delegated-session.md)
 flows where an external (non-Xema) caller acts on behalf of a Xema
-[audience](./audience.md); the delegated JWT is RS256-signed in
-production and carries `{ sub, act, org, project, session, environment,
-capabilities, exp }`. The public ingress
+[audience](./audience.md); the delegated JWT is signed by a rotating
+key ring (`ES256` / `RS256`) and carries `{ appId, sub, act, org, project,
+session, environment, capabilities, exp, jti, tokenClass }`. Every public
+ingress door takes an app-client credential and is capped by both a
+per-client and (where a subject exists) a per-subject hourly rate limit. The public ingress
 (`app-platform-public.xema.dev`) is split from the org-internal admin
 ingress so platform AuthGuard is bypassed only on `/public/*` paths.
 External-subject sessions are reachable through the embedded route

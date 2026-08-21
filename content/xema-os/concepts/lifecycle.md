@@ -2,7 +2,7 @@
 slug: lifecycle
 title: Object Lifecycle
 summary: The closed `draft → published → archived` state machine every versioned XemaObject moves through. Only `published` versions can be resolved; `draft` is editor-only and `archived` is preserved for lineage. Lifecycle transitions are auditable and irreversible (no un-publish).
-relatedCommands: ["xema inspect"]
+relatedCommands: ["xema run xema-shell:inspect@1"]
 relatedCapabilities: ["xema-shell:inspect@1"]
 relatedZones: []
 stability: stable

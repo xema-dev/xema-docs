@@ -20,7 +20,7 @@ The two schemas are structurally independent — each has its own migration hist
 ## The development cycle
 
 1. **Author changes** — a developer or agent modifies the app's schema migration file and writes a migration.
-2. **Apply to dev** — run `xema db migrate dev --app webapp-studio` to apply the migration to `app_webapp-studio_dev`.
+2. **Apply to dev** — run the Shell's `db migrate` command against the dev database to apply the migration to `app_webapp-studio_dev`.
 3. **Test** — run test sessions and automated checks against the dev schema.
 4. **Promote** — when the dev schema is validated, promote to prod (see below).
 
@@ -28,13 +28,7 @@ The two schemas are structurally independent — each has its own migration hist
 
 ## Promote-to-Prod
 
-Promoting means applying the dev schema's pending migrations to the prod schema:
-
-```bash
-xema app promote --app webapp-studio
-```
-
-This triggers the `PromoteAppToProd` Xema Workflow Runtime job:
+Promoting means applying the dev schema's pending migrations to the prod schema. Promotion is a single call — `POST /app-dbs/:id/promote-to-prod` on `webapp-studio`, driven from the Studio UI:
 
 1. **Diff** — calculate pending migrations (migrations applied to dev but not prod).
 2. **Pre-flight** — run connection checks, backup snapshot (if configured), and migration dry-run.
@@ -50,18 +44,19 @@ If any step fails, the workflow stops and surfaces a structured failure report. 
 
 Rolling back prod is explicit:
 
-```bash
-xema app rollback --app webapp-studio --to-version 1.2.3
-```
+> **Schema rollback is not implemented.** There is no rollback workflow, service
+> method, or route for an app's prod schema — a promotion that must be undone is
+> undone by authoring a forward migration that reverses it, and applying that
+> through the normal promote path.
+>
+> This is documented as absent rather than omitted, because "roll it back" is the
+> first thing anyone reaches for after a bad promotion, and finding out then is
+> the worst time to find out. Plan promotions on the assumption that they are
+> forward-only, and use the pre-flight step below.
 
-This triggers a `RollbackAppSchema` workflow that:
-
-1. Identifies the migration version to roll back to.
-2. Runs the rollback to the target version.
-3. Updates the migration history.
-4. Emits an audit event.
-
-Rollback is only available for migrations that declare a `down.sql` file. Migrations without a down migration cannot be automatically rolled back; the workflow surfaces this and requires manual intervention.
+The protection that *does* exist is on the way in, not the way out: promotion
+pre-flights the migration sequence before writing to prod, so a sequence that
+cannot apply cleanly is refused rather than half-applied.
 
 ---
 

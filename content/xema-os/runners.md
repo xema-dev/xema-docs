@@ -1,164 +1,112 @@
 # Runners
 
-A **runner** is the process that actually executes a capability. The Xema OS control plane (router, authorization, audit) is uniform across deployments; the runner layer is where *physical execution* happens — inside the kernel binary, in a sidecar process, on a GPU node, on a customer-edge VM, or in a regulated on-prem environment. The choice is data-driven, not hard-coded.
+A **runner** is the process that actually executes a capability. The Xema OS control plane (router, authorization, audit) is uniform across deployments; the runner layer is where *physical execution* happens — on a cloud node, on a GPU node, on a customer-edge VM, in a sandbox, or bridged out to an external MCP server. The choice is data-driven, not hard-coded.
 
 The runner abstraction makes it possible to deploy the same biome to a developer's laptop, a small org's single VM, and a regulated multi-region cluster without changing a line of biome code.
 
 ---
 
-## The three runner kinds
+## The runner kinds
 
-`RunnerKind` is a closed enum:
+`RunnerKind` is a closed enum. It lives in the **policy** surface of `@xemahq/kernel-contracts` — the decision layer is its primary author, because policy selects on it to route an invocation — and the runner surface re-exports it so there is no second declaration to drift against.
 
-| Kind | Where it lives | Cost / latency | Typical use |
-|---|---|---|---|
-| `embedded` | Inside the kernel server process | Lowest | Built-in capabilities, shell built-ins, Concept Registry, XVFS resolution |
-| `local-module` | Same node, separate process supervised by the biome host | Low | First-party biomes, dev/local sub-app processes |
-| `remote` | A different machine; reached via event-hub or pull-channel | Bounded by network | GPU workloads, customer-edge, regulated/private data, scale-out |
+| Kind | Wire value | Typical use |
+|---|---|---|
+| `Local` | `local` | Same-node execution supervised by the biome host |
+| `Cloud` | `cloud` | The default in-cluster pool |
+| `CustomerEdge` | `customer-edge` | A machine the customer operates, in their own network |
+| `GPU` | `gpu` | Accelerator-backed workloads |
+| `Sandbox` | `sandbox` | Biome build/test and untrusted evaluation |
+| `CI` | `ci` | Continuous-integration executors |
+| `McpExternal` | `mcp-external` | An external MCP server, bridged through `mcp-gateway-api` |
 
-A capability is not pinned to a runner kind at registration. **Policy** (via `routeHints.requiredRunnerKind`) chooses the kind per invocation; the router then picks a specific runner instance that matches.
+A capability is not pinned to a runner kind at registration. [Policy](./policy.md) chooses — softly via `routeHints.preferredRunnerKind`, or hard via a `require-runner-kind` obligation — and the router then picks a specific runner instance that matches.
 
----
-
-## Runner registration
-
-Every runner — embedded, local-module, or remote — registers itself with the kernel server through the [Service Registry](./service-registry.md):
-
-```ts
-// At runner boot
-serviceRegistry.register({
-  name: 'xema-runner-eu-west-gpu-04',
-  kind: 'remote',
-  exposesCapabilities: [
-    'document:render.pdf@1',
-    'invoice:extract@1',
-  ],
-  labels: {
-    region: 'eu-west',
-    dataLocality: 'customer-private',
-    accelerator: 'gpu',
-    trustTier: 'verified',
-  },
-  attestation: {
-    identity: '<service-account-jwt>',
-    version: 'v1.4.2',
-    allowedEnvironments: ['org', 'project'],
-  },
-});
-```
-
-Three runner-side requirements:
-
-1. **Identity** — every runner authenticates with a service-account token issued by the platform's identity provider.
-2. **Attestation** — the runner declares its version, allowed environments (org-admin signed), and data-residency labels.
-3. **Labels** — labels are how [Policy](./policy.md) `routeHints` match runners. A label is a free-form `key=value`; the policy compiler verifies that every label referenced in a policy is provided by at least one runner during install lint.
+`McpExternal` is worth calling out: the router resolves capability refs of the form `<provider-slug>:<tool-name>@1` to that kind and forwards the invoke envelope to the external bridge, which translates it into an MCP `tools/call` against the originating org-registered MCP server. An external MCP tool is a runner, not a special case.
 
 ---
 
-## Embedded runners — fast path
+## Enrollment — the ceiling is set before the runner ever speaks
 
-Embedded runners are not separate processes. They are modules loaded directly into the kernel server binary. Use them for:
+A runner does not describe itself into existence. It is **enrolled** first, by an org admin, and the enrollment records the ceilings the runner may later attest within:
 
-- The Concept Registry, the Shell built-in commands, XVFS resolution, the meta-tools.
-- Capabilities that are pure functions of in-memory state and would suffer a serialization round-trip otherwise.
+| Enrollment field | What it caps |
+|---|---|
+| `allowedKinds` | Which `RunnerKind` values this runner may attest as |
+| `maxTrustTier` | The highest trust tier it may claim (`untrusted` < `verified` < `trusted` < `system`) |
+| `allowedLocalities` | Which data localities it may claim (`cloud`, `customer-private`, `gpu`) |
+| `allowedEnvironmentIds` | Which [execution environments](./environments.md) it may run in |
 
-The trade-off: embedded runners share the kernel server's lifecycle. A crash takes down the whole control plane. That is why third-party biomes are never embedded — only kernel-shipped surfaces are.
-
----
-
-## Local-module runners — the developer default
-
-A **local-module runner** is a separate process on the same node, supervised by `biome-host-api`. This is the default for first-party biomes and for every biome installed by `xema dev`. The supervisor:
-
-- Spawns the runner with a minimal environment (no `*_API_URL` env vars — the runner discovers everything via the Service Registry).
-- Issues a service-account token at spawn time.
-- Restarts on crash (with exponential backoff and a crash budget).
-- Reaps zombies on biome uninstall.
-
-Local-module runners may share the host machine's filesystem and network namespace. The [Environment](./environments.md) governs whether they may use it.
+`allowedKinds` is NOT NULL and refused **empty** at create. That is deliberate: an empty allow-list is a deny-all ceiling that reads as "unconfigured", and that shape has already caused a total outage elsewhere in the platform. A declarative enrollment configuration that omits the field fails to parse at boot, loudly, rather than starting with a silently permissive or silently empty ceiling.
 
 ---
 
-## Remote runners — push vs pull
+## Attestation — the runner's claims are checked against its enrollment
 
-A **remote runner** is a different machine entirely. There are two transport modes; the runner picks one at registration:
+At attestation the runner asserts its kind, trust tier, locality and environments. All four are compared against the enrollment in one expression, inside the same transaction that records the attestation:
 
-### Push mode (cluster default)
+- the asserted trust tier must not out-rank `maxTrustTier`;
+- the asserted locality must be in `allowedLocalities`;
+- the asserted kind must be in `allowedKinds`;
+- every asserted environment must be in `allowedEnvironmentIds`.
 
-```
-kernel-server  →  event-hub-api  →  remote runner subscribes
-                      │
-            xema.runner.dispatch.v1
-```
+Any of them exceeding its ceiling is refused — the attestation does not partially succeed. The kernel applies the same kind check again before it signs a lease, so a runner cannot obtain a signed lease naming a kind its enrollment never authorized.
 
-The kernel server emits a `xema.runner.dispatch.v1` CloudEvent. The runner consumes from its subscription, executes, and emits `xema.runner.result.v1` back. This is the high-throughput, low-latency mode used inside a cluster.
+This matters because the runner's kind arrives from the runner's own configuration. Self-asserted and uncapped, it would be a routing decision made by the thing being routed to: a runner could declare itself `customer-edge` and become the target of every invocation pinned to customer-edge residency. The enrollment ceiling is what makes the self-assertion safe.
 
-### Pull mode (customer-edge default)
+A runner whose attestation expires or fails verification is removed from the dispatch pool. In-flight jobs follow the enrollment's declared in-flight policy; no new jobs are dispatched.
 
-```
-remote runner  →  long-polls  →  POST /runners/<id>/pull-work  →  kernel-server
-```
+---
 
-The runner long-polls a kernel endpoint. This mode works through NAT, behind corporate firewalls, and across cloud boundaries without inbound connectivity. Customer-edge and regulated-on-prem deployments use pull mode by default.
+## Transport — push and pull
 
-Both modes share the same dispatch contract: the runner receives a signed `RunnerJob` containing the full `ExecutionContext`, the capability ref, the input, and an RS256-signed job token with a tight TTL (≤60s).
+`RunnerTransport` is a two-member enum: `push` and `pull`. The runner's transport is part of its registration, not a per-invocation choice.
+
+### Push (cluster default)
+
+The kernel dispatches to the runner. High-throughput and low-latency, and it assumes the runner is reachable — which is true inside a cluster and false almost everywhere else.
+
+### Pull (customer-edge default)
+
+The runner reaches **outbound** and takes work. This works through NAT, behind corporate firewalls, and across cloud boundaries with no inbound connectivity at all. Customer-edge and regulated on-premise deployments use it by default.
+
+Both modes share the same dispatch contract: the runner receives the full execution context, the capability ref, the input, and a short-lived signed job token.
 
 ---
 
 ## Signed job tokens
 
-Every dispatch carries a kernel-signed token bound to the specific invocation:
+Every dispatch carries a kernel-signed token bound to that specific invocation — issuer, subject, audience (the target runner identity), the single capability ref in scope, and a tight expiry. The runner verifies signature, audience, scope and freshness before touching the input.
 
-- Issuer: the kernel server.
-- Subject: the invocation ID.
-- Audience: the target runner identity.
-- Scope: the single capability ref being invoked.
-- TTL: ≤60 seconds.
-
-The runner verifies signature, audience, scope, and freshness before touching the input. A token that does not match the job is rejected with `RUNNER_TOKEN_MISMATCH` — there is no second-chance retry on the same token.
-
-Why this matters: a leaked job token is useless past 60 seconds, useless on a different runner, useless for a different capability. Compromise of one runner does not lateral-move across the cluster.
-
----
-
-## Runner attestation lifecycle
-
-A runner is **not** trusted until it is attested. The kernel server records:
-
-| Property | Source |
-|---|---|
-| Identity | Service-account JWT from the identity provider |
-| Version | The runner reports it at register; cross-checked against the version manifest |
-| Allowed environments | Signed by the org admin during onboarding |
-| Data-residency labels | Signed by the org admin during onboarding |
-| Trust tier | `first-party` / `verified` / `community` / `untrusted` |
-
-A runner whose attestation expires or fails verification is removed from the dispatch pool immediately; in-flight jobs are allowed to complete (with a deadline) and no new jobs are dispatched.
+A leaked job token is useless past its expiry, useless on a different runner, and useless for a different capability. Compromise of one runner does not laterally move across the cluster.
 
 ---
 
 ## Picking a runner — the matching algorithm
 
-When the router has a `PolicyDecision` with `routeHints` and a capability ref:
+Given a `PolicyDecision` and a capability ref, the selector applies **hard filters in order**, recording how many candidates survived each step:
 
-1. Filter runners to those that expose the capability.
-2. Apply `requiredRunnerKind` if set.
-3. Filter to runners whose `labels` cover every `requiredLabels` entry.
-4. Filter to runners in `requiredRegion` if set.
-5. Filter to runners matching `requiredResidency` if set.
-6. Remove any runner in `excludeRunners`.
-7. Pick the lowest-loaded survivor.
+1. **Binding and lease authority, exact match** — runner id, enrollment id, principal id, credential revision, attestation revision, runtime id, owning org and locality must all agree. Nothing that fails this is a candidate at all.
+2. `requiredRunnerKind`, from a `require-runner-kind` obligation.
+3. `requiredDataResidency`, from a `data-residency` obligation.
+4. `requireCustomerEdge`, from the route hint.
+5. `requiredRunnerLabels` — every key must match (AND semantics).
+6. `requiredRegion` — matched against the runner lease's `region` operational label.
 
-If the filter set is empty after step 6, the invocation fails fast with `NO_RUNNER_MATCHES_POLICY`. There is no fallback to a less-restrictive runner — a regulated workload never silently spills onto a cloud runner.
+Then the soft preference `preferredRunnerKind` is applied if any candidate satisfies it, and the tie is broken deterministically.
+
+If the candidate set empties, the selection returns which constraint eliminated the last survivor, and the invocation fails with `NO_RUNNER_AVAILABLE` naming it. There is no fallback to a less-restrictive runner — a regulated workload never silently spills onto a cloud runner.
+
+Note what step 1 means in practice: labels, region and residency are **narrowing filters over already-authorized candidates**. A label never establishes ownership, trust, locality or capability authority. Authority comes from the enrollment and the lease; the filters only subtract.
 
 ---
 
 ## Related concepts
 
-- [Policy](./policy.md) — `routeHints` are the input to runner selection.
-- [Service registry](./service-registry.md) — how runners advertise themselves.
+- [Policy](./policy.md) — obligations and route hints are the input to runner selection.
+- [Service registry](./service-registry.md) — how services discover each other.
 - [Execution contexts](./execution-contexts.md) — what the dispatch payload carries.
-- [Environments](./environments.md) — runner allowed-environment lists are the trust gate.
+- [Environments](./environments.md) — an enrollment's allowed-environment list is the trust gate.
 - [Capabilities](./capabilities.md) — every capability is served by one or more runners.
 
 ---

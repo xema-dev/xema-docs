@@ -89,13 +89,13 @@ Every capability call is authorized against the grant before it reaches the impl
 
 Allowed → invocation proceeds. Denied → fail-fast with a structured response. Either way, audited.
 
-**Phase rollout note.** Built-in profiles and the `BiomeInstallGrant` table land in Phase 3 alongside `authorization-api`. The eight built-in execution environments become enforced in Phase 4 — until Phase 4 the `environment` field exists on grant rows but is a forward-compatibility placeholder.
+**Phase rollout note.** Built-in profiles and the `BiomeInstallGrant` table land in Phase 3 alongside `authorization-api`. The nine built-in execution environments become enforced in Phase 4 — until Phase 4 the `environment` field exists on grant rows but is a forward-compatibility placeholder.
 
 ---
 
 ## Structured denials
 
-Denial is a typed response, not a stack trace. Every denial carries an `auditId` the caller can pass to `xema why-denied <auditId>` to get back:
+Denial is a typed response, not a stack trace. Every denial carries an `auditId` the caller can pass to the Shell's `why-denied <auditId>` to get back:
 
 ```jsonc
 {
@@ -142,7 +142,7 @@ The same workflow YAML works against GitLab or Gitea if the org's connector bind
 | 1A | Capability ref parser, `CapabilityGrant`, `CapabilityPolicy` types in `@xemahq/capability-contracts`. No runtime. |
 | 1B | The full connector capability set above. One provider per domain wired end-to-end through capability refs. |
 | 3 | `xema-capability-router` + `authorization-api` go live; every connector call routes through them. |
-| 4 | Eight built-in execution environments seeded and enforced; `trusted-dev` environment available for biome authors. |
+| 4 | Nine built-in execution environments seeded and enforced, including the `trusted-dev` escape hatch for biome authors. |
 | 5 | Shell commands map 1:1 to capability invocations. |
 
 ---

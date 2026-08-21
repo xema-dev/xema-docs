@@ -39,7 +39,7 @@ The default runner. It:
 1. Connects to the schema using the provided `connectionUrl`.
 2. Runs all pending migrations in `migrationsPath` against the target schema.
 3. Records the migration history in the migration history table inside the target schema.
-4. Returns a `MigrationResult` with applied/skipped/failed counts.
+4. Records the outcome — the runner used, the applied migrations, and any failure — on a `MigrationRun` row carrying a `MigrationStatus`.
 
 Migration files in the biome bundle are organized by timestamp and name:
 
@@ -59,13 +59,14 @@ biome/
 
 Migrations run as part of three platform workflows:
 
-| Workflow | When triggered | What it does |
+| Entry point | When triggered | What it does |
 |---|---|---|
-| `ProvisionBiomeSchema` | At biome install | Runs all migrations from scratch on the new schema |
-| `RunBiomeMigrations` | On biome version update | Runs migrations added since the previous version |
-| `PromoteAppToProd` | On app production deploy | Runs migrations on the prod schema (see [App Studio Dev/Prod](./05-webapp-studio.md)) |
+| `ProvisionDatabaseWorkflow` | At org provisioning | Creates the org database and its first schema |
+| `EnsureSchemaWorkflow` | At biome install | Ensures the biome's schema exists on the org database |
+| `RunMigrationsActivity` | At biome boot and on version update | Applies the biome's pending migrations |
+| Promote-to-prod | On an app production deploy | Applies pending migrations to the prod schema (see [App Studio Dev/Prod](./05-webapp-studio.md)) |
 
-All three workflows record the runner they used on the `MigrationRun` row. They are orchestrated by the Xema Workflow Runtime, which provides retry, timeout, and observability.
+All of them record the runner they used on the `MigrationRun` row. The workflows are orchestrated by the Xema Workflow Runtime, which provides retry, timeout, and observability; the migration activity raises typed failures (`MigrationFailedError`, `MigrationTimeoutError`) rather than reporting a partial success.
 
 ---
 
@@ -78,7 +79,7 @@ If a migration fails:
 3. The biome remains in `schema-migration-failed` state — it can read existing data but cannot write to newly-expected columns.
 4. The org admin receives an alert with the failed migration SQL and the database error.
 
-To recover: fix the migration SQL, publish a new biome version, and re-trigger `RunBiomeMigrations`.
+To recover: fix the migration SQL, publish a new biome version, and re-run the migration.
 
 ---
 
@@ -94,7 +95,7 @@ For migrations that require careful sequencing (large table rewrites, zero-downt
 }
 ```
 
-Manual-only migrations are skipped by the automatic runner and surfaced in the org admin dashboard with the instructions. An org admin must run them explicitly via `xema db migrate run --migration 20260527_003_reindex_reviews`.
+Manual-only migrations are skipped by the automatic runner and surfaced in the org admin dashboard with the instructions. An org admin must run them explicitly — from the org admin dashboard, or with the Shell's `db migrate` command.
 
 ---
 

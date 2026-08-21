@@ -676,14 +676,31 @@ GET /sessions/{id}/preview-apps
 
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
-| `SESSION_NOT_FOUND` | 404 | Session does not exist |
-| `SESSION_NOT_ACTIVE` | 409 | Operation requires `active` status |
-| `TURN_IN_PROGRESS` | 409 | Another message is being processed |
-| `BUDGET_EXHAUSTED` | 422 | Token budget depleted |
-| `PROVISIONING_FAILED` | 409 | Session failed during provisioning |
-| `WORKER_UNAVAILABLE` | 503 | No workers available in pool |
+| `SESSION_NOT_FOUND` | 404 | Session does not exist, or is not visible to the caller |
+| `SESSION_ORG_CONCURRENCY_LIMIT_REACHED` | 429 | The org is at its concurrent-session ceiling |
 | `UNAUTHORIZED` | 401 | Missing or invalid token |
 | `FORBIDDEN` | 403 | Insufficient permissions |
+
+**A turn already in flight** is refused with the wire contract `{ "error": "session_busy" }` — a distinct shape, not a code in the table above, because a busy session is a retryable state rather than a failure.
+
+**A launch that does not complete** does not produce an HTTP code. It records a structured `LaunchFailureKind` on the session, which is what the UI and any automation should branch on. The set is closed and includes, among others:
+
+| Kind | Meaning |
+|---|---|
+| `config_resolution_failed` | The session's configuration could not be resolved |
+| `launch_selection_invalid` | The requested launch selection was not valid |
+| `worker_acquire_timeout` | No worker became available inside the deadline |
+| `worker_acquire_rejected` | The pool refused the acquisition |
+| `worker_allocation_lost` | An acquired worker was lost before the session started |
+| `provision_failed` | Provisioning failed |
+| `bootstrap_failed` / `bootstrap_contract_broken` | The runtime started but did not honour the bootstrap contract |
+| `workspace_restore_failed` / `workspace_snapshot_corrupt` | The workspace could not be restored |
+| `no_usable_provider` / `agent_unavailable` | No model provider or agent was usable |
+| `deadline_exceeded` | The launch exceeded its deadline |
+| `illegal_transition` / `launch_abandoned` | The launch left a legal state machine path |
+| `launch_unclassified` | Failure with no classification — reported as such, never silently mapped |
+
+`launch_unclassified` exists on purpose: a failure the platform cannot classify is reported as unclassified rather than folded into the nearest plausible neighbour.
 
 ---
 

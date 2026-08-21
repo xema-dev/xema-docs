@@ -8,7 +8,7 @@ Where Spaces and Environments are durable, ExecutionContext is **ephemeral** —
 
 ## The envelope shape
 
-The contract lives in `@xemahq/execution-context-contracts`:
+The contract lives in `@xemahq/kernel-contracts/execution-context`:
 
 ```ts
 interface ExecutionContext {
@@ -81,7 +81,7 @@ Most invocations originate inside a session. The router resolves Space + Environ
 | Project workspace session | `xema://orgs/<org>/projects/<project>` | `project` |
 | Org admin console session | `xema://orgs/<org>` | `org` |
 | Sandbox build session | `xema://biomes/<biome>` | `sandbox` |
-| Delegated app session | `xema://orgs/<org>/apps/<app>` | `app` or `public-app` |
+| Delegated app session | `xema://orgs/<org>/apps/<app>` | `app` or `public` |
 | Personal session | `xema://users/<userId>` | `org` (fallback to `user`) |
 
 A subject may **request** an alternate Space or Environment via the Shell's `--space` / `--environment` flags or the capability invoker's `requestedEnvironment` field. The router applies the request only if the subject holds a grant that allows it; otherwise the request is rejected before policy check.
@@ -112,7 +112,7 @@ When an agent spawns a sub-agent, or a workflow step invokes a capability that i
 - A fresh `invocationId`.
 - `parentInvocationId` set to the parent's `invocationId`.
 
-Lineage queries are first-class: `xema why-denied <auditId>` will walk the parent chain and report the originating subject + the chain of capabilities that led to the denial.
+Lineage queries are first-class: the Shell's `why-denied <auditId>` walks the parent chain and reports the originating subject plus the chain of capabilities that led to the denial.
 
 ---
 

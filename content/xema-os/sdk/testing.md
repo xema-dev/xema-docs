@@ -37,21 +37,15 @@ The parser refuses unknown closed-set values fail-fast. Run this test in your bi
 
 Each contribution is a pure(-ish) module: an agent definition is a YAML document, a workflow definition is YAML, a handler is a TS function. Test them the way you would test any other unit.
 
-**Agent definitions** — parse with `@xemahq/agent-contracts` and assert structural invariants:
+**Agent definitions** — the fastest and most complete check is `xema biome validate`, which runs the platform's own pre-boot pass over the whole biome directory: manifest schema, `xema.agents[]` ⟷ `agents/*.md` parity, contribution envelopes, skill frontmatter and workflow schemas. It exits non-zero listing every issue, so it drops straight into CI:
 
-```ts
-import { AgentDefinitionSchema } from '@xemahq/agent-contracts';
-import yaml from 'js-yaml';
-import { readFileSync } from 'node:fs';
-
-it('greeter is a well-formed agent', () => {
-  const def = yaml.load(readFileSync('./agents/greeter.agent.yaml', 'utf8'));
-  const parsed = AgentDefinitionSchema.parse(def);
-  expect(parsed.metadata.slug).toBe('greeter');
-});
+```bash
+xema biome validate
 ```
 
-**Workflow definitions** — parse with the DSL compiler from `@xemahq/workflow-dsl`. The compiler runs the same closed-set checks the platform runs at install time.
+For assertions on a *specific* agent, the agent contracts live in `@xemahq/kernel-contracts/agent-composition` (`Agent`, `AgentRef`, `AgentLifecycle`, `AgentLimits`, `ResolvedAgent`).
+
+**Workflow definitions** — parse with the DSL compiler from `@xemahq/dsl`. The compiler runs the same closed-set checks the platform runs at install time.
 
 **Event handlers** — import the handler module, build a typed event envelope by hand, pass a mock context, assert on the calls the handler makes (see below).
 
@@ -142,19 +136,11 @@ Running this as a unit test means a misdeclared manifest fails before publish �
 
 ## Storage tests
 
-A biome with declared collections can validate its schemas against `@xemahq/biome-storage-sdk`'s `CollectionSchema` parser:
-
-```ts
-import { CollectionSchema } from '@xemahq/biome-storage-sdk';
-import { readFileSync } from 'node:fs';
-
-it('incidents schema parses', () => {
-  const schema = JSON.parse(readFileSync('./storage/incidents.schema.json', 'utf8'));
-  expect(() => CollectionSchema.parse(schema)).not.toThrow();
-});
-```
-
-The parser enforces the closed field-type set, the `enum` requirement of a non-empty `values` array, and that every index references a declared field.
+> **No standalone collection-schema parser ships today.** There is no
+> `@xemahq/biome-storage-sdk` package and no exported `CollectionSchema`
+> validator to call from a unit test. Validate declared collections through
+> `xema biome validate`, which runs the platform's own manifest pass over the
+> biome directory.
 
 ---
 

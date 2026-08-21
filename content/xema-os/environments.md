@@ -1,25 +1,56 @@
 # Execution Environments
 
-An **execution environment** is a named runtime profile that describes *where* a capability is permitted to run. Every capability call in Xema OS is bound to exactly one environment. Environments encode trust boundaries, data-residency constraints, network reachability, and which capabilities are reachable from within them.
+An **execution environment** is a named runtime profile that describes *where* a capability is permitted to run. Every capability call in Xema OS is bound to exactly one environment. Environments encode trust boundaries, a data-classification ceiling, and how far outside itself a capability may reach from within them.
 
 An execution environment is the canonical, unambiguous term for the trust profile that gates every capability invocation. It is intentionally distinct from cloud availability regions, DNS terms, and Kubernetes node-grouping labels.
 
 ---
 
-## The eight built-in environments
+## The nine built-in environments
 
-| Environment | Trust level | Who typically runs in it | Network access |
+| Environment | Trust level | Who typically runs in it | Reach ceiling |
 |---|---|---|---|
-| `system` | Kernel-trusted | Xema platform internals only | Full internal |
-| `org` | Org-trusted | Org-installed biomes; org admins | Org-scoped external via connectors |
-| `project` | Project-scoped | Project-installed biomes; project members | Project-scoped external via connectors |
-| `app` | App-scoped | External-facing apps with delegated sessions | AudiencePolicy-mediated |
-| `session` | Session-scoped | Active interactive sessions | Inherits from the session's environment at launch |
-| `sandbox` | Isolated | Biomes under development or first install | No external network; no org secrets |
-| `store-review` | Store-isolated | Biomes under Store review | Sandboxed; no real org data |
-| `public-app` | Public-facing | External subjects on a published app | Highly restricted; audience-policy-mediated |
+| `system` | Kernel-trusted | Platform operators, migrations | `platform` — unconstrained |
+| `org` | Org-trusted | Org admins; biome install / uninstall | `platform` — unconstrained |
+| `project` | Project-scoped | Project members; the default agent and workflow runtime | `integration` |
+| `app` | App-scoped | Apps configured for an audience | `integration` |
+| `session` | Session-scoped | Interactive sessions, bounded by user permissions | `integration` |
+| `sandbox` | Isolated | Biomes an org is evaluating; biome build/test | `owner` |
+| `public` | Public-facing | External delegated sessions — chat widgets, customer portals | `owner` |
+| `store-review` | Store-isolated | A biome inspected for publication; no real org data | `owner` |
+| `trusted-dev` | Local-dev escape hatch | Biome authors on their own machine | `platform` — unconstrained |
 
-The set is closed (`ExecutionEnvironmentKind` enum in `@xemahq/execution-environment-contracts`). Third-party biomes cannot introduce new built-in environments. Orgs may, however, **author custom environments** that compose the built-in policy templates (see [Custom environments](#custom-environments-org-defined)).
+The set is closed: `ExecutionEnvironmentKind` in `@xemahq/kernel-contracts`. Third-party biomes cannot introduce new built-in environments. Slugs are stable wire identifiers — they appear in `ExecutionEnvironmentRef` (`environment:<slug>`), in capability grants, and in audit rows.
+
+`trusted-dev` is not a production environment. Inside it the capability gateway grants every capability the biome *declared* in its manifest — no resource glob, no rate limit, no human approval — precisely so an author can see what their biome would do. Every call is still audited, and the environment is never reachable from production data.
+
+---
+
+## The reach ceiling — how a built-in environment is actually constrained
+
+The environment's half of the permission plane is a **reach ceiling**: the maximum [`CapabilityReach`](./capabilities.md) (`owner` | `integration` | `platform`) a capability may declare and still be invocable here.
+
+Two properties matter:
+
+- **It is a restriction, never a grant.** The ceiling is intersected with the grant verdict, never unioned. An environment that admits `platform` reach grants nobody anything — it merely declines to narrow.
+- **It cannot go stale.** Capabilities are an open set that biomes contribute to at install time. A ceiling is expressed over a closed vocabulary every capability descriptor already carries, so a capability contributed tomorrow is classified the moment it declares its reach. No environment needs editing.
+
+When the capability catalogue cannot answer, the two families behave differently, and deliberately so:
+
+| Enforcement | Environments | Unresolvable capability |
+|---|---|---|
+| `boundary` — the environment *is* the control | `sandbox`, `public`, `store-review` | **DENY** |
+| `refinement` — the environment narrows an already-granted call | `system`, `org`, `project`, `app`, `session`, `trusted-dev` | Defer to the grant verdict, and say so in the log |
+
+One global policy would force a choice between "a registry blip denies every session" and "sandbox is bypassable by making the registry unavailable". Those are not the same question, so they do not share an answer.
+
+---
+
+## The data-classification ceiling
+
+Every environment carries `maxDataClassification` — the most restrictive [`DataClassification`](./spaces.md) (`public` | `internal` | `confidential` | `secret` | `regulated`) an invocation may carry and still run there. The column is NOT NULL with a declared permissive default (`regulated`, i.e. everything admitted); a nullable column would read as "unconfigured" while possibly enforcing something.
+
+An organization may tighten a **built-in** environment's classification ceiling for itself without editing the built-in: an `ExecutionEnvironmentCeilingOverride` row caps one built-in slug for one org.
 
 ---
 
@@ -28,7 +59,7 @@ The set is closed (`ExecutionEnvironmentKind` enum in `@xemahq/execution-environ
 Environment enforcement is two-part:
 
 1. **At install time** — the install grant records which environments the biome is permitted to operate in. The org admin sets this during approval.
-2. **At runtime** — the capability router checks that the active environment is in the grant's allowed set before dispatching. A mismatch returns a structured denial with an `auditId`.
+2. **At runtime** — the capability router checks that the active environment is in the grant's allowed set before dispatching. A mismatch returns a structured denial.
 
 Every invocation carries an [ExecutionContext](./execution-contexts.md) that includes the environment. The environment cannot be forged by the caller — it is resolved from the active session context.
 
@@ -38,62 +69,25 @@ Every invocation carries an [ExecutionContext](./execution-contexts.md) that inc
 
 A **grant** records that a specific subject (biome, agent, user, app client) may invoke a specific capability within a specific environment. Grants are created when an install grant is approved and when an org admin explicitly grants additional access.
 
-Inspect active grants:
-
-```bash
-xema environment explain --subject biome:acme-code-review --environment org
-```
-
-This prints the full grant tree: which capabilities the subject holds, in which environments, expiry (if any), and rate limits.
+Grants are managed from **Org Settings → Authorization**, and through the platform API. See [Permissions & Access](./permissions.md) for the whole grant model.
 
 ---
 
 ## Sandbox environment — development and testing
 
-The `sandbox` environment is the default for biomes in `draft` and `sandbox-installed` states. It enforces:
+The `sandbox` environment is where an org evaluates a biome it does not yet trust. Its reach ceiling is `owner` — nothing beyond what the invoking subject already holds — and that ceiling is a `boundary`: if the catalogue cannot classify a capability, the call is denied rather than admitted.
 
-- **No org secrets**: connector credentials, API keys, and encrypted config are not injected.
-- **No external network**: outbound calls are blocked except to declared mock connectors.
-- **No writes to org storage**: knowledge-base writes, artifact emissions, and storage-schema mutations are redirected to an ephemeral test namespace.
-- **Real terminal**: the sandbox provides a real Linux PTY for shell commands. Commands that would require org grants are denied.
-
-Use the sandbox to iterate fast without risk to production data. Graduate to `org` or `project` only after the biome passes review.
-
----
-
-## Environment-aware commands
-
-The Xema Shell lets you inspect environments directly:
-
-| Command | What it shows |
-|---|---|
-| `xema environments list` | All environments available to the calling subject |
-| `xema environment explain <env>` | Capabilities available in the environment, grants, limits |
-| `xema why-denied <auditId>` | Full denial reason, which environment was active, suggested fix |
+Practically, that means no production credential access. The environment *is* the boundary; there is no second list to keep current.
 
 ---
 
 ## Custom environments (org-defined)
 
-Orgs may compose custom environments rooted under their org [Space](./spaces.md). A custom environment is a named profile that:
+An organization may author its own environments, rooted under its org [Space](./spaces.md). A custom environment is a row like any other, distinguished by `isBuiltIn = false` and an owning `orgId`. It is scoped to that org; it cannot leak into another.
 
-- Inherits one or more built-in policy templates (e.g. `org-baseline`, `data-residency-eu`).
-- May tighten — never weaken — the capability set, data-classification floor, or runner selection of its parent template.
-- Is scoped to the org Space and its descendants; it cannot leak into other orgs.
+A custom environment is also the **only** place a per-ref `allowedCapabilities` allow-list is meaningful: the org names exact refs, the list is small, and the org owns its staleness. A built-in may never carry one — that is a database CHECK constraint (`execution_environments_builtin_no_capability_allow_list`), not a convention.
 
-Example: an org-defined `finance-production` environment denies `connector:bank.transfer@1` from any caller while allowing `connector:erp.create-invoice-draft@1`. The custom environment is just data — no code change; admins compose it through the Org Settings UI or via `xema environment create`.
-
----
-
-## Org admin: assigning environments
-
-When installing a biome, the org admin picks the environments it may operate in. To change after install:
-
-1. Open **Org Settings → Biomes → [biome name] → Edit Grant**.
-2. Adjust the environment set and confirm.
-3. The updated grant takes effect on the next capability call (no restart required).
-
-Changes are audited. The previous grant version is retained for compliance review.
+The reason is worth stating, because it is the same mistake twice avoided. The nine built-ins ship the list empty. A consumer gating on it must read empty as deny-all — a total outage, which shipped once — or ignore it, which makes the control inert for the environments nearly every org uses. Neither is a control. The reach ceiling is.
 
 ---
 
@@ -102,11 +96,10 @@ Changes are audited. The previous grant version is retained for compliance revie
 - [Spaces](./spaces.md) — the *where* of data ownership; environments are the *where* of runtime trust.
 - [Execution contexts](./execution-contexts.md) — the per-invocation envelope that carries the active environment.
 - [Policy](./policy.md) — the decision protocol that consults the environment.
-- [Runners](./runners.md) — runner labels match `routeHints` derived from environment policy.
-- [Capabilities](./capabilities.md) — every invocation binds to one environment.
+- [Runners](./runners.md) — where a capability's implementation actually executes.
+- [Capabilities](./capabilities.md) — every invocation binds to one environment, and declares one reach.
 
 ---
 
 **Previous**: [← Capabilities](./capabilities.md)
 **Next**: [Spaces →](./spaces.md)
-

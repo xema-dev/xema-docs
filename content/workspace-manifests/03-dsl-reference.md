@@ -306,20 +306,23 @@ When manifest compilation fails — at biome install time, or in your editor via
       "message": "agent slug must not be empty"
     },
     {
-      "code": "TEMPLATE_NOT_FOUND",
+      "code": "VALIDATION_ERROR",
       "path": "spec.seedFiles[0].template",
-      "name": "my-custom-template"
+      "message": "template 'my-custom-template' does not resolve"
     }
   ]
 }
 ```
 
-| Code | Meaning | Next Step |
-|---|---|---|
-| `VALIDATION_ERROR` | Tier 1 or 2 failure | Fix the YAML |
-| `TEMPLATE_NOT_FOUND` | Required template doesn't exist | Ship the template as a skill-bundle resource referenced by the manifest |
-| `INTERPOLATION_ERROR` | Expression syntax error | Check `${ … }` token syntax |
-| `SEMANTIC_ERROR` | Tier 3 (runtime) failure | Will be caught at dispatch; can't fix offline |
+Offline validation reports every failure as `VALIDATION_ERROR` with a `path` locating it and a message describing it. There is no per-cause code vocabulary at this layer — the `path` is what you branch on.
+
+| What the message describes | Next step |
+|---|---|
+| A schema or structural failure | Fix the YAML at the reported `path` |
+| A referenced template that does not resolve | Ship the template as a skill-bundle resource the manifest references |
+| An expression that does not parse | Check the `${ … }` token syntax |
+
+Tier-3 (runtime) failures cannot be detected offline at all; they surface at dispatch.
 
 ---
 

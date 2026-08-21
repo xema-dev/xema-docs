@@ -16,7 +16,7 @@ An App is `XemaObjectKind.App`:
 interface App {
   ref: XemaObjectRef;                         // xema://orgs/acme/projects/support/apps/customer-portal
   installedBiomes: BiomeInstall[];            // { biomeRef, versionConstraint, configuration }
-  defaultZone: ExecutionZoneRef;              // typically a project-scoped environment
+  defaultZone: ExecutionEnvironmentRef;       // must be admitted by the audience policy
   audiences: AudiencePolicy[];                // who may use the app, through which auth path
   capabilityPolicy: CapabilityPolicyOverride[];
   branding: BrandingConfig;
@@ -80,33 +80,62 @@ External subjects do **not** become Xema users. They are app-scoped identities. 
 When an external subject signs in through an app, `app-platform-api` mints a short-lived **delegated session JWT**. The token carries:
 
 ```
-sub          = external-user:<externalId>     (or anon:<random>)
-act          = app:<appClientId>
+sub          = external-subject:<externalId>   (or an anonymous subject)
+act          = the app client that acted on the subject's behalf
 org          = <orgId>
 project      = <projectId>
 session      = <sessionId>
-environment         = <environmentId>                       (typically environment:public-session)
+environment  = <environmentRef>
 capabilities = [<allowed capability refs>]
-exp          = short
+exp, jti, tokenClass
 ```
 
-Signing is **RS256** in production (with an HS256 dev fallback). Public keys are exposed at the standard JWKS endpoint so downstream services verify without round-tripping. The capability set on the token is the intersection of the app's `capabilityPolicy`, the audience policy, and the subject's grants.
+The capability set on the token is the intersection of the app's capability policy, the audience policy, and the subject's grants.
 
-### Public ingress endpoints (no Xema identity required)
+### Signing — a rotating key ring, and no symmetric option
 
-These live on a separate ingress hostname (`app-platform-public.xema.dev`) so platform AuthGuard can be bypassed in a controlled way — every public endpoint is decorated with `@Public()` and listed in the AuthGuard `extraExcludes`.
+Delegated sessions are signed by a **key ring**, not by a single configured key.
 
-| Endpoint | Purpose |
+- The ring holds many keys. Exactly one is active (`activeKid`); the others are retired but still published for a rotation overlap of 24 hours, so a token minted just before a rotation still verifies afterwards.
+- Each key is identified by its RFC 7638 JWKS thumbprint, and its private half is stored encrypted at rest.
+- Rotation is a compare-and-set on the ring's version, so two replicas rotating at once cannot fork the ring.
+
+**HS256 is not merely discouraged — it is unrepresentable.** The `SigningAlgorithm` enum has exactly two members, `RS256` and `ES256`; new rings are created on `ES256`; verification is pinned to those two; and the algorithm column carries a database CHECK constraint admitting only those two values. A symmetric key in that column would mean every service that can *verify* a delegated session can also *mint* one, so the structure refuses it rather than a comment discouraging it.
+
+Public keys are served at:
+
+```
+GET /public/.well-known/delegated-session-jwks.json
+```
+
+so downstream services verify without round-tripping. There is deliberately no RFC 8414 discovery document — these tokens are not an OIDC provider surface.
+
+### Public ingress doors
+
+Public ingress lives on its own hostname so the platform auth guard can be bypassed in a controlled way. Every door is enumerated here, and **every door takes a client credential** except the one where the credential is the request itself:
+
+| Endpoint | Client credential |
 |---|---|
-| `POST /public/apps/:appSlug/sessions` | Start a session for an external subject (the app's auth path authenticates first; this endpoint mints the delegated JWT) |
-| `GET /public/sessions/:id` | Read session state (delegated-token-authenticated) |
-| `POST /public/sessions/:id/revoke` | Revoke the session |
+| `POST /public/apps/:appSlug/sessions` | `clientId` + `clientSecret` |
+| `POST /public/apps/:appSlug/auth/oidc` | `clientId` + `clientSecret` |
+| `POST /public/apps/:appSlug/auth/magic-link/request` | `clientId` + `clientSecret` |
+| `POST /public/apps/:appSlug/auth/magic-link/verify` | none — the single-use 32-byte link token *is* the credential |
+| `POST /public/apps/:appSlug/auth/anon` | `clientId` + `clientSecret` |
+| `GET /public/sessions/:id` | none — keyed by the session id the caller already holds |
+| `POST /public/sessions/:id/revoke` | none — self sign-out by the session-id holder |
 
-The split between the internal and public ingress hostnames is enforced by ingress annotations + the AuthGuard `extraExcludes` on `/public/*`. They terminate at the same Service.
+`clientId` alone is a row primary key, not a secret. Requiring the paired secret is what makes the anonymous door a *credentialled* anonymous door: the end user is anonymous, the embedding application is not.
+
+Every door then routes through **one shared admission path**, which:
+
+1. authenticates the client credential;
+2. requires the app's `AudiencePolicy` to exist — no policy is a `403 AUDIENCE_POLICY_NOT_FOUND`, never a permissive default;
+3. resolves the execution environment and refuses it with `403 ZONE_NOT_ALLOWED_FOR_AUDIENCE` unless it is listed in the policy's `allowedEnvironments`. The app's `defaultZone` supplies the default, it does not override the policy;
+4. applies the rate limits below.
 
 ### Verifying a delegated token
 
-Internal services that accept on-behalf-of calls verify via `POST /delegated-sessions/verify`. The service returns the decoded claims plus a structured `SubjectIdentity` the gateway can authorize against. Other endpoints:
+Internal services that accept on-behalf-of calls verify via `POST /delegated-sessions/verify`. The response is a flat claim set — `appId`, `sub`, `act`, `org`, `project`, `session`, `environment`, `capabilities[]`, `exp`, `jti`, `tokenClass`. There is no nested identity object.
 
 | Endpoint | Purpose |
 |---|---|
@@ -114,13 +143,24 @@ Internal services that accept on-behalf-of calls verify via `POST /delegated-ses
 | `GET /delegated-sessions/:id` | Read session metadata |
 | `POST /delegated-sessions/:id/revoke` | Revoke |
 
-A separate platform-internal mint endpoint exists for invite flows; it is gated by service tokens, never reachable from public traffic, and not part of the documented public surface.
-
 ---
 
 ## Rate limiting
 
-`app-platform-api` ships a Redis-backed rate limiter (atomic Lua `INCR + EXPIRE`). Limits apply per app + audience + endpoint. The limiter is the first line of defence on the public ingress; the second line is the standard capability-gateway rate-and-quota check on every capability invocation routed through the delegated session.
+`AudiencePolicy` carries **two** ceilings, and every public door is capped by both where both apply:
+
+| Field | Default | Bucket |
+|---|---|---|
+| `rateLimitPerHourPerSubject` | 600 | `subject:<clientId>:<subjectExternalId>` |
+| `rateLimitPerHourPerClient` | 6000 | `client:<clientId>` |
+
+Both are NOT NULL with a positive-value database CHECK. **There is no value meaning "unlimited"** — a nullable ceiling reads as unconfigured while possibly enforcing nothing, which is the shape this platform has already paid for elsewhere.
+
+The per-client cap applies **unconditionally, on every door**. The per-subject cap applies only once a subject exists.
+
+That asymmetry is the point, and it is why the anonymous door is capped per client only: an anonymous call mints a *fresh* external subject per request, so there is no subject to key a bucket on. Keying one anyway — the earlier `anon:<clientId>` bucket — produced a single shared bucket for every anonymous user in the world, wearing a per-subject name.
+
+The limiter is Redis-backed and atomic. Exceeding a bucket is `429 RATE_LIMIT_EXCEEDED`; an unavailable limiter is `503 RATE_LIMITER_UNAVAILABLE` — it fails closed rather than admitting uncapped traffic.
 
 ---
 

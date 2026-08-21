@@ -10,7 +10,7 @@ Agent Composition replaces the old single-agent-per-phase model. The **Model Res
 
 | Page | What it covers |
 |---|---|
-| [Concepts](./01-concepts.md) | CompositionNode, AgentRef, CompositionLifecycle, recursion model |
+| [Concepts](./01-concepts.md) | The recursion model, `AgentRef`, and the one `AgentLifecycle` |
 | [Model Resolution](./02-model-resolution.md) | ModelResolutionRule, dimensions, priority, debugging |
 
 ## Getting Started
@@ -25,7 +25,7 @@ Agent Composition replaces the old single-agent-per-phase model. The **Model Res
 A: Yes. The same published composition can be launched as an interactive session (human-in-the-loop) or as a workflow step. The platform detects the context and adjusts only the I/O surface — the composition logic is identical.
 
 **Q: What happens if a composition references an unpublished agent?**
-A: Resolution fails with a typed error: `AGENT_NOT_PUBLISHED`. Only `published` agents can be referenced in a resolved composition. Draft agents can be used in `draft` compositions for testing.
+A: Resolution fails fast rather than silently resolving the draft. Only `published` agents can be referenced in a resolved composition. (Publishing itself has its own typed refusals — `AGENT_PUBLISH_MISSING_REQUIRED_SKILLS`, `AGENT_PUBLISH_MISSING_REQUIRED_TOOLS`, `AGENT_PUBLISH_INTRINSIC_FLOOR_VIOLATION`.) Draft agents can be used in `draft` compositions for testing.
 
 **Q: Can the model change mid-turn?**
 A: No. The Model Resolution Matrix resolves the model at invocation boundaries only: agent start, sub-agent spawn, and `/skill` launch. The model is fixed for the duration of a turn.

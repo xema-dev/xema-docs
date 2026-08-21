@@ -343,16 +343,23 @@ DELETE /deliverable-specs/{id}/overlay-bindings/{bindingId}
 
 ## Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `SPEC_NOT_FOUND` | 404 | Spec or ref does not exist |
-| `SPEC_SLUG_CONFLICT` | 409 | Slug already exists in this org |
-| `SPEC_KIND_INVALID` | 400 | Unknown spec kind |
-| `SPEC_SCHEMA_INVALID` | 422 | Zod source or JSON Schema has syntax errors |
-| `SPEC_VERSION_EXISTS` | 409 | Version already published |
-| `OVERLAY_NOT_FOUND` | 404 | Overlay binding not found |
-| `VALIDATION_FAILED` | 422 | Validation ran but content does not pass |
-| `SYSTEM_SPEC_IMMUTABLE` | 403 | Cannot modify/delete system specs |
+**`deliverable-specs-api` does not return machine-readable error codes.** It answers with standard HTTP statuses and a prose message; there is no `SPEC_*` code vocabulary to match on. Branch on the status, and treat the message as diagnostic text for a human.
+
+| HTTP Status | When |
+|-------------|------|
+| 404 | The spec, version, or ref does not exist |
+| 409 | The slug already exists at that version in this org |
+| 403 | The spec is biome- or system-scoped and therefore immutable |
+| 422 | Validation ran and the content does not pass |
+
+The **compile-time** failures a workflow author hits *do* carry stable codes, because the DSL compiler owns them (`WorkflowErrorCode`, `@xemahq/kernel-contracts/workflow`):
+
+| Code | When |
+|---|---|
+| `DSL_UNKNOWN_DELIVERABLE_SPEC` | The workflow names a spec that does not resolve |
+| `DSL_UNKNOWN_DELIVERABLE_FIELD` | The workflow names a field the spec does not declare |
+| `DSL_VERSION_NOT_RESOLVABLE` | The named spec version cannot be resolved |
+| `DELIVERABLE_CONTRACT_VIOLATED` | A produced deliverable does not satisfy its spec at run time |
 
 ---
 

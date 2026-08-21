@@ -89,26 +89,35 @@ The page is also available embedded at `/embedded/shell` for external-subject co
 
 All built-in. None are biome-contributed. Each is a thin capability:
 
-| Command | Capability | Purpose |
-| --- | --- | --- |
-| `xema help` / `xema help <cmd>` | `xema-shell:help@1` | Command discovery + per-command metadata |
-| `xema concepts` | `xema-shell:concepts.list@1` | List all `Concept` objects |
-| `xema concept <slug>` | `xema-shell:concept.read@1` | Resolve a single concept |
-| `xema explain <path-or-ref>` | `xema-shell:explain@1` | Human + agent-friendly description of any object |
-| `xema inspect <path-or-ref>` | `xema-shell:inspect@1` | Structured dump (manifest, grants, lifecycle, versions) |
-| `xema ls <xvfs-path>` | `xema-shell:ls@1` | List children of an XVFS path |
-| `xema cat <xvfs-path>` | `xema-shell:cat@1` | Read object payload |
-| `xema run <ref>` | `xema-shell:run-object@1` | Invoke a workflow / composition |
-| `xema grant <subject> <capability> ...` | `xema-shell:grant@1` | Issue a capability grant |
-| `xema capabilities explain <ref>` | `xema-shell:capability.explain@1` | Required zones, default grants, audit policy |
-| `xema environment explain <env>` | `xema-shell:environment.explain@1` | Environment semantics + allowed capabilities |
-| `xema biome install <ref>` | `biome:install@1` | Install a biome into a environment |
-| `xema biome publish <path>` | `biome:submit-to-store@1` | Submit a biome to the [Store](./store.md) |
-| `xema memory recall <query>` | `memory:recall@1` | Search subject-scoped memory |
-| `xema why-denied <auditId>` | `xema-shell:audit.read@1` | Structured "why was this call denied" |
-| `xema doctor [target]` | `xema-shell:doctor@1` | Static + runtime health check |
+Command names carry no `xema` prefix — that prefix belongs to the [CLI](./cli.md), which is a different surface.
 
-Every command supports `--json`. The agent-facing surface (`xema-shell:run@1`) forces `--json` regardless of flag.
+| Command | Capability | `safeForAgents` | Purpose |
+| --- | --- | --- | --- |
+| `help` / `help <cmd>` | `xema-shell:help@1` | yes | Command discovery + per-command metadata |
+| `concepts` | `xema-shell:concepts.list@1` | yes | List every `Concept` object |
+| `concept <slug>` | `xema-shell:concept.read@1` | yes | Resolve a single concept |
+| `explain <path-or-ref>` | `xema-shell:explain@1` | yes | Human-friendly description of any object |
+| `inspect <path-or-ref>` | `xema-shell:inspect@1` | yes | Structured dump of an object |
+| `ls <xvfs-path>` | `xema-shell:ls@1` | yes | List objects under an XVFS scope |
+| `cat <xvfs-path>` | `xema-shell:cat@1` | yes | Resolve a path or ref and return the object payload |
+| `capabilities explain <ref>` | `xema-shell:capability.explain@1` | yes | Parse a capability ref and return what the gateway knows |
+| `environments explain <env>` | `xema-shell:environment.explain@1` | yes | Fetch a built-in execution-environment row |
+| `why-denied <auditId>` | `xema-shell:audit.read@1` | yes | Explain a capability-router denial by audit id |
+| `doctor` | `xema-shell:doctor@1` | yes | Kernel health checks against the current platform |
+| `memory recall <query>` | `xema-shell:memory.recall@1` | yes | Recall memory entries for a subject |
+| `db list` | `xema-shell:db.list@1` | yes | List org-managed databases |
+| `db describe` | `xema-shell:db.describe@1` | yes | Schema tree of a database (schemas + tables) |
+| `db query` | `xema-shell:db.query@1` | yes | Run a read-only SQL query through the database explorer |
+| `db migrate` | `xema-shell:db.migrate@1` | **no** | Trigger a migrations run for a database |
+| `run <ref>` | `xema-shell:run-object@1` | **no** | Invoke the capability bound to an XVFS object |
+| `grant <subject> <capability> …` | `xema-shell:grant@1` | **no** | Create a capability grant through `authorization-api` |
+| `biome install <ref>` | `xema-shell:biome.install@1` | **no** | Install a biome into the current environment |
+| `biome publish <path>` | `xema-shell:biome.publish@1` | **no** | Publish a biome to the [Store](./store.md) |
+| `db attach` / `db detach` | `xema-shell:db.attach@1` / `.detach@1` | **no** | Attach or detach a database from a project |
+
+`biome install`, `biome publish`, `db attach` and `db detach` are declared and reachable but not yet backed by their downstream service call. `memory recall` returns from a stubbed `memory-api` path. The descriptors are live and the shape is stable; the behaviour behind those four is not.
+
+The agent-facing entry point is `xema-shell:run@1`, which always returns structured JSON.
 
 ---
 
@@ -116,8 +125,8 @@ Every command supports `--json`. The agent-facing surface (`xema-shell:run@1`) f
 
 Not every command should be reachable by every agent. `safeForAgents` is a per-command flag in the `ShellCommandDescriptor`, enforced by `xema-capability-router`:
 
-- `safeForAgents=true` — discovery, inspection, help, concept lookup, `why-denied`, `doctor`, read-only `ls`/`cat`/`inspect`.
-- `safeForAgents=false` — destructive admin actions, lifecycle transitions like `biome publish`, anything that mutates a Store listing, anything that grants capabilities.
+- `safeForAgents=true` — discovery, inspection, help, concept lookup, `why-denied`, `doctor`, read-only `ls` / `cat` / `inspect`, and read-only database introspection.
+- `safeForAgents=false` — destructive admin actions, lifecycle transitions like `biome publish`, migrations, anything that mutates a Store listing, anything that grants capabilities.
 
 Agents needing a `safeForAgents=false` action still go through the gateway with the underlying capability directly. The Shell is the discovery surface for them, not a bulk-action surface.
 
@@ -129,7 +138,7 @@ A **separate** terminal lives at `xema-shell-api`'s `/sandbox/terminal/:installa
 
 Hard constraints:
 
-- The PTY runs in the `sandbox` execution environment only. Production zones are refused at the gateway.
+- The PTY runs in the `sandbox` execution environment only. Production environments are refused at the gateway.
 - The PTY has no org credentials and no production data access.
 - The PTY is the **only** place in Xema where a literal shell exists. Every other "terminal" surface is the structured Xema Shell.
 - Authorization: a sandbox-environment grant for `biome:sandbox.terminal@1` is required; the grant is scoped to the calling subject's own draft biome installation.
@@ -140,7 +149,7 @@ The split is deliberate: the Xema Shell stays auditable, replayable, and parseab
 
 ## Discovery vs runtime work
 
-Agents that loop on `xema ls` instead of subscribing to the relevant Object Registry event are a performance anti-pattern. `xema doctor` flags it. The Shell is for **discovery, inspection, lifecycle transitions, and one-shot calls**; high-frequency runtime work goes through the underlying capability directly.
+Agents that loop on `ls` instead of subscribing to the relevant Object Registry event are a performance anti-pattern. The Shell is for **discovery, inspection, lifecycle transitions, and one-shot calls**; high-frequency runtime work goes through the underlying capability directly.
 
 ---
 
