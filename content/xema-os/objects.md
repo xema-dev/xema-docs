@@ -72,8 +72,10 @@ ranked most-specific-first:
 User > Project > Org > Biome > System
 ```
 
-`App` and `Session` are addressable Space kinds that take no part in that
-ladder.
+`App` and `Session` are ranked too — the rank map covers all seven kinds, with
+`App` the *most* specific of them all — but no registry that resolves by slug
+admits them as owners, so they never appear in this comparison. Their rank exists
+so that widening a registry's admissible subset never has to invent an order.
 
 Precedence is "most specific wins". A user-authored agent shadows a project-authored agent of the same slug; a project-authored agent shadows the org's; the org's shadows a biome-shipped one; biome-shipped shadows kernel-shipped.
 

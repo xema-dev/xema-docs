@@ -14,12 +14,12 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Connectors](./connectors.md) | Typed integration points, named multi-account connections, wallet credentials, OAuth flow |
 | [Biomes](./biomes.md) | The installable software bundle, the seven-state lifecycle, the install flow |
 | [Execution Environments](./environments.md) | The nine built-in environments, the reach ceiling, environment grants |
-| [Spaces](./spaces.md) | The seven-level SpaceRef hierarchy, URI grammar, data classification |
+| [Spaces](./spaces.md) | The seven-level SpaceRef hierarchy, URI grammar, data classification, re-scoping |
 | [Execution Contexts](./execution-contexts.md) | The per-invocation envelope; what flows where |
 | [Policy](./policy.md) | `PolicyDecision` shape, the closed obligation set, route hints, credential selection, approval flow |
 | [Permissions & Access](./permissions.md) | The whole access model — capabilities, grants, roles, teams, agent reach tiers, auto-grant |
 | [Profiles](./profiles.md) | Named grant bundles attached to subjects — **planned, not implemented** |
-| [Runners](./runners.md) | The runner kinds, enrollment ceilings, attestation, push vs pull, the selector |
+| [Runners](./runners.md) | The runner kinds, execution targets, enrollment ceilings, attestation, push vs pull, the selector |
 | [Controllers](./controllers.md) | Reconciliation loops, desired vs observed state, error categories |
 | [Service Registry](./service-registry.md) | Service discovery + `@InjectService(name)` |
 | [MCP and Capabilities](./mcp-and-capabilities.md) | The six meta-tools + external MCP federation |
@@ -30,7 +30,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Agent Composition](./agent-composition/) | Recursive agent tree, agent lifecycle, Model Resolution Matrix |
 | [Shell](./shell.md) | The unified command surface, WebSocket protocol, sandbox terminal |
 | [Store](./store.md) | The five Store capabilities, listing lifecycle, install + submission flow |
-| [Versioning](./versioning.md) | Draft vs published, lockfile shape, capability auto-bump |
+| [Versioning](./versioning.md) | Draft vs published, rollback as a pointer flip, lockfile shape, capability auto-bump |
 | [Apps](./apps.md) | App model, delegated sessions and the signing key ring, audience policies, ingress caps, embed snippet |
 | [SDK / Getting Started](./sdk/getting-started.md) | Author your first biome with the `xema` CLI |
 | [SDK / Manifest](./sdk/manifest.md) | Every field of `xema-biome.json`, contribution kinds, lifecycle |

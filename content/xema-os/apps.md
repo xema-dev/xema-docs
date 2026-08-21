@@ -81,7 +81,7 @@ When an external subject signs in through an app, `app-platform-api` mints a sho
 
 ```
 sub          = external-subject:<externalId>   (or an anonymous subject)
-act          = the app client that acted on the subject's behalf
+act          = { sub: <appClientId>, subject_kind: "app-client" }
 org          = <orgId>
 project      = <projectId>
 session      = <sessionId>
@@ -91,6 +91,22 @@ exp, jti, tokenClass
 ```
 
 The capability set on the token is the intersection of the app's capability policy, the audience policy, and the subject's grants.
+
+`act` is an **RFC 8693 actor claim — an object, not a string**, and the difference
+is not cosmetic. Every reader in the platform builds the delegation chain by
+walking `act` as an object; a string `act` produces an *empty* chain, silently, so
+the guards that exist to recognise a delegated caller simply never fire. Two
+properties follow, and both are enforced rather than advised:
+
+- **`act.sub` is the acting party's bare identifier** — an App client's
+  `clientId`, never a `<kind>:<id>` composite. The schema rejects the composite
+  spelling by name.
+- **The claim is REPLACED, never nested.** The only actor an exchanged token would
+  otherwise carry is the exchange broker, which must not appear in the chain. A
+  nested `act` is refused at mint time and is a parse error at read time.
+
+The reader supports a chain of arbitrary depth (`act.act.act…`, flattened
+outermost-acting-first); no producer in Xema emits more than one hop today.
 
 ### Signing — a rotating key ring, and no symmetric option
 

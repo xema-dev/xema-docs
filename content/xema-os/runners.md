@@ -26,6 +26,96 @@ A capability is not pinned to a runner kind at registration. [Policy](./policy.m
 
 ---
 
+## Execution targets
+
+A runner kind says *what sort of executor* runs the work. An **execution target**
+says *which pool of executors picks it up* — and that is a different question, with
+a different owner. A target is the unit a customer points at when they say "this
+workload runs on our hardware, in our region."
+
+A target carries a slug, an owning Space, an operational label map, and the ceilings
+that apply to everything running on it:
+
+| Field | What it decides |
+|---|---|
+| `slug` | The pool's name. Lowercase, digits and `-`, up to 63 characters |
+| `ownerSpaceUri` | Who owns it — `xema://system` or `xema://orgs/<orgId>` |
+| `labels` | Operator declarations about the pool (see below) |
+| `status` | `provisioning`, `active`, `draining`, `revoked`, `failed` — only `active` accepts new work |
+| `minTrustTier` / `maxTrustTier` | The trust band anything placed here must fall inside |
+| `isolation` | The runtime isolation the pool provides |
+| `maxDataClassification` | The classification ceiling for work placed here. Absent means *un-configured* — never a defaulted `public` |
+| `isDefault` | The org's fallback when nothing more specific is declared |
+
+The platform operates one shared pool, `xema-managed`, which every organization falls
+back to until it declares one of its own.
+
+### Owned by a Space, so ownership comes for free
+
+A target is owned at a Space, and the tiers it admits are exactly two: `system` and
+`org`. That is an [admissible subset](./spaces.md) of the one ownership vocabulary,
+not a private enum, so everything the ownership plane already knows how to do applies
+unchanged — precedence between two targets at one slug is the same rank map, and
+re-scoping is the same promotion rule.
+
+The omissions are decisions. A target is a *physical* pool with an enrolled worker
+behind it, so `project`, `user` and `session` are refused: a pool nobody can enrol
+into is a promise the platform cannot keep, and narrowing *within* an org's target is
+what a per-installation label requirement already does. `biome` and `app` are refused
+for a different reason — a biome declares what it **needs** from a runtime and is
+forbidden from naming **where** it runs.
+
+### Labels — an open map with three keys that have a reader
+
+An operator may advertise anything on a target. Three keys are read by the platform:
+
+| Key | Means |
+|---|---|
+| `region` | Where the pool physically is |
+| `residency` | The data-residency claim the pool satisfies |
+| `accelerator` | The accelerator class available on it |
+
+`residency` is the one that closes a long-standing hole. A residency used to be
+expressible only as a [policy](./policy.md) obligation naming a region, with nothing
+on the other side able to satisfy it. Declared on a target, the claim is enforceable
+for a structural reason rather than a string-comparison one: the target has its own
+task queue, polled by the operator's own worker, on the operator's own hardware.
+
+Keys and values are both open vocabularies with one closed property — they are
+DNS-label-shaped, so `eu`, `eu-central-1` and `a100` are legal and `EU WEST!` is
+not. A label the platform cannot represent is **refused**, never coerced or dropped:
+silently discarding one would place work somewhere the operator did not ask for while
+reporting success.
+
+### One task queue per target, by construction
+
+Placement is not a lookup table bolted onto dispatch — it is the queue name itself:
+
+```
+<targetSlug>::<functional>
+
+xema-managed::xema_default
+acme-gpu-frankfurt::xema_agent
+```
+
+The functional half says what *kind* of capacity a poller is equipped for —
+`xema_default`, `xema_agent`, `xema_human` — and none of the three says where. The
+target slug is the dimension that does.
+
+The grammar has exactly one implementation, in the kernel, and both directions of it
+(compose and parse) live there. Every queue is qualified, including the platform's
+own — there is no unqualified default that work can fall into by accident. The slug
+pattern is deliberately narrower than a Space segment id for this reason: a slug is
+embedded verbatim in a queue name, so it must not contain the separator the grammar
+splits on.
+
+A worker is configured with the target it polls for, and polls only that target's
+queues. Work placed on a target an org operates therefore never executes anywhere
+else — not because a filter excluded the alternatives, but because nothing else is
+listening.
+
+---
+
 ## Enrollment — the ceiling is set before the runner ever speaks
 
 A runner does not describe itself into existence. It is **enrolled** first, by an org admin, and the enrollment records the ceilings the runner may later attest within:
@@ -104,6 +194,7 @@ Note what step 1 means in practice: labels, region and residency are **narrowing
 ## Related concepts
 
 - [Policy](./policy.md) — obligations and route hints are the input to runner selection.
+- [Spaces](./spaces.md) — an execution target is owned at a Space, which is where its precedence and re-scoping come from.
 - [Service registry](./service-registry.md) — how services discover each other.
 - [Execution contexts](./execution-contexts.md) — what the dispatch payload carries.
 - [Environments](./environments.md) — an enrollment's allowed-environment list is the trust gate.

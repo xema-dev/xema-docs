@@ -12,7 +12,9 @@ The Object Model is plane 1 of the Xema System Interface (XSI). Each
 object is identified by a `XemaObjectRef` of the shape
 `xema://<scope-path>/<kind>/<slug>[@<version>]`. The kind is drawn from
 the closed [object-kind](./object-kind.md) enum; the scope path is
-derived from the 5-tier scope ref. Object ownership is single-writer:
+derived from the object's owning [space](./space.md), addressed by a
+`SpaceRef` — one closed vocabulary of seven tiers, which each registry
+narrows to an admissible subset rather than copying. Object ownership is single-writer:
 exactly one producing service owns each `(source, kind)` slice and
 publishes a complete projection via the
 `xema.object-registry.projection.published.v1` CloudEvent. Consumers

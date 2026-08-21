@@ -70,20 +70,34 @@ Hard rules:
 - Every segment pair is `<plural-kind>/<id>` — the pluralised `SpaceKind` value (`orgs`, `projects`, `apps`, `sessions`, `biomes`, `users`) plus that Space's stable identifier. `xema://system` is the one rootless, id-less form. This is the SAME scope grammar `XemaObjectRef` and search refs use, so a Space URI is always a prefix of the object URIs it contains.
 - Segments are ordered from least-specific to most-specific. Reversing the order is a parse error.
 - `users`, `biomes` and `sessions` are ROOT-addressable: a User, Biome or Session Space is identified by its own id alone and parents onto System. Only `orgs → projects → apps` nests.
-- Walking ancestors is the precedence chain for grant resolution: a grant at `xema://orgs/acme` applies to every descendant unless overridden.
+- Walking ancestors is the containment chain a grant resolves along: a grant at `xema://orgs/acme` applies to every descendant unless overridden. It is *not* the precedence ladder — see the note above.
 
-Parse and traverse via `@xemahq/space-contracts`:
+Parse, render and traverse via `@xemahq/kernel-contracts/space`:
 
 ```ts
-import { parseSpaceRef, ancestorsOf } from '@xemahq/space-contracts';
+import {
+  parseSpaceRef,
+  formatSpaceRef,
+  walkAncestors,
+  SpaceKind,
+} from '@xemahq/kernel-contracts/space';
 
 const ref = parseSpaceRef('xema://orgs/acme/projects/billing');
-// → { kind: 'Project', id: 'billing', parent: { kind: 'Org', id: 'acme' } }
+// → { tier: SpaceKind.Project, orgId: 'acme', projectId: 'billing', path: '…' }
 
-for (const ancestor of ancestorsOf(ref)) {
-  // visits Project → Org → System
+for (const ancestor of walkAncestors(ref)) {
+  // visits the ref itself, then Org, then System
 }
+
+formatSpaceRef(ref) === 'xema://orgs/acme/projects/billing'; // round-trips exactly
 ```
+
+A `SpaceRef` is a **flat record**, not a linked list: it carries the `tier` plus
+whichever id segments that tier requires — a `Project` ref must carry both
+`orgId` and `projectId`, and a ref missing a required segment fails to parse.
+Ancestry is derived from the URI at read time, never stored, which is why a
+declaration on `xema://orgs/acme/projects/billing` is meaningful whether or not
+anything was ever declared about `xema://orgs/acme`.
 
 ---
 
@@ -112,8 +126,54 @@ Spaces are first-class in every product surface:
 - **Knowledge Base** — pages live in a Space; cross-Space reads are policy-mediated.
 - **Artifacts** — every artifact version stamps its emitting Space.
 - **Skills** — a skill's owning Space is one of five admissible `SpaceKind` tiers; resolution precedence is most-specific-wins.
-- **Compositions** — `CompositionSpace` mirrors the Skill model.
+- **Agents and tool profiles** — the same admissible subset the skill plane uses, resolved by the same rank map.
 - **Frontend routing** — the product URL grammar is `/spaces/orgs/:org/projects/:project/...`, mirroring the SpaceRef path.
+
+---
+
+## Re-scoping — the one first-class ownership operation
+
+Because every registry addresses ownership with the same `SpaceRef`, "share this
+with my team" and "publish this to my organization" are not features each registry
+invents. They are one operation — **move the owner up the ladder** — and the rules
+live in the kernel so two registries cannot answer the same question differently.
+
+Three routes implement it today:
+
+| Route | Moves |
+|---|---|
+| `POST /skills/:id/rescope` | A skill's owning Space |
+| `POST /agents/:id/rescope` | An agent definition's owning Space |
+| `PUT /tool-profiles/:id/rescope` | A tool profile's owning Space |
+
+The permitted moves are a small, closed table:
+
+```
+user → project        user → org        project → org
+```
+
+Everything else is refused, and each refusal is a decision rather than an omission:
+
+- **Demotion is refused in every direction.** Narrowing a row's owner orphans every
+  broader consumer that already references it — silently, and only at the moment
+  they next resolve. Author a narrower copy instead.
+- **Same-tier is refused.** Answering "yes" to a no-op would report a publish that
+  did not happen.
+- **`Biome` and `System` are not customer-promotable.** Those tiers are written by
+  the biome-host loader and the platform seeder; a row that appeared there by
+  promotion would be un-reconcilable by either.
+- **`App` and `Session` are not promotable either.** They are runtime containers, so
+  a row owned by a session is scoped to that session's lifetime and promoting it
+  would outlive its owner.
+
+Authority is checked against the **target** tier, not just the source: promoting to
+org space is an org-admin action, while promoting to a project is the ordinary
+authoring authority any member already has. A derived object — one a projection
+generates rather than a person authors — is refused outright, because re-scoping it
+would leave the source live and the projection orphaned.
+
+This is why there is no separate "availability" or "binding" subsystem anywhere in
+Xema: availability is implicit in ownership, and re-scoping is how you change it.
 
 ---
 

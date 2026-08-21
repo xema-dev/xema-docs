@@ -49,7 +49,29 @@ There is no fourth `allow_with_warning`, and `needs_approval` is never collapsed
 
 `EgressAllowlist` is deliberately generic — it is not mail-specific. Every biome's outbound-fetch path consults it, through one shared matcher rather than an ad-hoc string compare.
 
-`DataResidency` is its own closed set: `eu`, `us`, `customer-private`. `customer-private` is the customer-edge tenancy class used when an org runs its own runner in a private network, and it is the one the router can satisfy today — a region-backed residency needs a region→residency registry the platform does not yet ship, so `eu` and `us` currently match no runner and a decision carrying them will fail to dispatch rather than silently spill onto a cloud runner. Adding a region means extending the enum **and** the OPA bundle in lockstep; a free-form string is never accepted at this layer.
+`DataResidency` is its own closed set, and it has exactly **one** member:
+`customer-private` — the customer-edge tenancy class used when an org runs its own
+runner in a private network. A decision carrying anything else is refused by the
+router rather than dispatched.
+
+It shrank to one member on purpose. `eu` and `us` were members once, and they were
+not merely unused: the runner selector's residency filter answered `false` for
+anything but `customer-private`, so either of them would have emptied the candidate
+pool and failed every dispatch. The obligation could name a region that nothing on
+the other side could satisfy, because **no region→residency registry existed**.
+
+That registry exists now, and it is deliberately *not* this enum. A residency is
+**declared on an [execution target](./runners.md#execution-targets)** — the pool of
+executors that actually has the property — under the well-known label key
+`residency`. Declared there, a residency claim is enforceable because the target
+has its own task queue, polled by the operator's own worker, on the operator's own
+hardware; it is not enforceable by comparing two strings.
+
+The division is the general rule and worth keeping: a region is an **open**
+vocabulary owned by whoever runs the machines, and an obligation kind is a
+**closed** vocabulary owned by the kernel. Putting regions in the second is what
+produced two members nothing could satisfy. Do not add a region member here — add a
+target.
 
 There is no MFA obligation and no expiry obligation.
 
