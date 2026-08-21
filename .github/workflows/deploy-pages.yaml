@@ -25,7 +25,7 @@ jobs:
           # `@astrojs/compiler-rs` and `@astrojs/prism`. Node 20 is excluded
           # outright — the build would fail on it. Keep this in lockstep with
           # lockfile.yaml, which must run the same install this job does.
-          node-version: 22
+          node-version-file: .node-version
       # `npm ci`, not `npm install`. `install` silently REWRITES the lockfile
       # when it disagrees with package.json, so the published site would be
       # built from a dependency tree nobody committed — and the desync would
