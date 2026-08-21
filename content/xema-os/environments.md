@@ -44,7 +44,7 @@ Inspect active grants:
 xema environment explain --subject biome:acme-code-review --environment org
 ```
 
-This prints the full grant tree: which capabilities the subject holds, in which environments, with resource-glob scope, expiry (if any), and rate limits.
+This prints the full grant tree: which capabilities the subject holds, in which environments, expiry (if any), and rate limits.
 
 ---
 
