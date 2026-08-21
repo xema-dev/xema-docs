@@ -84,7 +84,7 @@ Each `WebBiomePage` accepts:
 | `label` | Displayed nav label. |
 | `icon` | Optional nav icon (`ComponentType<{ className? }>` — any lucide/heroicons/SVG kit). |
 | `category` | Semantic **menu category** the surface declares its intent to live in — see below. |
-| `scope` | `'org'` (default; mounts at the org root) or `'project'` (mounts under `/spaces/projects/:projectId`). |
+| `scope` | `'org'` (default; mounts at the org root) or `'project'` (mounts under `/projects/:projectId`). |
 | `access` | Route access tier — `'member'` (default), `'org-admin'`, or `'platform-admin'`. |
 | `load` | Dynamic import of the page module: `() => import('./pages/X')`. |
 | `navHidden` | Register the route with **no** nav item (e.g. a `:param` detail route reached only by deeplink). |
@@ -123,7 +123,7 @@ The host mounts two App-Router catch-all resolver segments that forward the
 captured slug to `BiomeRouteResolver`:
 
 - Org scope — `src/app/(authed)/[...biomeSlug]/page.tsx`
-- Project scope — `src/app/(authed)/spaces/projects/[projectId]/[...biomeSlug]/page.tsx`
+- Project scope — `src/app/(authed)/projects/[projectId]/[...biomeSlug]/page.tsx`
 
 `BiomeRouteResolver` (`src/lib/biomes/biome-host-next/`) walks the registry for
 contributions whose `projectScoped` matches the segment's scope and matches the

@@ -112,7 +112,7 @@ dead declaration.
 {
   "renderHints": {
     "label": "Runbook",
-    "routeTemplate": "/spaces/projects/{projectId}/documents/{containerSlug}/{slug}",
+    "routeTemplate": "/projects/{projectId}/documents/{containerSlug}/{slug}",
     "routeParams": ["containerSlug","slug"]
   }
 }
@@ -122,7 +122,7 @@ Expanding it for a hit in project `proj_42`, container `runbooks`, slug
 `incident response` yields:
 
 ```
-/spaces/projects/proj_42/documents/runbooks/incident%20response
+/projects/proj_42/documents/runbooks/incident%20response
 ```
 
 Every substituted value occupies a single path segment and is URL-encoded, so a value
