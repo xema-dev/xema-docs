@@ -18,8 +18,8 @@ typed [object](./object.md) is anchored to exactly one, addressed by a
 `project`, `app`, `session`, `biome`, `user`. There is no second
 ownership enum anywhere in the platform. A registry that legitimately
 owns fewer tiers — credentials own four, execution targets own two —
-declares an **admissible subset** over this one enum and fails fast on
-anything outside it. That keeps the *address* universal, which is what
+declares an **admissible subset** (`spaceKindSubset`) over this one enum
+and fails fast on anything outside it. That keeps the *address* universal, which is what
 makes re-scoping expressible at all: with a private enum per registry
 there is no address a "publish this to my organization" request could
 name.
@@ -29,11 +29,24 @@ root, `org → project → app` nesting, and `user`, `session`, `biome`
 as sibling roots) answers what contains what. It cannot rank a
 biome-owned row against an org-owned one, because those two share only
 the root. So the **merge order** — which of two rows at one slug wins —
-is its own declared rank map, `app` most specific through `system`
-least, and never derived from the ancestor walk. Where the tree speaks
-the two agree; where it is silent the ladder supplies.
+is its own declared rank map — `SPACE_KIND_RANK`, `app` most specific
+through `system` least — and never derived from the ancestor walk.
+Where the tree speaks the two agree; where it is silent the ladder
+supplies.
 
-Each Space also carries a `DataClassification` ceiling that a
-descendant may raise and never lower. See the
-[Spaces page](../spaces.md) for the URI grammar, the classification
-set, and the re-scope operation.
+A Space row is a *declaration*, not a materialised node: a row exists
+only where something was declared about that Space, nothing stores a
+parent pointer, and ancestry is derived from the URI with no I/O.
+`space-registry-api` owns them. Each Space also carries a
+`DataClassification` floor that joins down the chain — absent is the
+identity, the more restrictive side wins, and a descendant may only
+ever raise it.
+
+Moving a row to a broader owner is the one first-class ownership
+operation. `isLegalSpacePromotion` permits `user → project`,
+`user → org` and `project → org`, and refuses everything else —
+demotion, because narrowing an owner silently orphans every broader
+consumer that already references the row, and same-tier, because
+answering "done" would report a publish that never happened. See the
+[Spaces page](../spaces.md) for the URI grammar, the classification set
+and the re-scope routes.

@@ -12,7 +12,7 @@ XVFS is Xema's reflection plane. Every [object](./object.md) the
 platform owns — a [skill](./skill.md), a [workflow](./workflow.md), a
 [concept](#), a [capability](./capability.md) — is reachable via a
 deterministic path. The scope prefix mirrors the
-[scope tier](./object.md) of the object: `/system/...` for kernel-shipped
+[space](./space.md) that owns the object: `/system/...` for kernel-shipped
 entities, `/orgs/<id>/...` for tenant-scoped, `/users/<id>/...` for
 user-scoped. The [xema-shell](./xema-shell.md) capabilities
 `xema-shell:explain@1`, `xema-shell:inspect@1`, `xema-shell:ls@1` and

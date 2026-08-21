@@ -1,7 +1,7 @@
 ---
 slug: connector
 title: Connector
-summary: A typed integration point with an external system (GitHub, Slack, Jira, S3, …). Connectors are declared by biomes and bound to concrete credentials at platform, org, project, or user tier — many named connections per provider, exactly one default per owner. All inbound webhooks flow through `connector-gateway-api`.
+summary: A typed integration point with an external system (GitHub, Slack, Jira, S3, …). Connectors are declared by biomes and bound to concrete credentials at one of the four spaces credentials own — `system`, `org`, `project` or `user` — many named connections per provider, exactly one default per owner. All inbound webhooks flow through `connector-gateway-api`.
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["org"]

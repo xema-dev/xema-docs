@@ -14,7 +14,8 @@ object is identified by a `XemaObjectRef` of the shape
 the closed [object-kind](./object-kind.md) enum; the scope path is
 derived from the object's owning [space](./space.md), addressed by a
 `SpaceRef` — one closed vocabulary of seven tiers, which each registry
-narrows to an admissible subset rather than copying. Object ownership is single-writer:
+narrows to an admissible subset rather than copying. Object ownership
+is single-writer:
 exactly one producing service owns each `(source, kind)` slice and
 publishes a complete projection via the
 `xema.object-registry.projection.published.v1` CloudEvent. Consumers

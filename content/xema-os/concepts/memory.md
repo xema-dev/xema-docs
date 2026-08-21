@@ -10,8 +10,8 @@ stability: stable
 
 Memory is how Xema gives [agents](./agent.md) durable, scoped context
 without re-uploading every prompt. Each memory node is typed, scoped
-to a [tier](./object.md) (system / org / project / user), and carries
-provenance (`writtenBy`, `writtenAt`, `digest`). Agents recall memory
+to a [space](./space.md) — memory owns `system`, `org`, `project` and
+`user` — and carries provenance (`writtenBy`, `writtenAt`, `digest`). Agents recall memory
 through the `memory:recall@1` capability (exposed to the shell as
 `xema-shell:memory.recall@1`) — never through raw blob reads — so every recall is audited and gated. Digest gates keep writes
 cheap: a maintenance pass on an unchanged node consumes zero tokens.

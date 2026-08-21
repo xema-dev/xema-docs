@@ -13,7 +13,10 @@ traditional plugin, a biome can extend nearly every plane of the platform
 at once via its [manifest](./manifest.md): registering agents and
 [skills](./skill.md), publishing [contributions](./contribution.md),
 mounting [controllers](./controller.md), shipping zero, one, or many
-optional backend sidecar services through `ships.apis[]`, declaring
+optional backend sidecar services as `components[]` entries — each with
+an `artifact` whose `path` is the single source of truth for where that
+component's source lives, required with no default, so nothing has to
+guess a directory layout — declaring
 collections served by the shared biome data plane, and registering
 lifecycle hooks for install / uninstall / upgrade / enable / disable.
 Biomes are installed into an organization, versioned, locked, and

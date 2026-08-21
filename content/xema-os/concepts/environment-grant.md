@@ -14,8 +14,7 @@ caller holds an environment grant for the active
 [execution environment](./execution-environment.md) before dispatching, and
 the environment's reach ceiling then caps what the
 [capability](./capability.md) may touch. Environment grants are revocable,
-auditable, and can be issued at any scope tier
-([object scope](./object.md)). They are the mechanism that lets Xema
-trust biomes incrementally — a third-party biome may default to the
+auditable, and can be issued at any [space](./space.md). They are the
+mechanism that lets Xema trust biomes incrementally — a third-party biome may default to the
 `sandbox` environment and require an explicit grant to run in `org` or
 `project`.
