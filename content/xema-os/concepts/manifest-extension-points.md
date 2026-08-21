@@ -2,7 +2,7 @@
 slug: manifest-extension-points
 title: "Manifest Extension Points"
 summary: "The parts of xema-biome.json that decide what a biome extends: the target discriminator, the declared contribution roster, and the contributions block that points at the envelopes. The full field-by-field reference lives in the biome authoring docs; this is the extension-relevant subset."
-relatedCommands: ["xema biome install", "xema biome publish"]
+relatedCommands: ["xema biome install","xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable
@@ -39,7 +39,7 @@ Everything under `xema` is discriminated on `xema.target`.
 The roster of contribution kinds this biome declares. Values come from the closed
 [contribution-kind](./contribution-kind.md) catalog.
 
-Array of `ContributionKind` (30 legal values).
+Array of `ContributionKind` (31 legal values).
 
 ## `xema.contributions`
 
@@ -52,7 +52,7 @@ Array of `ContributionKind` (30 legal values).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `opencode-tool`, `opencode-plugin`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
 

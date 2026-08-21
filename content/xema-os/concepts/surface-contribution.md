@@ -2,7 +2,7 @@
 slug: surface-contribution
 title: "Surface Contribution"
 summary: "The manifest a biome ships to register a render kind a Vista preview tab can hold: a biome-local kind slug, a payload JSON Schema, and display metadata. The first-party kind set is closed; biome kinds are namespaced so they can never shadow it."
-relatedCommands: ["xema biome install", "xema biome publish"]
+relatedCommands: ["xema biome install","xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable

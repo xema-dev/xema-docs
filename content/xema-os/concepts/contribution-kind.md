@@ -2,7 +2,7 @@
 slug: contribution-kind
 title: "Contribution Kind"
 summary: "The closed catalog of things a biome may contribute through the contribution protocol, and — per kind — whether an ingestion parser actually consumes it today. Derived from the ContributionKind enum and the biome-host parser registry, so \"declared\" is never mistaken for \"supported\"."
-relatedCommands: ["xema biome install", "xema biome publish"]
+relatedCommands: ["xema biome install","xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable
@@ -60,6 +60,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `project-kit` | `ContributionKind.ProjectKit` | biome-host parser (`ProjectKitParser`) | A project-kit bundle contributed by a biome. |
 | `provisioning-scaffold` | `ContributionKind.ProvisioningScaffold` | RESERVED — no contribution ingestion (category 3) | No parser: a provisioning scaffold is declared in the manifest's `xema.provisioning[]` and authored as `provisioning/<id>.yaml` plus an optional `provisioning/<id>/` template tree, and agent-session-api's `provisioning-plan-resolver` PULLS it over HTTP per session bootstrap from biome-host-api's `GET /platform/biomes/server/:id/provisioning-scaffolds`. |
 | `connector-adapter` | `ContributionKind.ConnectorAdapter` | biome-host parser (`ConnectorAdapterParser`) | A concrete connector provider contributed by a biome inside an adapter kind. |
+| `inbound-endpoint` | `ContributionKind.InboundEndpoint` | biome-host parser (`InboundEndpointParser`) | An inbound HTTP endpoint a biome needs the platform to expose ON ITS BEHALF, so the biome's own service is never reachable from outside. |
 | `workflow-config` | `ContributionKind.WorkflowConfig` | biome-host parser (`WorkflowConfigParser`) | Workflow-config content shipped by a biome. |
 | `deliverable-spec` | `ContributionKind.DeliverableSpec` | biome-host parser (`DeliverableSpecParser`) | A deliverable-spec contributed by a biome. |
 | `workspace-manifest` | `ContributionKind.WorkspaceManifest` | biome-host parser (`WorkspaceManifestParser`) | A workspace manifest contributed by a biome. |

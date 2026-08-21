@@ -2,7 +2,7 @@
 slug: extension-surface
 title: "Extension Surface"
 summary: "The complete, machine-readable set of ways a biome extends Xema: the contribution protocol (typed envelopes validated by kernel schemas), the convention content directories (on-disk presence), and the biome manifest itself. Every page in this set is generated from the kernel contract it documents, so it cannot drift from what the platform validates."
-relatedCommands: ["biome install","biome publish"]
+relatedCommands: ["xema biome install","xema biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable
