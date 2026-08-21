@@ -2,7 +2,7 @@
 slug: extension-surface
 title: "Extension Surface"
 summary: "The complete, machine-readable set of ways a biome extends Xema: the contribution protocol (typed envelopes validated by kernel schemas), the convention content directories (on-disk presence), and the biome manifest itself. Every page in this set is generated from the kernel contract it documents, so it cannot drift from what the platform validates."
-relatedCommands: ["xema biome install", "xema biome publish"]
+relatedCommands: ["biome install","biome publish"]
 relatedCapabilities: []
 relatedZones: []
 stability: stable
@@ -35,8 +35,8 @@ loads implicitly:
 
 ## The state of the contribution protocol
 
-The kernel declares **30** contribution kinds.
-**23** are ingested today by a `biome-host-api` parser;
+The kernel declares **31** contribution kinds.
+**24** are ingested today by a `biome-host-api` parser;
 **7** are not — they are either handled by a domain service
 directly, or reserved for protocol completeness with a different (content-directory)
 delivery path. Shipping a contribution of a kind with no ingestion path is a silent
@@ -48,7 +48,7 @@ uniform support.
 | Area | Concept | Kernel contract |
 |---|---|---|
 | What can be contributed | [contribution-kind](./contribution-kind.md) | `ContributionKind` |
-| An agent-invocable capability | [capability-contribution](./capability-contribution.md) | `CapabilityContributionManifestSchema` |
+| An agent-invocable capability | [capability-contribution](./capability-contribution.md) | `CapabilitySyncManifestSchema` |
 | A Vista render surface | [surface-contribution](./surface-contribution.md) | `SurfaceContributionManifestSchema` |
 | A search result-type | [search-type-contribution](./search-type-contribution.md) | `SearchTypeContributionManifestSchema` |
 | The manifest itself | [manifest-extension-points](./manifest-extension-points.md) | `BiomeManifestSchema` |
