@@ -9,8 +9,28 @@ A **Space** is the answer to "where does this *thing* live?" in Xema OS — who 
 `SpaceKind` is a closed enum. Precedence — **most specific wins**:
 
 ```
-User > Session > Biome > App > Project > Org > System
+App > User > Session > Project > Org > Biome > System
 ```
+
+Two of those placements surprise people, so they are worth stating rather than
+inferring. **`App` is the most specific tier**, not a mid-level one: an app-owned
+row is the narrowest thing the platform addresses. And **`Biome` sits second from
+last**, below `Org` — a biome ships a default, and an organisation's own row
+shadows it. That is the same direction the object model states: the org's
+shadows a biome-shipped one, and biome-shipped shadows kernel-shipped.
+
+This order is **declared**, not derived from the containment tree, and the two are
+different facts. The tree answers *what contains what*; it cannot rank `Biome`
+against `Org` at all, because `User`, `Session`, `Biome` and `Org` are sibling
+roots under `System` and share only that root. The ladder supplies an order the
+tree never had. Where the tree does speak, the ladder agrees with it — pinned by
+the invariant that for every ref `A` and every proper ancestor `B`,
+`rank(A) < rank(B)`.
+
+Registries that own fewer tiers declare an **admissible subset** over this one
+enum rather than a private copy — which is why the skill and agent planes
+document a five-rung `User > Project > Org > Biome > System` and are consistent
+with, not contradicting, the seven above.
 
 | Kind | Owns | Typical inhabitants |
 |---|---|---|
