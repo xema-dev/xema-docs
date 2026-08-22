@@ -129,11 +129,25 @@ An organization routinely has more than one account with the same provider — t
 |---|---|
 | `name` | Distinguishes connections to the same provider. Defaults to `default` |
 | `isDefault` | Exactly one connection per (owner, provider) is the default |
-| `scopeTier` | Which tier owns it — `platform`, `org`, `project`, or `user` |
+| `scopeTier` | Which tier owns it — `system`, `org`, `project`, or `user` |
 
 The invariant is *N named connections per (owner, provider), exactly one default*, and it is enforced by eight partial unique indexes in the database rather than by application code — one name-uniqueness index and one single-default index per tier. It is not possible to write two defaults, and it is not possible to write two connections with the same name at the same tier.
 
-`scopeTier` uses the platform's one credential-ownership vocabulary (`CredentialOwnerScope` in `@xemahq/kernel-contracts`), so a connection tier means the same thing here as it does in the credential broker.
+`scopeTier` is not a vocabulary of its own. It is `CREDENTIAL_OWNER_SPACE_KINDS`
+(`@xemahq/kernel-contracts`) — an **admissible subset** of the platform's single
+`SpaceKind` ownership vocabulary, naming the four tiers that may own a
+credential. A connection tier therefore means exactly what the same tier means
+everywhere else in Xema, and the narrowest-first order the resolver walks is
+derived from `SPACE_KIND_RANK` rather than restated here.
+
+`Session` is deliberately **not** in the subset: a credential must outlive the
+session using it, or nobody can rotate or revoke it.
+
+Two consequences of it being a subset rather than a copy. The platform tier is
+spelled `system`, the same as everywhere else — an earlier revision of this page
+called it `platform`, which was a third spelling of one concept and is retired.
+And there was formerly a separate CredentialOwnerScope enum, named without
+backticks here because it no longer exists; do not look for it.
 
 ### Resolution — narrowest wins, and ambiguity is an error
 

@@ -90,14 +90,15 @@ Plus the per-invocation envelope that wires them together: **[Execution Context]
 
 Xema OS deploys in three shapes from the same codebase. There is no fork between dev and production — the same primitives, same contracts, the same `xema` CLI.
 
-| Profile | Use case | KernelState | Service data DB | Cache | Event substrate | Identity |
-|---|---|---|---|---|---|---|
-| `dev` | Single developer, `xema dev` single binary | SQLite (in-process) | SQLite (per-service file) | in-memory | in-process event hub | stub OIDC |
-| `single-instance` | Small org self-hosting on one VM | SQLite (file at `/var/lib/xema/kernel-state.sqlite`) | SQL database | Redis | event hub | Keycloak |
-| `cluster` | Production multi-node | etcd cluster | SQL database | Redis | event hub | Keycloak |
-| `managed-cloud` | Hosted Xema, multi-tenant | etcd cluster | SQL database (multi-tenant) | Redis | event hub | Keycloak federated |
+| Profile | Use case | Topology |
+|---|---|---|
+| `dev` | A single developer, `xema dev` | Every backing service runs locally; the coordination store is a single-member quorum |
+| `single-instance` | A small org self-hosting on one machine | The whole stack on one host, one member per backing service |
+| `cluster` | Production, multiple nodes | Replicated coordination store, replicated backing services |
 
-Three deployment shapes, one codebase. Capability calls produce identical `PolicyDecision` outputs across all four profiles for the same `ExecutionContext`.
+**The profile records deployment intent; it is not a code-path fork.** `KernelStateProfile` has exactly these three members, and every one of them resolves to the *same* coordination-store adapter — the member count is a deployment detail, not a different implementation. There is no in-process, embedded-file or single-binary variant of the kernel state, and the relational store is never a substitute for it. The same is true one level up: the set of backing services a deployment provisions is identical across profiles, so a behaviour that only appears in production is a configuration difference, never a different code path.
+
+Capability calls produce identical `PolicyDecision` outputs across all three profiles for the same `ExecutionContext`.
 
 ---
 

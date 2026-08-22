@@ -108,10 +108,28 @@ When a capability declares an external service, the decision also carries the **
 The PDP is the single authority for that choice, applying a fixed ladder, highest wins:
 
 ```
-explicit  >  capability_default  >  user_default  >  project_default  >  org_default  >  platform_default
+explicit grant  >  capability default  >  user default
+                >  project default  >  org default  >  system default  >  none
 ```
 
-`user_default` is what makes "the agent acts on my behalf" mean *with my credential*. No match denies with `MISSING_CREDENTIAL_BINDING` — never a silent fallback.
+`credentialPrecedenceApplied` records which rung answered, as a
+`CredentialPrecedenceSource` — `Explicit`, `CapabilityDefault`, `UserDefault`,
+`ProjectDefault`, `OrgDefault`, `PlatformDefault`. The user rung is what makes
+"the agent acts on my behalf" mean *with my credential*.
+
+**The ladder is keyed by (provider, subject, space), and the provider half is
+load-bearing.** The provider is derived from the capability ref itself — for a
+`connector:` ref it is the resource segment, for anything else the domain — so a
+default is per-provider, never one binding standing in for GitHub, Slack and
+Jira at once. A ref the platform cannot derive a provider from skips the four
+default rungs entirely rather than matching loosely.
+
+**Reaching the bottom rung is not a denial.** It returns *no binding*, and a
+capability that needs no external credential proceeds normally — most do. The
+denial for a capability that genuinely requires a credential comes later, from
+the broker, when there is nothing to resolve. There is no silent fallback in
+either direction: the ladder never guesses a binding, and never substitutes a
+wider owner's when a narrower one was named.
 
 The router forwards only the opaque id, never a secret, and the broker re-validates it before reading custody.
 

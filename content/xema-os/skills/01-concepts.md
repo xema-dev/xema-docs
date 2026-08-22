@@ -77,26 +77,37 @@ Two members, because those are the two producers that exist. A `Pinned` and a `C
 
 ## System skill bundles
 
-Xema ships 14 built-in system skills under `packages/kernel/system-skills/`. These are always available to every agent in every org:
+Xema ships a small set of built-in system skills in the `@xemahq/system-skills`
+package. They are seeded into the registry at `System` space on boot, so they
+are available to every agent in every org without anyone installing anything.
+
+There are four top-level bundles:
 
 | Bundle | What it teaches |
 |---|---|
-| `xema-shell-basics` | Using the Xema Shell and its built-in commands |
-| `workflow-dsl` | Writing and reading workflow YAML |
-| `deliverable-specs` | Authoring and reviewing deliverable specs |
-| `knowledge-base-navigation` | Querying and navigating the knowledge base |
-| `artifact-store` | Reading and writing artifacts |
-| `connector-usage` | Using SCM, tracker, docs, and chat connectors |
-| `biome-authoring` | Writing and validating biome manifests |
-| `skill-authoring` | Writing skill bundles and sub-skills |
-| `agent-composition` | Composing multi-agent workflows |
-| `xema-os-concepts` | The six-layer model, execution environments, capabilities |
-| `code-review-foundations` | Core code review patterns |
-| `security-review-foundations` | OWASP, threat modelling, secure coding |
-| `spec-writing-foundations` | Writing clear functional and technical specs |
-| `documentation-foundations` | Writing accurate public-facing documentation |
+| `xema-os` | The root orientation skill for every Xema-resident agent — the runtime primitives, the cross-cutting concepts (Space, execution environment, execution context, policy), the XVFS namespace, and the rule that every capability call goes through the capability meta-tools |
+| `coordinator-protocol` | The Plan → Delegate → Consolidate skeleton a coordinator agent follows to turn a problem statement plus a deliverable spec into one phase-level deliverable |
+| `delegate-work` | The decision tree for handing a task to a sub-agent — which delegation strategy fits the task shape, and the shared-deliverable rule that prevents lost writes |
+| `git-conflict-resolver` | Resolving merge conflicts during publish-to-production: which hunks are resolved mechanically, and which are escalated to a human |
 
-System skills are immutable from the UI. To customize, create an `Org`-scoped skill with the same name — it wins by scope resolution.
+`xema-os` is the one that demonstrates the recursive shape. It is not a flat
+bundle — it carries eighteen sub-skills, each addressed by path
+(`xema-os/capabilities`, `xema-os/spaces`, and so on):
+
+```
+agent-builder     biome-builder   biomes        capabilities
+environments      memory          meta-tools    object-model
+policy            runners         security-reviewer
+service-registry  shell           spaces        store
+store-publisher   versioning      workflow-author
+```
+
+That roster is a property of the shipped package and grows with the platform.
+Ask the registry rather than this page if you need the current list.
+
+System skills are immutable from the UI. To customise one, author a skill with
+the same slug at `Org`, `Project` or `User` space — it wins by the ownership
+ladder above, and the system bundle stays untouched underneath it.
 
 ---
 

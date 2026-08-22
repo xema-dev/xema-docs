@@ -25,7 +25,7 @@ Skills are owned by `skill-registry-api`, resolved through a five-tier slice of 
 A: A skill is a *folder*. It can contain multiple files — reference docs, style guides, code samples, sub-skills — that the agent can navigate. A single system-prompt string is a flat, unnavigable blob; a skill is a structured knowledge bundle.
 
 **Q: Can an agent have multiple skills?**
-A: Yes. An agent can hold any number of skills. The agent's workspace mounts them all at `/workspace/.xema/skills/<slug>/`.
+A: Yes. An agent can hold any number of skills. Every resolved skill is mounted into the agent's workspace as a complete bundle, one directory per skill slug, and the agent runtime discovers them from the filesystem — there is no per-skill registration step.
 
 **Q: Can a skill contain code that runs?**
 A: Skills are knowledge bundles, not executable scripts. They contain Markdown, reference files, and sub-skills. Executable logic belongs in tools or workflow steps.

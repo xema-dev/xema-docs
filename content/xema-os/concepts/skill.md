@@ -9,8 +9,9 @@ stability: stable
 ---
 
 A skill is a folder, not a file. `SKILL.md` carries the contract;
-everything else is mounted as-is into the agent workspace at
-`/workspace/.xema/skills/<slug>/`. Skills are hierarchical
+everything else is mounted as-is into the agent workspace, one
+directory per skill slug, and discovered from the filesystem by the
+agent runtime. Skills are hierarchical
 (recursive sub-skills), multi-resource, and sourced from a biome's
 `skills/` folder, the Agent Studio, or a registered git repository.
 They are owned by `skill-registry-api` and addressed as

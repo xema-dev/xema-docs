@@ -79,7 +79,7 @@ Sub-skills are addressed by path: `code-review/security-review`. They appear as 
 When an agent runs with the `code-review` skill mounted, its workspace receives:
 
 ```
-/workspace/.xema/skills/
+<skills mount>/
   code-review/
     SKILL.md
     reference/
@@ -91,7 +91,21 @@ When an agent runs with the `code-review` skill mounted, its workspace receives:
         threat-model-template.md
 ```
 
-The agent reads these files using standard file-system navigation. The skill root is at `/workspace/.xema/skills/code-review/SKILL.md`.
+The bundle is mounted verbatim — same file names, same nesting, sub-skills as
+child directories — under a platform-managed skills directory inside the
+workspace. The agent reads it with ordinary file-system navigation, starting
+from the bundle's own `SKILL.md`. Author against the bundle layout, never
+against an absolute path: the mount location is the runtime's to choose and is
+not part of the contract.
+
+### Mounting is not live
+
+The skill set is written to the workspace **before** the agent runtime starts,
+and the runtime scans it **once**. There is no filesystem watch and no refresh
+interval. Publishing or changing a skill therefore affects the **next** session,
+not one that is already running — an open agent keeps the skills it launched
+with until it is restarted. Design around that rather than expecting a live
+pickup.
 
 ---
 
@@ -105,43 +119,94 @@ Sub-skills do not get separate slash commands by default. Mount them explicitly 
 
 ---
 
-## Scope and the authored skill API
+## Authoring a skill through the API
 
-To create an `Org`-scoped skill via the API:
+Two routes create a skill, and they take different shapes.
+
+**A single-file skill** — `POST /skills`. The SKILL.md arrives as one string:
 
 ```http
 POST https://skill-registry-api.xema.dev/skills
-Authorization: Bearer <org-admin-token>
+Authorization: Bearer <token>
+Content-Type: application/json
 
 {
-  "name": "code-review",
+  "slug": "code-review",
+  "name": "Code Review",
   "description": "Org-standard code review skill",
-  "scope": "Org",
-  "source": "authored",
-  "bundle": {
-    "skillMd": "---\nname: code-review\n...",
-    "resources": []
-  }
+  "scope": "org",
+  "skillMarkdown": "---\nname: code-review\ndescription: Reviews diffs against the org style guide.\n---\n\n# Code Review Skill\n\n..."
 }
 ```
 
-For `git_repo` skills, provide `gitRepoRef` instead of `bundle`:
+`slug` is hierarchical — `software-engineering/requirements` nests the skill
+under its parent. `scope` is the kernel `SpaceKind` value, **lower-case**, and
+this route accepts `org`, `project` or `user`; the platform-owned tiers are not
+authorable. Optional: `kind`, `injectionMode`, `category`, `tags`, `parentSlug`.
 
-```json
+Two fields you might expect and will not find. There is no source field — the
+route sets the source itself, because a skill authored through it is authored
+by definition. And there is no owner id anywhere in the body: authority comes
+from the request context, so the body names the *tier* and never the *id*.
+
+**A multi-file bundle** — `POST /skills/bundle`. This is the route to use when
+the skill has reference material:
+
+```http
+POST https://skill-registry-api.xema.dev/skills/bundle
+Authorization: Bearer <token>
+Content-Type: application/json
+
 {
-  "name": "security-review",
-  "description": "Security review skill from our eng standards repo",
-  "scope": "Org",
-  "source": "git_repo",
-  "gitRepoRef": {
-    "url": "https://github.com/acme/eng-skills",
-    "path": "security-review/",
-    "ref": "main"
-  }
+  "slug": "code-review",
+  "scope": "org",
+  "skillMarkdown": "---\nname: code-review\ndescription: Reviews diffs against the org style guide.\n---\n\n# Code Review Skill\n\n...",
+  "resources": [
+    {
+      "relPath": "reference/style-guide.md",
+      "type": "reference",
+      "contentBase64": "IyBTdHlsZSBndWlkZQo="
+    }
+  ]
 }
 ```
 
-The platform ingests the skill at the pinned ref. Update the ref to pick up changes from the repo.
+`name` and `description` are **not** request fields here — they are read from
+the SKILL.md frontmatter, so the bundle has exactly one place that states them.
+`relPath` is relative to the bundle root and may not begin with `/` or escape
+upward. A resource whose `relPath` is itself a `SKILL.md` is ingested as its own
+sub-skill row rather than as a file of the parent, which is how the recursive
+structure on disk survives the round trip.
+
+---
+
+## Ingesting skills from a git repository
+
+A git-sourced skill is not a variant of the create call — it is a registered
+*repository* that the platform scans:
+
+```http
+POST https://skill-registry-api.xema.dev/skill-repositories
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "url": "https://github.com/acme/eng-skills",
+  "ref": "main",
+  "rootPath": "skills/"
+}
+```
+
+Then ingest it:
+
+```http
+POST https://skill-registry-api.xema.dev/skill-repositories/<id>/sync
+```
+
+The sync walks the repository for every `SKILL.md`, ingests each one as an
+org-scoped skill, and prunes skills whose files have been removed. `ref` pins
+the version — move the ref and re-sync to pick changes up. `rootPath` narrows
+the scan to a sub-directory.
 
 ---
 
