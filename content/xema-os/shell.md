@@ -98,9 +98,9 @@ Command names carry no `xema` prefix — that prefix belongs to the [CLI](./cli.
 | `concept <slug>` | `xema-shell:concept.read@1` | yes | Resolve a single concept |
 | `explain <path-or-ref>` | `xema-shell:explain@1` | yes | Human-friendly description of any object |
 | `inspect <path-or-ref>` | `xema-shell:inspect@1` | yes | Structured dump of an object |
-| `ls <xvfs-path>` | `xema-shell:ls@1` | yes | List objects under an XVFS scope |
-| `cat <xvfs-path>` | `xema-shell:cat@1` | yes | Resolve a path or ref and return the object payload |
-| `capabilities explain <ref>` | `xema-shell:capability.explain@1` | yes | Parse a capability ref and return what the gateway knows |
+| `ls <xvfs-scope>` | `xema-shell:ls@1` | yes | List objects under an XVFS scope prefix |
+| `cat <ref>` | `xema-shell:cat@1` | yes | Resolve a ref and return the object payload |
+| `capabilities explain <ref>` | `xema-shell:capability.explain@1` | yes | Parse a capability ref against the kernel grammar |
 | `environments explain <env>` | `xema-shell:environment.explain@1` | yes | Fetch a built-in execution-environment row |
 | `why-denied <auditId>` | `xema-shell:audit.read@1` | yes | Explain a capability-router denial by audit id |
 | `doctor` | `xema-shell:doctor@1` | yes | Kernel health checks against the current platform |
@@ -115,7 +115,9 @@ Command names carry no `xema` prefix — that prefix belongs to the [CLI](./cli.
 | `biome publish <path>` | `xema-shell:biome.publish@1` | **no** | Publish a biome to the [Store](./store.md) |
 | `db attach` / `db detach` | `xema-shell:db.attach@1` / `.detach@1` | **no** | Attach or detach a database from a project |
 
-`biome install`, `biome publish`, `db attach` and `db detach` are declared and reachable but not yet backed by their downstream service call. `memory recall` returns from a stubbed `memory-api` path. The descriptors are live and the shape is stable; the behaviour behind those four is not.
+`run`, `biome install`, `biome publish`, `db attach` and `db detach` are declared and reachable but not yet backed by their downstream service call — each returns a typed pending status and a non-zero exit rather than doing anything. `memory recall` is the same: it makes no `memory-api` call, so agents use the `memory:recall@1` capability instead (see [Memory](./memory.md)). `capabilities explain` parses the ref and returns its parts, but its `binding` field is always `null` while the router's resolver is a stub — it tells you the ref is well-formed, not that the capability exists. The descriptors are live and the shape is stable; the behaviour behind those is not.
+
+`cat`, `explain` and `inspect` currently resolve a canonical `xema://…` ref only. An XVFS path is refused with `SHELL_NOT_IMPLEMENTED` — walk a scope with `ls` first and resolve a ref from that listing.
 
 The agent-facing entry point is `xema-shell:run@1`, which always returns structured JSON.
 
