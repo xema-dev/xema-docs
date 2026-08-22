@@ -23,7 +23,7 @@ xema doctor
 
 ```bash
 xema doctor                 # the local environment
-xema doctor --infra         # also TCP-probe Postgres, Redis, etcd, event-hub-api, …
+xema doctor --infra         # also TCP-probe the relational database, Redis, etcd, event-hub-api, …
 xema doctor --sources       # list the configured biome sources + whether their tokens are present
 ```
 
@@ -61,7 +61,7 @@ xema up --dry-run                       # print the resolved roster, waves and p
 
 ### `xema dev`
 
-Boot the roster as host processes — one forked child per service — for local development. It probes Postgres / Redis / etcd / event-hub-api first and exits with an actionable `docker compose up` message if any are down.
+Boot the roster as host processes — one forked child per service — for local development. It probes the relational database / Redis / etcd / event-hub-api first and exits with an actionable `docker compose up` message if any are down.
 
 ```bash
 xema dev

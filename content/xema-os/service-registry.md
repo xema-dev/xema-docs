@@ -143,7 +143,7 @@ Adding a service meant editing dozens of consumers. Renaming a service meant a c
 |---|---|
 | `doctor` (Shell) | Kernel health checks, including every registered service and its lease |
 | `xema services describe <name>` | Full descriptor including capabilities and labels |
-| `xema doctor --infra` (CLI) | TCP-probe the backing dependencies — Postgres, Redis, etcd, event-hub-api |
+| `xema doctor --infra` (CLI) | TCP-probe the backing dependencies — the relational database, Redis, etcd, event-hub-api |
 
 The Object Browser also exposes the registry: each service appears as a typed `XemaObject` of kind `service-instance` anchored to `xema://system`.
 

@@ -60,7 +60,7 @@ The `connectionUrl` returned by the broker points to the connection pool, not di
 
 ## SDK usage
 
-`@xemahq/biome-database-nest` is the whole integration. A biome carries **no** database configuration — no host, no credential, no URL, no schema name, nothing to put in a Helm chart or a secret. The module resolves the connection from `org-database-pool-api` at boot, builds a schema-qualified Prisma client for it, and applies the service's own Prisma migrations before the app serves traffic:
+`@xemahq/biome-database-nest` is the whole integration. A biome carries **no** database configuration — no host, no credential, no URL, no schema name, nothing to put in a Helm chart or a secret. The module resolves the connection from `org-database-pool-api` at boot, builds a schema-qualified database client for it, and applies the service's own migrations before the app serves traffic:
 
 ```ts
 import {
@@ -75,7 +75,7 @@ BiomeDatabaseModule.forRoot({
 });
 ```
 
-`biomeId` names the database this service owns. It is **pinned by the pool on first resolve**, so changing it later is refused rather than silently pointing the service at a fresh empty schema. `workspaceDir` is where the Prisma schema and its `migrations/` directory live.
+`biomeId` names the database this service owns. It is **pinned by the pool on first resolve**, so changing it later is refused rather than silently pointing the service at a fresh empty schema. `workspaceDir` is where the service's schema definition and its `migrations/` directory live — see the `@xemahq/biome-database-nest` package README for the exact file layout.
 
 A service that needs a second database declares it:
 
@@ -86,7 +86,7 @@ databases: [
 ],
 ```
 
-Migrations run with `prisma migrate deploy`, which **throws** on failure — a bad migration stops the pod becoming ready instead of half-applying under live traffic. Credential refresh is handled for you: long-running processes transparently obtain new credentials before the TTL expires.
+Migrations are applied by the module at boot, and a failed migration **throws** — a bad migration stops the pod becoming ready instead of half-applying under live traffic. Credential refresh is handled for you: long-running processes transparently obtain new credentials before the TTL expires.
 
 ---
 

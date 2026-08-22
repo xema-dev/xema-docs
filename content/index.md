@@ -71,7 +71,7 @@ The property, concretely: a user Space `xema://users/<u>` walks to `[User, Syste
 
 ## Properties worth choosing Xema for
 
-**Each organization gets its own workflow-engine namespace.** Not a tenant column — a separate Temporal namespace, `xema-org-<orgId>`, provisioned on demand. Workflow state, history, signals, queries and visibility are scoped to it, and a retention policy the engine cannot confirm aborts the dispatch rather than running unprotected.
+**Each organization gets its own workflow-engine namespace.** Not a tenant column — a separate Xema Workflow Runtime namespace, `xema-org-<orgId>`, provisioned on demand. Workflow state, history, signals, queries and visibility are scoped to it, and a retention policy the engine cannot confirm aborts the dispatch rather than running unprotected.
 
 **Credentials are never handed to an agent.** An agent names a connection; the gateway mints a short-lived token bound to one invocation and one capability. A fully compromised agent process cannot leak a usable secret, because it never held one.
 
