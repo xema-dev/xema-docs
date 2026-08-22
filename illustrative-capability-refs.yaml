@@ -43,13 +43,6 @@ illustrative:
       - content/xema-os/cli.md
       - content/xema-os/sdk/getting-started.md
 
-  my:something@1:
-    reason: >-
-      A stand-in ref in the `xema run` synopsis. The `my:` domain is the documentation convention for
-      "your own biome's domain here" and names nothing that could exist.
-    files:
-      - content/xema-os/cli.md
-
   my-domain:thing@2:
     reason: >-
       Demonstrates a MAJOR version bump — it is the only `@2` on the site and exists to show that a
@@ -103,32 +96,38 @@ illustrative:
 
   connector:bank.transfer@1:
     reason: >-
-      The site's standing fictional HIGH-RISK capability, used across four pages to make environment
-      denial, execution-context scoping and policy evaluation concrete. Every use is prefixed
-      "Example:" / "Worked example:". Xema ships no banking connector, and the only occurrence in
-      code is a policy TEST fixture (authorization-api `policies/xema_test.rego`).
+      The site's standing fictional HIGH-RISK capability, used on two pages to make execution-context
+      scoping and the capability-vs-MCP-tool distinction concrete. Every use is prefixed "Example:" /
+      "Worked example:". Xema ships no banking connector, and the only occurrence in code is a policy
+      TEST fixture (authorization-api `policies/xema_test.rego`).
     files:
-      - content/xema-os/environments.md
       - content/xema-os/execution-contexts.md
       - content/xema-os/mcp-and-capabilities.md
-      - content/xema-os/policy.md
-
-  connector:erp.create-invoice-draft@1:
-    reason: >-
-      The low-risk counterpart to `connector:bank.transfer@1` in the same sentence — the environment
-      example needs one capability it denies and one it allows. Xema ships no ERP connector.
-    files:
-      - content/xema-os/environments.md
-
-  invoice:extract@1:
-    reason: >-
-      Appears inside a fictitious runner registration (`xema-runner-eu-west-gpu-04`) illustrating that
-      a remote runner advertises several capabilities. It sits beside the real `document:render.pdf@1`
-      precisely to show a mixed list; only the second one is a Xema capability.
-    files:
-      - content/xema-os/runners.md
 
 unpublished:
+  xema:object.write@1:
+    reason: >-
+      The gate `xema-shell-api` really does enforce on `POST /xvfs/write`: `XVFS_WRITE_CAPABILITY` in
+      `src/xvfs/xvfs.service.ts` is this exact string, it is the `ref` sent to `xema-capability-router`
+      on every XVFS upsert, and a denial is what produces the documented `XVFS_WRITE_DENIED` (403).
+      The same name is printed in that route's OpenAPI description and in the generated client. So the
+      sentence is true about the platform's behaviour — but no producer publishes the ref: the `xema:`
+      domain has no seed row, no `INITIAL_CAPABILITY_SEED` entry, no contribution, no
+      `@XemaCapability` decorator (`xvfs.service.ts` carries none), and the route's own DERIVED ref is
+      `xema-shell:xvf.write.create@1`, which is a different name for a different thing — the ref that
+      admits the HTTP call, not the ref the handler then checks against the object being written.
+    owed: >-
+      Publish `xema:object.write@1` from whichever service owns the XemaObject write plane — the
+      natural home is `object-registry-api`, since the ref names an OBJECT verb rather than a Shell
+      one — or, if the gate is meant to be the Shell's, rename the constant, the OpenAPI description,
+      the generated client and this page to a ref that is actually published. Until then no grant can
+      be authored for the ref the router is asked about, so every XVFS write depends on how the router
+      resolves a ref its registry has never seen. Correcting these docs alone would leave them
+      disagreeing with the service's own error contract, which is why this is recorded rather than
+      rewritten here.
+    files:
+      - content/xema-os/objects.md
+
   xema-shell:run@1:
     reason: >-
       The agent-facing Shell dispatch surface. This is NOT a docs typo — the platform names the same

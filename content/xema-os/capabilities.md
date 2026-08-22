@@ -21,7 +21,7 @@ artifact:read@1
 workflow:run.start@1
 workflow:control@1
 workspace:session.create@1
-workspace:session.invite@1
+workspace:session.read@1
 document:render.pdf@1
 memory:recall@1
 memory:store@1

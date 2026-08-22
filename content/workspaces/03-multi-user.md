@@ -29,7 +29,9 @@ The session owner is the actor that created the session. Ownership can be transf
 
 ## Joining a session
 
-A user joins via the Xema UI: **Sessions → [session name] → Join**. An agent joins programmatically by being invited with `workspace:session.invite@1`. CI subjects join via the session API with a service token.
+A user joins via the Xema UI: **Sessions → [session name] → Join**. An agent joins programmatically by being invited through the session's participants API — `POST /sessions/{sessionId}/participants`, the capability `agent-runtime:session.participants.create@1`. CI subjects join via the session API with a service token.
+
+Authority for that call is the caller's role **on this session**, resolved from the session itself: the creator is its owner, an already-invited participant carries the role its row records, and a caller admitted only through a shared resource is an observer. Membership changes are the owner's and collaborators' to make; an observer cannot invite. There is no org-wide "may invite into any session" grant — a role on a session comes from that session.
 
 Observer access is granted automatically to org members who have read access to the session's project. They see the live transcript and workspace state but cannot contribute.
 
