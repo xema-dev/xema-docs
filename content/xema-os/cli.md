@@ -69,7 +69,7 @@ xema dev workflow-engine-api            # boot a subset; hard prerequisites are 
 xema dev --watch                        # hot-reload from a source checkout
 ```
 
-Passing a subset never boots a broken partial graph: the transitive hard prerequisites (`identity-api` and the foundational services) are always added.
+Passing a subset never boots a broken partial graph: all transitive hard prerequisites and foundational services are always added.
 
 ### `xema serve`
 

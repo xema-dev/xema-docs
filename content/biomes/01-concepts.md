@@ -1,24 +1,63 @@
 # Biome Concepts
 
-A **biome** is a folder bundle with a `xema-biome.json` manifest at its root. Unlike a library or a microservice, a biome describes *what it contributes* declaratively; the platform decides *how* and *where* those contributions run based on the execution environment, the active grants, and the org's installed profile.
+A **biome** is a folder bundle with a `xema-biome.json` manifest at its root. It is the unit through which Xema gains a domain, integration, product surface, or shared platform capability.
+
+The manifest declares what the biome ships and what every executable component requires. The platform decides where a component can run by matching those declarations against the installation and available execution targets.
+
+---
+
+## Three extension channels
+
+A biome extends Xema through exactly three explicit channels:
+
+1. **Components** — executable or materialized artifacts declared in `xema.components[]`.
+2. **Convention content directories** — multi-file content such as Agents, Skills, Workflows, deliverable specs, and workspace manifests.
+3. **Contribution envelopes** — typed single-file records under `contributions/` or `xema.contributions.inline[]`.
+
+This separation matters. A service, an Agent definition, and a capability record have different lifecycle and runtime needs; the manifest represents each without treating all extension content as executable code.
 
 ---
 
 ## The manifest
 
-`xema-biome.json` is the sole required file. It is a wrapped `{ "name", "version", "xema": { … } }` document — everything biome-specific lives under `xema`, discriminated on `xema.target` (`server` or `web`). A minimal manifest:
+`xema-biome.json` is a wrapped `{ "name", "version", "xema": { … } }` document. A server biome requires at least one component:
 
 ```json
 {
-  "name": "@acme/code-review",
+  "name": "@acme/customer-operations",
   "version": "1.0.0",
   "xema": {
-    "id": "acme-code-review",
-    "displayName": "Acme Code Review",
-    "description": "Automated PR review workflows for the Acme engineering team.",
+    "id": "customer-operations",
+    "displayName": "Customer Operations",
     "scope": "platform",
     "target": "server",
-    "requiresCapabilities": ["kb:page.write@1"]
+    "components": [
+      {
+        "key": "content",
+        "kind": "content",
+        "artifact": { "kind": "package-content", "path": "." },
+        "entrypoint": { "kind": "materialize" },
+        "protocol": { "kind": "none" },
+        "executionModes": ["materialized"],
+        "requirements": {
+          "tenancy": { "allowed": ["org", "project"], "tenantContext": "verified" },
+          "isolation": { "minimum": "none" },
+          "trust": { "minimum": "untrusted" },
+          "locality": { "allowed": ["cloud", "customer-private"] },
+          "state": { "kind": "stateless" },
+          "resources": { "minimum": { "cpu": "1m", "memory": "1Mi", "ephemeralStorage": "1Mi" } },
+          "runtime": { "kind": "none" },
+          "io": { "ingress": "none", "egress": "none", "rawBody": false, "devices": [] },
+          "scaling": {
+            "mode": "singleton",
+            "concurrency": { "handling": "serial", "maximumPerInstance": 1 },
+            "readiness": { "kind": "none" },
+            "drain": { "kind": "none" },
+            "hints": { "cpu": "batch", "memory": "steady", "startup": "fast" }
+          }
+        }
+      }
+    ]
   }
 }
 ```
@@ -27,84 +66,67 @@ Key fields:
 
 | Field | Purpose |
 |---|---|
-| `name` | Scoped package name; the Store and lockfile pin `name@version` |
-| `version` | Semantic version |
-| `xema.id` | Unique kebab-case biome identifier (matches the folder name) |
-| `xema.target` | `server` (backend contributions) or `web` (frontend bundle) |
-| `xema.scope` | Dependency/boot tier: `kernel`, `system`, `base`, `platform` |
-| `xema.requiresCapabilities` | Every capability ref the biome may invoke |
-| `xema.permissions` | Consent metadata (profile recommendation + per-capability reasons) shown at install time |
-| `xema.ships.apis[]` | API services the biome ships (content is discovered from convention directories instead) |
+| `name` and `version` | Package identity and immutable version input |
+| `xema.id` | Stable biome identifier |
+| `xema.target` | `server` or `web` manifest shape |
+| `xema.scope` | Enforced boot/dependency tier: `kernel`, `system`, `base`, or `platform` |
+| `xema.components[]` | Current v5 artifact and runtime declaration |
+| `xema.dependencies` | Hard biome dependencies by id |
+| `xema.agents[]` | Agent roster cross-validated with the Agent files |
+| `xema.contributions` | Directory and/or inline typed contribution envelopes |
+| `xema.requiresCapabilities` | Capabilities the biome may request; declaration is not a grant |
+| `xema.exposesCapabilities` | Capabilities implemented by the biome |
+| `xema.permissions` | Human-readable install-consent metadata |
 
-The full field-by-field detail — generated from the platform schema itself — is in the [Manifest Reference](./04-manifest-reference.md).
-
----
-
-## The lifecycle state machine
-
-A biome progresses through deliberate, observable stages. Xema never auto-promotes — humans hold every promotion gate.
-
-```
-draft  →  sandbox-installed  →  review-required  →  org-installed
-                                                    ↓              ↓
-                                              store-submitted   archived
-                                                    ↓
-                                              store-approved
-                                                    ↓
-                                                archived
-```
-
-| State | Environment | What the biome can do |
-|---|---|---|
-| `draft` | none | Exists in Biome Studio; not callable, not installable |
-| `sandbox-installed` | `sandbox` | Runs with no org secrets; reads mounted inputs only |
-| `review-required` | `sandbox` + `store-review` | Under human review; tests run; SBOM generated; permission diff shown |
-| `org-installed` | `org` / `project` | Callable by org subjects; capability grants resolved per environment |
-| `store-submitted` | `store-review` | Available to other orgs for inspection; no real data |
-| `store-approved` | global | Installable by any org from the Xema Store |
-| `archived` | none | Retained for lineage; not installable; existing locked installs continue working |
-
-The state machine is one-directional in the happy path. Moving to `archived` is always explicit and requires the `biome:archive@1` capability. No automated agent can promote a biome past the sandbox without an org-admin approval gate.
+The generated [Manifest Reference](./04-manifest-reference.md) is the field-by-field source of truth.
 
 ---
 
-## Capability declarations
+## Components
 
-The biome manifest is a *declaration*, not a permission. Every runtime invocation must pass through the **capability gateway**, which consults the `BiomeInstallGrant` created when the org admin approved the install. If a capability is not in the grant, the call is denied and an `auditId` is returned.
+`xema.components[]` replaces the retired `ships.apis[]` model. A component can be content, web, adapter, service, worker, or job. Its `artifact.path` is the authoritative filesystem location.
 
-### Stage 1 — install time
+Every component declares its runtime contract:
 
-1. The biome is submitted for install.
-2. The platform computes a **permission digest**: capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version.
-3. An org admin reviews the digest, optionally choosing a built-in profile or customizing per-capability resource scopes, execution environments, and rate limits.
-4. Approval creates a `BiomeInstallGrant` row. This grant is the single authoritative answer to "what may this biome do, in which environment?".
+- tenancy and verified tenant context;
+- minimum isolation and trust;
+- permitted locality;
+- stateless, ephemeral, or durable state requirements;
+- resource and optional accelerator needs;
+- runtime and version range;
+- ingress, egress, raw-body, and device needs;
+- scaling, concurrency, readiness, drain, and scheduling hints.
 
-### Stage 2 — runtime
-
-Every call from the biome goes through the capability gateway with `{ ref, subject, environment, input }`. The gateway checks the grant, verifies the resource glob, the environment, the rate limit, and any required approval. Allowed calls proceed; denied calls return a typed denial with an `auditId` you can inspect with the Shell's `why-denied <auditId>`.
-
----
-
-## Contribution kinds
-
-A biome can contribute:
-
-| Kind | Where it lives | Description |
-|---|---|---|
-| Agent definitions | `agents/<slug>.md` + `xema.agents[]` | Named agents with prompts and permissions; the manifest roster and the files are cross-validated |
-| Skills | `skills/` | Skill folder bundles (see [Skills](../xema-os/skills/)) |
-| Workflows | `workflow-config/` | Workflow YAML files |
-| Deliverable specs | `deliverable-specs/` | Structured output contracts |
-| Workspace manifests | `workspace-manifests/` | Agent workspace manifests |
-| Typed contribution envelopes | `contributions/*.contribution.json` | Capabilities, connector bindings, document templates, and every other single-file typed kind |
-| API services | `api/<name>/` + `xema.ships.apis[]` | Optional backend services the biome ships (event consumers register inside these) |
-| Managed database | `xema.database` | Managed relational schema provisioned per org, migrated at boot |
-| Frontend (web) | `<id>-web/` package | UI pages, nav items, and slot panels — a `target: "web"` biome that default-exports a frontend module (authored via `defineWebBiome`). See [UI: I contribute](../xema-os/sdk/ui-i-contribute.md) |
-
-Multi-file content kinds are discovered by **on-disk presence** of their convention directory — there is no per-kind declaration list in the manifest. The complete directory table is in the [Manifest Reference](./04-manifest-reference.md#convention-content-directories).
+The host can therefore refuse an unsatisfied installation rather than starting a component under weaker conditions.
 
 ---
 
-**Previous**: ← (this is the first page in the section)
+## Scope tiers and boundaries
+
+Customer and third-party biomes use the `platform` scope. The lower `kernel`, `system`, and `base` scopes build Xema's own foundation.
+
+Biomes do not import other biomes' implementation. They communicate through capabilities and published contracts. This is what keeps one domain release from becoming a source-level dependency of every other domain.
+
+---
+
+## Permissions
+
+`requiresCapabilities` and permission hints describe install intent. They do not grant runtime authority.
+
+Runtime invocation still evaluates:
+
+- the acting subject and delegation;
+- Agent arming;
+- resource reach and ownership;
+- Space and Execution Environment;
+- policy, approvals, quotas, and placement obligations.
+
+---
+
+## Fresh-instance model
+
+A biome is not synonymous with a prebuilt Xema application. A new customer can begin with the base platform and create only the integration and domain biomes it needs. Existing domain biomes demonstrate the extension model; they are not required dependencies of a fresh installation.
+
+---
 
 **Next**: [Authoring →](./02-authoring.md)

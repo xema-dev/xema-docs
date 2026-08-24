@@ -57,7 +57,7 @@ jobs:
   draft:
     uses: xema/agent
     with:
-      agentSlug: requirements-writer
+      agentRef: requirements-writer
       deliverableSpecRef: requirements-standard
       agentContext:
         prompt: "Write requirements for the requested feature."

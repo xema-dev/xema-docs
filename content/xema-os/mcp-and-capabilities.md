@@ -12,16 +12,16 @@ An agent connected to Xema does **not** see N separate MCP servers, one per inte
 
 | Meta-tool | Purpose |
 |---|---|
-| `xema.capabilities.search` | Find the capabilities the agent is allowed to invoke right now |
-| `xema.capabilities.describe` | Get the input/output schema, examples, and side effects for one or more refs |
-| `xema.capabilities.invoke` | Invoke a capability by ref |
-| `xema.capabilities.plan` | Derive the shortest runnable sequence of capabilities to reach a goal |
-| `xema.capabilities.preflight` | Report what blocks an invocation — before the call fails |
-| `xema.capabilities.explain` | Turn a denial into the grant that would unlock it |
+| `xema_capabilities_search` | Find capabilities the agent is armed and allowed to invoke right now |
+| `xema_capabilities_describe` | Get the input/output schema, examples, and side effects for one or more refs |
+| `xema_capabilities_invoke` | Invoke a capability by ref |
+| `xema_capabilities_plan` | Derive the shortest runnable sequence of capabilities to reach a goal |
+| `xema_capabilities_preflight` | Report what blocks an invocation — before the call fails |
+| `xema_capabilities_explain` | Turn a denial into the grant that would unlock it |
 
 This collapses the agent's surface from "one tool per provider verb across every installed integration" (dozens to hundreds) to **six tools, always** — and, crucially, keeps it constant as the capability catalogue grows. The results returned by `search` are the agent's working set: filtered by Subject, Space, Environment, and Policy, so the agent never sees what it cannot invoke.
 
-### `xema.capabilities.search`
+### `xema_capabilities_search`
 
 Finds the capabilities the agent may invoke under the current [ExecutionContext](./execution-contexts.md).
 
@@ -57,7 +57,7 @@ There is no full-catalogue listing. Page through results with `cursor`.
 
 Filtering happens server-side, and a capability the agent may not invoke is **absent** — not returned with a denial marker. An agent in the `public` environment never sees `connector:bank.transfer@1` even if some other subject can invoke it. Compare `consideredCount` with the number of results to see how much authorization removed.
 
-### `xema.capabilities.describe`
+### `xema_capabilities_describe`
 
 Returns full schemas, examples, side-effect labels, and approval requirements:
 
@@ -83,7 +83,7 @@ Returns full schemas, examples, side-effect labels, and approval requirements:
 
 Describe accepts arrays so an agent fetching context can batch-resolve every capability it plans to use in one call.
 
-### `xema.capabilities.invoke`
+### `xema_capabilities_invoke`
 
 Generic invocation:
 
@@ -120,7 +120,7 @@ From that point forward, the external tool is **indistinguishable** from a nativ
 - Every input/output is validated against the schema the external server published.
 - Every result lands in the audit log with the full ExecutionContext.
 
-The agent **never** sees the external MCP server as a separate tool list. It sees one result in `xema.capabilities.search`, with the same shape as every other capability.
+The agent **never** sees the external MCP server as a separate tool list. It sees one result in `xema_capabilities_search`, with the same shape as every other capability.
 
 ---
 
@@ -142,16 +142,16 @@ Agents are taught — in their system skill — to **discover** capabilities at 
 
 ```
 On each new task:
-1. Call xema.capabilities.search, naming the resource you are acting on
+1. Call `xema_capabilities_search`, naming the resource you are acting on
    (e.g. resourceType: "project") or describing the goal in `query`.
 2. Pick the capability whose summary matches the goal.
-3. Call xema.capabilities.describe to see the schema.
-4. Call xema.capabilities.invoke with valid input.
+3. Call `xema_capabilities_describe` to see the schema.
+4. Call `xema_capabilities_invoke` with valid input.
 
-For work that takes several dependent steps, call xema.capabilities.plan
+For work that takes several dependent steps, call `xema_capabilities_plan`
 with the goal ref instead of guessing the order. Before an action that
-needs a connection or a grant, call xema.capabilities.preflight. If an
-invocation is refused, call xema.capabilities.explain with the denial
+needs a connection or a grant, call `xema_capabilities_preflight`. If an
+invocation is refused, call `xema_capabilities_explain` with the denial
 code rather than retrying unchanged.
 ```
 
@@ -170,7 +170,7 @@ Before unification:
 
 After unification:
 
-- One tool list, always three entries.
+- One tool list, always six entries.
 - The capability list updates in real time as biomes install/uninstall.
 - Policy is the only thing that decides what an agent can see.
 - No prompt rotations on integration change.

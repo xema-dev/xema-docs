@@ -247,7 +247,7 @@ spec:
       value: ${input.theme}
 ```
 
-The `demo-25-seeded-workspace` workflow in the demo biome references this manifest via `workspaceManifestRef: demo-seeded-canvas@1.0.0` and asks the agent to extend the scaffold without rewriting it — a canonical "first paint correct, agent contributes the delta" pattern.
+Once compiled into a published Agent revision, a workflow selects this environment through that Agent's `agentRef`. The Agent can then extend the scaffold without rewriting it—a canonical “first paint correct, Agent contributes the delta” pattern.
 
 ### Brainstorming session
 

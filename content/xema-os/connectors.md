@@ -42,7 +42,7 @@ Three reasons, all enforced at the gateway:
 
 ## Capabilities a connector exposes
 
-A connector ships one or more [capability refs](./capabilities.md) under the `connector:` domain. The 1B pilot capability set is the canonical example:
+A connector ships one or more [capability refs](./capabilities.md) under the `connector:` domain. An illustrative set is:
 
 ```
 connector:scm.create-pull-request@1
@@ -88,7 +88,9 @@ For `OAuthUser` and `OAuthClient` bindings, the install flow is uniform across p
 1. The admin opens the connector's install page (a biome-contributed UI surface).
 2. The gateway issues a one-time state token and redirects to the provider's authorize endpoint with the connector-declared scopes.
 3. The provider redirects back to the gateway callback. The gateway verifies the state, exchanges the code for tokens, and writes an encrypted credential payload under the new binding.
-4. The binding moves to `ready`. The biome's `onInstall` lifecycle hook fires and may perform an initial sync.
+4. The binding moves to `ready`.
+
+Declaring an `onInstall` path in a biome manifest does not currently execute it. A connector that needs an initial sync must run that work through a shipped service or an explicit workflow; see [Lifecycle Hooks](./sdk/lifecycle-hooks.md).
 
 The redirect URL is always a gateway endpoint — never a biome endpoint. Biome code is never on the OAuth code-exchange path. Provider client secrets live in the gateway's KMS-backed secret store; biome manifests reference them by name, not value.
 

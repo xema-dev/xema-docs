@@ -1,110 +1,87 @@
-# Agent Composition Concepts
+# Agent Concepts
 
-**Agent Composition** is how Xema scales a single agent into a multi-step, multi-role piece of work. Instead of hardcoding an execution order in a workflow YAML, a composition declares a tree of nodes — each node is an agent, optionally extended with extra skills, tools, and a model override.
+Xema has **one Agent primitive**. An Agent carries its own identity, prompt, intrinsic Skills and Tools, optional inheritance, workspace policy, capability envelope, and recursive subagents.
+
+A leaf specialist is an Agent with no subagents. A multi-agent composition is an Agent with subagents. They share one identity model, revision model, authoring path, and resolver.
 
 ---
 
-## The composition tree
+## Agent shape
 
-A composition is a tree of `CompositionNode`s. Each node has:
+Conceptually, a published Agent contains:
 
 ```ts
-interface CompositionNode {
-  ref: AgentRef;               // "slug@version" — the referenced agent definition
-  skills?: string[];           // additional skills to mount at this node only
-  tools?: string[];            // additional tools to enable at this node only
-  modelOverride?: ModelRef;    // override the model for this node (not children)
-  children?: CompositionNode[];// sub-agents, themselves fully-armed nodes
+interface Agent {
+  slug: string;
+  version: string;
+  systemPrompt?: string;
+  extends?: string;
+  promptMode?: 'append' | 'replace';
+  skills: SkillRef[];
+  tools: ToolSelectionEntry[];
+  subagents: AgentNode[];
+  limits?: AgentLimits;
+  workspace?: AgentWorkspaceConfig;
+  workspaceSharing?: 'isolated' | 'shareable';
+  capability?: CapabilityLayer;
 }
 ```
 
-The root node is the entry point. Children are spawned by the root agent using the composition contract — they are not launched independently.
-
-### AgentRef format
-
-Agent references use a `slug@version` format:
-
-```
-reviewer@1.2.0        ← pinned version
-reviewer@latest       ← always resolves the latest published version
-acme/reviewer@1.2.0   ← org-qualified slug (for cross-org compositions)
-```
-
-Pinned versions are recommended for production compositions. `@latest` is convenient for development but can be unpredictable when a new version is published.
+Each subagent node references another published Agent and may add node-local Skills, Tools, instructions, a model override, permission narrowing, limits, and further children.
 
 ---
 
-## Recursion — compositions of compositions
+## Inheritance
 
-A composition node can reference an agent that is itself a composition root. This is how multi-level multi-agent pipelines are built:
+An Agent may `extend` one base Agent. The resolver walks the inheritance chain, rejects cycles and excessive depth, and combines configuration deterministically.
 
-```
-orchestrator-agent
-  ├── researcher-agent
-  │     └── search-tool-agent
-  └── writer-agent
-        └── editor-agent
-```
+`promptMode` controls the derived Agent's prompt:
 
-Each node is resolved independently. The `orchestrator-agent` does not need to know the internal structure of `researcher-agent`. This keeps compositions modular and independently testable.
+- `append` — base prompt, then the derived prompt;
+- `replace` — derived prompt only.
+
+Skills and tool configuration are resolved as part of the Agent's intrinsic layer. Invocation overlays are applied later and cannot turn a narrower permission into broader authority.
 
 ---
 
-## Lifecycle
+## Subagents
 
-There is no separate composition lifecycle enum. A composition is an Agent, and it moves through the one `AgentLifecycle` every versioned Xema object uses:
+Subagents are Agents referenced recursively. The parent delegates through its task capability; the child executes in its own bounded context and returns a result.
 
-| State | Meaning |
-|---|---|
-| `draft` | Under authoring; never resolved by the runtime; free to iterate |
-| `published` | Immutable; the only state the runtime resolves |
-| `archived` | Retained for lineage; never resolved; existing pinned references continue working |
-
-The state machine is **one-directional**: `draft → published → archived`. Publishing is a deliberate act; archiving is explicit. There is no auto-publish, no silent state change.
-
-Resolution always refuses a non-`published` version and fails fast. This is intentional: production execution must always use an inspectable, immutable composition.
-
-### Publishing a composition
-
-Publishing requires the `composition:publish@1` capability:
-
-```bash
-xema run composition:publish@1 --input '{"slug":"my-composition","version":"1.0.0"}'
-```
-
-Or via the Agent Studio UI: **Agent Composition → [composition name] → Publish**.
-
-Publishing is permanent. If the composition needs to change, create a new version and publish that.
+The Agent can declare structural runtime limits such as maximum recursion depth, fan-out, and total spawns. These are runtime controls, not prompt suggestions.
 
 ---
 
-## Skills and tools at node level
+## One Agent, two execution experiences
 
-Skills and tools can be declared at the agent definition level (intrinsic, always present) or at the node level (extra, added for this composition only):
+The same published Agent can run as:
 
-```json
-{
-  "ref": "reviewer@1.2.0",
-  "skills": ["security-review", "performance-review"],
-  "tools": ["mcp-tool:sonarqube.read@1"]
-}
-```
+- an **Interactive Session**, with streaming, threads, pause/resume, attachments, and human collaboration;
+- a **Workflow Agent step**, with durable orchestration, retry policy, structured deliverables, and optional human-in-the-loop handoff.
 
-Node-level skills and tools are additive — they extend the agent's intrinsic set for the duration of this composition. They do not modify the agent definition itself.
+The Agent definition stays the same. The launch surface supplies the interaction and lifecycle mode.
 
 ---
 
-## Interactive sessions vs workflow steps
+## Identity, drafts, revisions, and rollback
 
-The same published composition can be used as:
+Agent storage separates:
 
-- **An interactive session agent** — launched by a human or agent via the interactive session API. The session keeps the composition resident while the conversation is active.
-- **A workflow step** — referenced in a workflow YAML step with `kind: agent-composition`. The Xema workflow runtime spawns the composition, waits for output, and continues.
+- a stable Agent identity;
+- one mutable draft;
+- immutable, content-addressed published revisions;
+- a live pointer to the active revision.
 
-No code change is needed to switch between uses. The platform adjusts only the I/O surface (streaming vs synchronous output).
+Publishing creates a new immutable revision. Restoring copies an earlier revision into the mutable draft. Rolling back moves the live pointer to an existing immutable revision and creates no new content.
+
+Retirement is an identity operation: the active pointer is cleared. Runtime resolution follows published revisions, never an editable draft, except in the explicit authoring sandbox.
 
 ---
 
-**Previous**: ← (this is the first page in this section)
+## Agent references
+
+Use a bare slug to resolve the latest live published revision, or `slug@version` to pin a specific published version. Production Workflows should use or compile to immutable pins so replays remain deterministic.
+
+---
 
 **Next**: [Model Resolution →](./02-model-resolution.md)

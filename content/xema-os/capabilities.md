@@ -12,7 +12,7 @@ A capability reference is a stable, versioned name:
 <domain>:<resource>.<verb>@<major>
 ```
 
-The pilot set:
+Illustrative refs:
 
 ```
 kb:page.read@1
@@ -44,9 +44,7 @@ The `@<major>` is intentional. Capability refs version like syscalls, not like p
 
 ## The gateway flow
 
-Every invocation goes through one funnel. **`xema-capability-router` lands in Phase 3** — until then, capability refs are declared in manifests and resolved statically; the runtime invocation surface is not yet live.
-
-When it lands, the flow is:
+Every invocation goes through one live mediation funnel:
 
 ```
 caller
@@ -80,7 +78,7 @@ The Xema Store computes a `PermissionDigest`: capabilities grouped by domain, a 
 Every capability call is authorized against the grant before it reaches the implementation. The gateway checks:
 
 1. Is the capability in the biome's `BiomeInstallGrant`?
-2. Is the resource inside the grant's allowed resource glob?
+2. Is the named resource reachable through the active resource authority and ownership rules?
 3. Is the environment in the grant's allowed environment set?
 4. Is the subject covered (direct identity, group, or role)?
 5. Is the audience policy compatible?
@@ -88,8 +86,6 @@ Every capability call is authorized against the grant before it reaches the impl
 7. Does the grant require human approval for this call?
 
 Allowed → invocation proceeds. Denied → fail-fast with a structured response. Either way, audited.
-
-**Phase rollout note.** Built-in profiles and the `BiomeInstallGrant` table land in Phase 3 alongside `authorization-api`. The nine built-in execution environments become enforced in Phase 4 — until Phase 4 the `environment` field exists on grant rows but is a forward-compatibility placeholder.
 
 ---
 
@@ -121,9 +117,9 @@ Agents can self-correct (switch environment, ask a human to grant the capability
 
 ---
 
-## Worked example — connector pilot
+## Worked example — connector capability
 
-Phase 1B ships the connector domain end-to-end. A workflow that opens a pull request looks like this:
+A workflow that opens a pull request looks like this:
 
 1. The workflow step declares `connector:scm.create-pull-request@1` as a required capability.
 2. The biome manifest exposes (or requires) the same ref.
@@ -132,18 +128,6 @@ Phase 1B ships the connector domain end-to-end. A workflow that opens a pull req
 5. The agent never sees the GitHub token. The response is a typed artifact ref pointing at the new pull request.
 
 The same workflow YAML works against GitLab or Gitea if the org's connector binding for that resource points there — the workflow names no provider.
-
----
-
-## Phase rollout
-
-| Phase | Capability surface |
-|---|---|
-| 1A | Capability ref parser, `CapabilityGrant`, `CapabilityPolicy` types in `@xemahq/capability-contracts`. No runtime. |
-| 1B | The full connector capability set above. One provider per domain wired end-to-end through capability refs. |
-| 3 | `xema-capability-router` + `authorization-api` go live; every connector call routes through them. |
-| 4 | Nine built-in execution environments seeded and enforced, including the `trusted-dev` escape hatch for biome authors. |
-| 5 | Shell commands map 1:1 to capability invocations. |
 
 ---
 
@@ -189,12 +173,12 @@ Agents never see individual MCP servers or per-biome tool surfaces. They see exa
 
 | Meta-tool | What it does |
 |---|---|
-| `xema.capabilities.search` | Retrieves the capabilities the calling agent is **authorized to invoke** in the current Execution Context. All arguments are flat and optional: `{ query?, domain?, resourceType?, mutating?, limit?, cursor? }`. Each entry: `{ ref, biome, title, summary, riskTier, requiresApproval, mutation }`. |
-| `xema.capabilities.describe` | Returns the full schema for one or more refs: `{ ref, inputSchema, outputSchema, examples, sideEffects, requiresApproval, biome: { id, version } }`. Accepts an array of up to 50 refs in one call. |
-| `xema.capabilities.invoke` | Generic invocation: `{ ref, input }` → `{ output, auditId, obligations }`. `input` is validated against the capability's full declared JSON Schema at the gateway boundary before runner dispatch. |
-| `xema.capabilities.plan` | Derives the shortest runnable sequence to a goal capability over the capability graph: `{ goalCapabilityRef, fromResourceTypes, maxDepth? }` → `{ goal, found, steps, missingResourceTypes }`. |
-| `xema.capabilities.preflight` | Checks readiness before a call can fail: `{ ref }` → `{ ready, requirements, blockers }` — missing credentials, grants, or runtimes. |
-| `xema.capabilities.explain` | Turns a denial code from a failed `invoke` into the exact grant that unlocks it: `{ capabilityRef, denialCode }` → `{ permissions, domain, biome, suggestions }`. |
+| `xema_capabilities_search` | Retrieves the capabilities the calling agent is both armed and **authorized to invoke** in the current Execution Context. All arguments are flat and optional: `{ query?, domain?, resourceType?, mutating?, limit?, cursor? }`. |
+| `xema_capabilities_describe` | Returns the full schema for one or more refs: `{ ref, inputSchema, outputSchema, examples, sideEffects, requiresApproval, biome: { id, version } }`. Accepts an array of up to 50 refs in one call. |
+| `xema_capabilities_invoke` | Generic invocation: `{ ref, input }` → `{ output, auditId, obligations }`. `input` is validated against the capability's full declared JSON Schema at the gateway boundary before runner dispatch. |
+| `xema_capabilities_plan` | Derives the shortest runnable sequence to a goal capability over the capability graph: `{ goalCapabilityRef, fromResourceTypes, maxDepth? }` → `{ goal, found, steps, missingResourceTypes }`. |
+| `xema_capabilities_preflight` | Checks readiness before a call can fail: `{ ref }` → `{ ready, requirements, blockers }` — missing credentials, grants, or runtimes. |
+| `xema_capabilities_explain` | Turns a denial code from a failed `invoke` into the exact grant that unlocks it: `{ capabilityRef, denialCode }` → `{ permissions, domain, biome, suggestions }`. |
 
 **There is no full-catalogue listing.** `search` returns only what the caller may actually invoke — denied capabilities are absent, not flagged, and there is no "include denied" switch. Retrieval is graph-scoped: give it an anchor (`resourceType`, or a noun in `query` that names a known resource type) and it walks that type's capability-graph neighbourhood, which is the fast, high-precision path. Without an anchor it falls back to a bounded, paginated catalogue query — page through it with `cursor`, taken from the previous response's `nextCursor`.
 
@@ -202,7 +186,7 @@ Worked example — an agent discovers and calls a capability:
 
 ```jsonc
 // 1. Discover (flat args — no filter wrapper)
-xema.capabilities.search({ domain: "connector" })
+xema_capabilities_search({ domain: "connector" })
 // → {
 //     "capabilities": [
 //       { "ref": "connector:scm.create-pull-request@1", "biome": "xema.software-dev", ... },
@@ -213,11 +197,11 @@ xema.capabilities.search({ domain: "connector" })
 //   }
 
 // 2. Describe (batched)
-xema.capabilities.describe({ refs: ["connector:scm.create-pull-request@1"] })
+xema_capabilities_describe({ refs: ["connector:scm.create-pull-request@1"] })
 // → [{ "ref": "...", "inputSchema": { ... }, "examples": [ ... ] }]
 
 // 3. Invoke — input must match the declared schema exactly
-xema.capabilities.invoke({
+xema_capabilities_invoke({
   ref: "connector:scm.create-pull-request@1",
   input: { repoRef: "xema://orgs/acme/.../github-main", branch: "feature/x", title: "..." }
 })
@@ -240,8 +224,8 @@ Xema OS does not show an agent the union of every MCP server's `tools/list`. Ins
 2. At registration time, `mcp-gateway-api` calls the external server's MCP `tools/list`.
 3. Each external tool is translated to a capability ref: `<provider-id>:<tool-name>@1`.
 4. The capability is inserted into the Service Registry with runner kind `mcp-external`.
-5. `xema.capabilities.search` surfaces the provider's capabilities under the same policy + grant model as any first-party capability — and, like every other capability, only to subjects authorized to invoke them.
-6. On `xema.capabilities.invoke`, the gateway translates the call back to an MCP `tools/call` against the registered server.
+5. `xema_capabilities_search` surfaces the provider's capabilities under the same policy + grant model as any first-party capability — and only when the Agent is armed and its subject is authorized to invoke them.
+6. On `xema_capabilities_invoke`, the gateway translates the call back to an MCP `tools/call` against the registered server.
 
 The agent's view stays uniform: every capability — first-party, biome-shipped, or externally federated — is a ref behind the same six meta-tools. Policy, audit, and grant flows are identical.
 
@@ -265,7 +249,7 @@ Lifecycle is per-major-version. Bumping `@1 → @2` introduces a new ref; the `@
 
 ## See also
 
-- [MCP and Capabilities](./mcp-and-capabilities.md) — deeper detail on the three-meta-tool flow and external MCP server registration.
+- [MCP and Capabilities](./mcp-and-capabilities.md) — deeper detail on the six-meta-tool flow and external MCP server registration.
 - [Execution Contexts](./execution-contexts.md) — the per-invocation envelope every capability call carries.
 - [Policy](./policy.md) — the decision protocol every invocation is gated by.
 

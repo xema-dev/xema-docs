@@ -59,7 +59,7 @@ The property, concretely: a user Space `xema://users/<u>` walks to `[User, Syste
 | Primitive | What it is |
 |---|---|
 | **[Biome](./biomes/)** | An installable bundle — agents, skills, workflows, connectors, UI surfaces, and optionally a backend service. The unit of extension |
-| **[Capability](./xema-os/capabilities.md)** | One named, versioned, callable action (`kb:page.read@1`). Every action in the system is one, and every call is policy-mediated |
+| **[Capability](./xema-os/xema-os-capabilities.md)** | One named, versioned, callable action (`kb:page.read@1`). Every action in the system is one, and every call is policy-mediated |
 | **[Agent](./xema-os/agent-composition/)** | Identity, prompt, skills, tools, and a recursive tree of sub-agents. Usable as an interactive session *and* as a workflow step — the same definition |
 | **[Skill](./xema-os/skills/)** | A folder bundle that teaches an agent how to do something. Owned at a space, resolved most-specific-first |
 | **[Workflow](./workflows/)** | A declarative YAML pipeline with typed inputs, gates, and durable execution |
@@ -95,7 +95,7 @@ A concept that only works in one of them is not platform-grade, so none of them 
 
 ## Where to start
 
-**If you want to understand the system layer** — read [Xema OS](./xema-os/) in order: [Overview](./xema-os/overview.md), [Objects](./xema-os/objects.md), [Spaces](./xema-os/spaces.md), [Environments](./xema-os/environments.md), [Policy](./xema-os/policy.md), [Capabilities](./xema-os/capabilities.md).
+**If you want to understand the system layer** — read [Xema OS](./xema-os/) in order: [Overview](./xema-os/overview.md), [Objects](./xema-os/objects.md), [Spaces](./xema-os/xema-os-spaces.md), [Environments](./xema-os/xema-os-environments.md), [Policy](./xema-os/xema-os-policy.md), [Capabilities](./xema-os/xema-os-capabilities.md).
 
 **If you want to automate something today** — start with [Workflows](./workflows/) and the [Use Cases](./use-cases/).
 
@@ -131,7 +131,7 @@ No. Most teams start with one workflow or one agent session pattern. The primiti
 That is what connectors are for. Source control, issue tracking, chat, mail, storage — inbound through one ingress edge, outbound through one gateway, and neither path puts a credential in your code.
 
 **Can I run it where my data has to stay?**
-Yes, and the honest form of that answer is on the [Runners](./xema-os/runners.md) page: enrollment ceilings, attestation, customer-edge pull transport, and exactly which residency classes the router can satisfy today.
+Yes, and the honest form of that answer is on the [Runners](./xema-os/xema-os-runners.md) page: enrollment ceilings, attestation, customer-edge pull transport, and exactly which residency classes the router can satisfy today.
 
 **What is not built yet?**
 This documentation says so where it applies, on the page where it matters, rather than in a roadmap nobody reads next to the feature. If a page describes something as planned or not implemented, take it literally.

@@ -1,150 +1,79 @@
-# SDK — Backend I Ship
+# SDK — Components I Ship
 
-A biome may ship **zero, one, or many** backend services. The manifest's `ships.apis[]` field is the declaration; the host (`biome-host-api`) materialises each entry as its own Helm sub-chart, its own image, its own subdomain, and its own capability namespace.
-
-This page documents the `ships.apis[]` shape, the base-path conventions, and the cross-biome import rules. For lifecycle hook modules (which run in-process, not as a service), see [Lifecycle Hooks](./lifecycle-hooks.md).
+A biome can ship zero or more executable components. The current manifest declares them in `xema.components[]`; the earlier `ships.apis[]` model is retired.
 
 ---
 
-## When to ship an API
+## Component kinds
 
-A biome ships its own API when it needs:
-
-- a long-running process (sweepers, schedulers, queue consumers);
-- a custom HTTP surface with controllers Xema cannot infer from the manifest;
-- a relational database schema with non-trivial migrations and joins;
-- WebSocket, SSE, or other transports beyond simple capability invocation.
-
-A biome should **not** ship an API when its needs fit:
-
-- a few collections of structured rows — use [biome-storage-api collections](./storage.md).
-
-One-shot install / uninstall housekeeping is **not** an exception today: the manifest's [lifecycle hooks](./lifecycle-hooks.md) are declared but never invoked, so that work needs a shipped service to run it on startup.
-
-Consuming platform events, by contrast, **does** require a shipped service — the event consumers register inside it. See [Events I consume](./events-i-subscribe.md).
-
----
-
-## `ships.apis[]` shape
-
-```jsonc
-{
-  "xema": {
-    "ships": {
-      "apis": [
-        {
-          "name": "ingestor",
-          "basePath": "/ingest",
-          "image": { "package": "./api/ingestor", "port": 3000 },
-          "scopes": ["ingest.read", "ingest.write"]
-        },
-        {
-          "name": "renderer",
-          "basePath": "/render",
-          "image": { "package": "./api/renderer", "port": 3000 },
-          "scopes": ["render.execute"]
-        }
-      ]
-    }
-  }
-}
-```
-
-| Field | Required | Purpose |
-|---|---|---|
-| `name` | yes | Stable identifier; appears in the API's capability namespace and in the subdomain |
-| `basePath` | yes | URL prefix Xema's ingress routes to this API (must start with `/`) |
-| `image.package` | yes | Source folder relative to the biome root |
-| `image.port` | yes | Container port the service listens on |
-| `scopes` | optional | Free-form scope strings for `@Scopes()` runtime checks inside the service |
-
-Each API is exposed under `<biomeId>.<name>.api.<base-domain>`. The manifest does not declare the full hostname — the host computes it from the biome id, the API name, and the cluster's base domain.
-
----
-
-## Capability namespace per API
-
-Every API gets its own capability namespace:
-
-```
-biome:<biomeId>.<apiName>.<verb>@<major>
-```
-
-For example, a biome `acme.support` with two APIs (`ingestor` and `renderer`) would expose refs like:
-
-```
-biome:acme.support.ingestor.write@1
-biome:acme.support.ingestor.read@1
-biome:acme.support.renderer.execute@1
-```
-
-Refs are declared in `xema-biome.json`'s `exposesCapabilities[]` and resolved by `xema-capability-router` to the corresponding API. Callers — other biomes, agents, workflows, the Shell — never address the API's HTTP surface directly; they invoke the capability and the gateway routes the call.
-
-This is the only way cross-biome calls happen. The boundary check enforces it:
-
-- A biome's API source MUST NOT import another biome's API source.
-- A biome's API source MAY import `@xemahq/*` published kernel packages.
-- A biome's API source MAY import generated platform clients from `@xemahq/<service>-api-client`.
-
-Direct HTTP from biome A's code to biome B's API bypasses the gateway, bypasses authorization, and bypasses audit — boundary CI rejects it.
-
----
-
-## Multiple APIs in one biome
-
-Multiple APIs make sense when one biome's workload splits naturally — a write-heavy ingestor next to a read-heavy renderer, or a public-facing facade next to a private worker. Each API:
-
-- has its own Dockerfile (or shares the canonical backend service Dockerfile with `SERVICE=<api-name>` build arg);
-- has its own Helm sub-chart with its own env vars, secrets, and resource limits;
-- has its own OpenAPI document at `<api-package>/openapi.json`;
-- generates its own Orval client into the biome's own package layout.
-
-The split is at the namespace level — the two APIs may share a managed database (one row per API in the biome's `helm/` values), share a Redis instance, or share neither.
-
----
-
-## Base-path conventions
-
-Xema reserves the following base-path prefixes for platform-owned surfaces. Biome APIs must avoid them:
-
-| Prefix | Owner |
+| Kind | Purpose |
 |---|---|
-| `/api/*` | Backend service default — fine inside the biome's own service |
-| `/health/*` | Standard liveness / readiness — required on every biome API |
-| `/system/*` | Reserved for kernel APIs |
-| `/store/*` | Reserved for `xema-store-api` |
-| `/shell/*`, `/sandbox/*` | Reserved for `xema-shell-api` |
+| `content` | Materialized Agents, Skills, Workflows, schemas, and other packaged content |
+| `web` | Static bundle hosted by the Xema web shell |
+| `adapter` | Module implementing a declared host adapter protocol |
+| `service` | Long-running request-serving component |
+| `worker` | Long-running queue or event worker |
+| `job` | Finite, scheduled, or one-shot component |
 
-Use a biome-specific prefix (`/incidents`, `/renderer`, `/connector-link`) and let the ingress prepend the biome subdomain.
-
----
-
-## Health and readiness
-
-Every biome API MUST expose three endpoints:
-
-| Endpoint | Purpose |
-|---|---|
-| `GET /health` | Top-level liveness probe |
-| `GET /health/live` | Kubernetes liveness |
-| `GET /health/ready` | Kubernetes readiness (must check the DB / Redis it depends on) |
-
-The host's Helm sub-chart wires these to liveness and readiness probes. A biome API that does not expose them fails the install boundary check.
+Each component combines an artifact, entrypoint, protocol, execution modes, and runtime requirements. See the generated [Manifest Reference](../../biomes/04-manifest-reference.md#xemacomponents) for the exact shape.
 
 ---
 
-## Shipping migrations
+## When to ship executable code
 
-Biome APIs that own database tables ship migrations under `api/migrations/`. The platform runs them as part of the Helm `migrationJob` before the API itself starts accepting traffic. Migrations are write-once and never edited after they ship — the same rules that govern platform-owned schemas apply.
+Ship a service, worker, job, or adapter when the biome needs behavior that declarative content cannot express, such as:
+
+- a long-running request, event, or queue consumer;
+- a custom capability implementation;
+- a provider adapter;
+- domain persistence with non-trivial invariants;
+- scheduled reconciliation;
+- a protocol surface such as HTTP or a worker queue.
+
+Do not ship a service merely to register Agents, Skills, Workflows, or contribution envelopes. A content component can materialize those.
+
+---
+
+## Runtime requirements are part of the contract
+
+An executable component must declare:
+
+- allowed tenancy scopes and verified tenant context;
+- minimum isolation and trust;
+- allowed locality;
+- state kind, persistence, consistency, and tenant fencing where durable;
+- minimum and preferred resources plus optional accelerator needs;
+- runtime kind and supported version;
+- ingress, egress, raw-body, and device requirements;
+- scaling mode, concurrency, readiness, graceful drain, and workload hints.
+
+The operator and scheduler use these declarations when deciding whether and where the component can run. A requirement is not documentation-only metadata.
+
+---
+
+## HTTP services and capabilities
+
+An HTTP component declares its protocol revision, stable service name, authentication scopes, service dependencies, and any exposed capabilities.
+
+Other biomes must not import its implementation or invent a direct dependency on its deployment address. Cross-biome operations use published clients where appropriate and the capability plane for domain actions, preserving authorization and audit.
+
+---
+
+## Scaling and lifecycle
+
+Horizontal components declare per-instance concurrency, readiness behavior, and a drain contract. This lets rollouts stop accepting new work and complete or hand off in-flight work deliberately.
+
+The deployment profile supplies the physical replicas and substrate; the biome supplies the workload requirements.
 
 ---
 
 ## Related pages
 
-- [Manifest reference](./manifest.md) — the `ships` block
-- [Capabilities](../capabilities.md) — how the gateway routes calls to a biome API
-- [Storage](./storage.md) — the shared data plane alternative to shipping your own DB
-- [Lifecycle Hooks](./lifecycle-hooks.md) — for one-shot install / upgrade work that does not warrant a service
+- [Manifest Reference](../../biomes/04-manifest-reference.md)
+- [Authoring](../../biomes/02-authoring.md)
+- [Capabilities](../capabilities.md)
+- [Runners](../runners.md)
+- [Lifecycle Hooks](./lifecycle-hooks.md)
 
 ---
 

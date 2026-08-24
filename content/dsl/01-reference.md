@@ -470,7 +470,7 @@ Access via: `${{ dynamic.item }}`
 Action reference in format: `namespace/action[@version]`
 
 Examples:
-- `xema/agent@1.0.0` — pinned to an exact version (recommended for production)
+- `xema/agent@2.1.0` — pinned to the current exact version (recommended for production)
 - `xema/agent` — pins to the action's current version **at compile time** and freezes it into the run. The compiled run carries a concrete version, so replays remain deterministic; only a new compilation would pick up a newer current version.
 - `xema/review@1.2.0`
 - `xema/emit-artifact@1.0.0`

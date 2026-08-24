@@ -22,13 +22,13 @@ When a session is created with a domain marker:
 - `sessionDomainKey` identifies the projection kind (closed domain marker)
 - `sessionDomainRef` identifies the domain row
 
-The runtime resolves the effective profile deterministically from `sessionDomainKey`.
+The runtime resolves the effective published Agent deterministically from `sessionDomainKey`.
 
 Rules:
 
-- If `sessionDomainKey` is present and `profileKey` is omitted: runtime resolves profile from the domain marker.
-- If both are present and they disagree: fail fast.
-- If neither is present: fail fast.
+- If `sessionDomainKey` is present and `agentRef` is omitted, the runtime resolves the Agent from the domain marker.
+- If an explicit `agentRef` conflicts with the domain's registered Agent, creation fails fast.
+- If neither `agentRef` nor a resolvable domain marker is present, creation fails fast.
 
 This removes service-level hardcoding and keeps profile selection biome-driven.
 
@@ -83,7 +83,7 @@ async function createDesignReview(params: {
   });
 
   // 2) Ask agent-session runtime to create the backing session
-  //    Note: no hardcoded profileKey needed.
+  //    No hardcoded Agent ref is needed when the domain mapping owns it.
   const sessionRes = await fetch(`${process.env.AGENT_SESSION_API_URL}/sessions`, {
     method: 'POST',
     headers: {
@@ -119,8 +119,8 @@ async function createDesignReview(params: {
 
 Use the same runtime endpoints used by generic sessions:
 
-- `POST /sessions/{id}/messages` for turns
-- session stream endpoint for realtime updates
+- `POST /sessions/{id}/threads/{threadId}/messages` for turns
+- `GET /sessions/{id}/events/stream` for persistent realtime updates
 
 Keep design-review UI additive (extra panels, badges, metadata), while transcript and stream components remain shared.
 
@@ -138,13 +138,13 @@ Suggested invariant checks:
 
 ---
 
-## Biome-Driven Profile and Manifest Selection
+## Biome-Driven Agent and Workspace Selection
 
 For new domain modes:
 
-- register domain/profile configuration in biome content
-- resolve profile/manifest from domain marker + biome configuration
-- do not hardcode runtime profile constants in domain services
+- register the domain-to-Agent configuration in biome content
+- resolve the published Agent and workspace from the domain marker
+- do not hardcode retired session-profile constants in domain services
 
 This keeps one runtime and one manifest model while allowing many projection modes.
 

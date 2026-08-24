@@ -1,170 +1,157 @@
 # Biomes
 
-A **biome** is the Xema OS unit of distribution. Where a traditional extension model extends one surface, a biome may ship agents, skills, tools, workflows, deliverable specs, document templates and themes, mount sources, artifact types, connector bindings, frontend slot contributions, optional backend services, controllers, and storage schemas — all through one declarative manifest and one lifecycle.
+A **biome** is Xema's unit of extension and distribution. It packages a coherent domain or integration without modifying the Kernel or reaching into another biome's implementation.
 
-A biome is *installed* into an organization, *scoped* to one or more execution environments, *versioned* under the user-controlled lifecycle, and *governed* by the two-stage permission model, backed by a fully-specified state machine.
+A biome may ship:
 
----
+- Agents and Skills;
+- Workflows and structured deliverable specifications;
+- capability and connector contributions;
+- workspace manifests and provisioning scaffolds;
+- UI bundles and host-surface contributions;
+- optional services, workers, jobs, or adapters;
+- install-time permission and integration requirements.
 
-## The biome lifecycle
-
-A biome moves through deliberate, observable stages. The kernel never auto-promotes; humans hold the promotion gates.
-
-```
-draft  →  sandbox-installed  →  review-required  →  org-installed
-                                                    →  store-submitted
-                                                       →  store-approved
-                                                          →  archived
-```
-
-| Stage | Environment | What it can do |
-|---|---|---|
-| `draft` | none (sources only) | lives in Biome Studio / Agent Studio; not callable, not installable |
-| `sandbox-installed` | `sandbox` | runs in a sandbox environment with no org secrets; reads mounted inputs only |
-| `review-required` | `sandbox` + `store-review` | inspected by a human reviewer; tests run; SBOM generated; permission diff shown |
-| `org-installed` | `org` / `project` | callable by org subjects; capability grants resolved per environment |
-| `store-submitted` | `store-review` | available to other orgs for inspection only; runs in a review environment with no real data |
-| `store-approved` | global | installable by any org from the [Xema Store](./store.md) |
-| `archived` | none | retained for lineage; not installable; existing locked installs keep working |
-
-The enum is closed (`BiomeLifecycle` in `@xemahq/biome-host-api-client`). The state machine is one-directional in the happy path; reverse moves (`org-installed → archived`, `store-approved → archived`) are explicit capability calls, not implicit transitions.
+Biomes are how an organization grows a fresh Xema installation into the platform it needs. The base platform supplies shared operating capabilities; customer and domain biomes add the business layer.
 
 ---
 
-## Lifecycle transitions are capability calls
+## The current manifest model
 
-Every transition is mediated by one capability and audited as one decision:
+Every biome has a `xema-biome.json` manifest. The current contract is component-based: `xema.components[]` is the authoritative list of artifacts the biome ships. The earlier `ships.apis[]` shape is retired.
 
-| From → To | Capability | Default approval policy |
-|---|---|---|
-| `draft → sandbox-installed` | `biome:install@1` | implicit (author's own draft) |
-| `sandbox-installed → review-required` | `biome:promote@1` | `requiresApproval=true` |
-| `review-required → org-installed` | `biome:promote@1` | `requiresApproval=true` |
-| `review-required → store-submitted` | `biome:submit-to-store@1` | `requiresApproval=true` |
-| `store-submitted → store-approved` | `biome:approve-in-store@1` (a.k.a. `store:biome.approve@1`) | reviewer approval required |
-| `store-approved → archived` | `biome:archive@1` (a.k.a. `store:biome.archive@1`) | `requiresApproval=true` |
-| `org-installed → archived` | `biome:archive@1` | `requiresApproval=true` |
+Each component declares:
 
-All seven transitions emit a structured audit-log entry through `audit-log-api`. The `requiresApproval=true` default for every promote-out-of-sandbox capability is what enforces the "user holds command" rule across the lifecycle — no automated agent can promote a biome past the sandbox without an approval gate.
+- `key` and `kind` — `content`, `web`, `adapter`, `service`, `worker`, or `job`;
+- `artifact.kind` and `artifact.path` — the package content, web bundle, host module, or OCI image;
+- `entrypoint` and `protocol` — how the host starts it and how other platform surfaces interact with it;
+- `executionModes` — materialized, web-hosted, shared-host, composed, isolated, or runner;
+- `requirements` — tenancy, isolation, trust, locality, state, resources, runtime, I/O, scaling, readiness, and drain behavior.
 
----
+This makes runtime requirements machine-readable. Placement and deployment do not depend on a folder name or an undocumented convention.
 
-## Install — Stage 1 (consent)
-
-The install capability `biome:install@1` is paired with `store:biome.install@1` for store-fetched biomes. The flow:
-
-1. Caller invokes `biome:install@1` (or `store:biome.install@1`) with `{ biomeRef, version, environment, scope }`.
-2. `biome-host-api` parses the manifest, computes a **permission digest** — capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version.
-3. The digest is presented to an org admin; the admin chooses a built-in profile (`read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`) or customizes per-capability resource scopes, execution environments, and rate limits.
-4. Approval writes a `BiomeInstallGrant` row in `authorization-api`. The grant is the authoritative answer to "what may this biome do, in which environment?".
-
-Until the admin approves, the biome stays in `sandbox-installed`. No runtime call ever consults a manifest field — every check goes through the grant.
-
----
-
-## Install — Stage 2 (runtime brokering)
-
-Every capability invocation by the installed biome routes through `xema-capability-router`:
-
-1. Caller hands the gateway `{ ref, subject, environment, input }`.
-2. Gateway looks up the `BiomeInstallGrant`.
-3. Gateway checks: capability in the grant set, resource glob matches, environment allowed, subject covered, audience policy compatible, within rate / quota, no human approval required.
-4. Allowed → the resolver dispatches to the bound contribution or kernel handler.
-5. Denied → typed denial with an `auditId`. Run `why-denied <auditId>` in the [Shell](./shell.md) for the structured reason and a suggested fix.
-
-The biome never holds raw credentials. The gateway resolves the binding for the active environment and calls the connector itself; the biome sees the capability ref and the input only.
-
----
-
-## What lives in a biome
-
-The on-disk layout (rooted under `biomes/<id>/`):
-
-```
-xema-biome.json                ← manifest
-contracts/
-  capabilities.json            ← exposesCapabilities + requiresCapabilities
-  permissions.json             ← role-capability + execution-environment hooks
-backend/
-  migrations/                  ← if the biome owns a relational database schema
-  api/                         ← optional backend service(s)
-  openapi.json                 ← when the biome ships a service
-frontend/
-  routes/                      ← RouteContributions
-  slots/                       ← HostExtensionSlots entries
-  widgets/                     ← widget-kind contributions
-agents/                        ← Contribution(agent-definition)
-skills/                        ← Contribution(agent-skill) folder bundles
-workflows/                     ← Contribution(workflow-definition)
-deliverable-specs/             ← Contribution(deliverable-spec)
-document-templates/            ← Contribution(document-template)
-document-themes/               ← Contribution(document-theme)
-artifact-types/                ← Contribution(artifact-type)
-mount-sources/                 ← Contribution(mount-source)
-connectors/                    ← Contribution(connector-binding)
-controllers/                   ← K8s-style reconcilers
-runtime/
-  docker-compose.fragment.yaml ← optional, dev-only
-  helm/                        ← optional, when the biome ships a service
+```jsonc
+{
+  "name": "@acme/operations",
+  "version": "1.0.0",
+  "xema": {
+    "id": "operations",
+    "displayName": "Operations",
+    "scope": "platform",
+    "target": "server",
+    "components": [
+      {
+        "key": "operations-content",
+        "kind": "content",
+        "artifact": { "kind": "package-content", "path": "." },
+        "entrypoint": { "kind": "materialize" },
+        "protocol": { "kind": "none" },
+        "executionModes": ["materialized"],
+        "requirements": {
+          "tenancy": { "allowed": ["org", "project"], "tenantContext": "verified" },
+          "isolation": { "minimum": "none" },
+          "trust": { "minimum": "untrusted" },
+          "locality": { "allowed": ["cloud", "customer-private"] },
+          "state": { "kind": "stateless" },
+          "resources": { "minimum": { "cpu": "1m", "memory": "1Mi", "ephemeralStorage": "1Mi" } },
+          "runtime": { "kind": "none" },
+          "io": { "ingress": "none", "egress": "none", "rawBody": false, "devices": [] },
+          "scaling": {
+            "mode": "singleton",
+            "concurrency": { "handling": "serial", "maximumPerInstance": 1 },
+            "readiness": { "kind": "none" },
+            "drain": { "kind": "none" },
+            "hints": { "cpu": "steady", "memory": "steady", "startup": "fast" }
+          }
+        }
+      }
+    ]
+  }
+}
 ```
 
-Every line under `agents/` through `controllers/` is one `ContributionKind` in the closed enum. See the [Manifest reference](./sdk/manifest.md) for how each path is declared and the [Backend SDK page](./sdk/backend-i-ship.md) for the `ships.apis[]` shape.
+Use the generated [Manifest Reference](../biomes/04-manifest-reference.md) for the exact schema. It is generated from the same contract the host validates.
 
 ---
 
-## The `contributions/` directory
+## Scope tiers and dependency rules
 
-The unified surface for everything a biome ships is the **`contributions/`** directory at the biome root. One `*.contribution.json` per contribution, each declaring its kind, its target object, and a pointer to the asset (folder, module, or inline manifest):
+`xema.scope` is one of four enforced boot and dependency tiers:
 
-```
-contributions/
-  agent.greeter.contribution.json
-  workflow.escalation.contribution.json
-  skill.documentation.contribution.json
-  connector.github.contribution.json
-  mount-source.cve-feed.contribution.json
-```
+| Scope | Purpose |
+|---|---|
+| `kernel` | The smallest platform foundation |
+| `system` | System-wide operating services |
+| `base` | Shared capabilities used by domain products |
+| `platform` | Domain, integration, and customer biomes |
 
-This replaces the legacy per-kind top-level directories (`agents/`, `workflows/`, `skills/`, …) and the legacy `xema.content.*` / `xema.modules.*` manifest blocks. Both old shapes lift cleanly into `contributions/` — the migration is mechanical, the data is the same, and every former content kind and module kind is now one value in the closed `ContributionKind` enum.
+Third-party and customer biomes use `platform`. Lower tiers are reserved for the platform foundation.
 
-A new kind ("e.g. `chart-runtime` for Vega") is two files: one enum entry plus the Zod schema for its manifest. No new top-level directory, no new seeder, no scattered registry updates. See [SDK / Contributions](./sdk/contributions.md) for the authoring details.
+The important boundary is capability-based composition:
 
----
+- Kernel packages do not import biomes.
+- One biome does not import another biome's implementation.
+- Cross-biome work happens through published contracts and capabilities.
 
-## Multi-API biomes
-
-A biome may ship **zero, one, or many** backend services through `ships.apis[]`. Each API gets its own Helm sub-chart, its own Docker image, its own subdomain, and its own capability namespace (`biome:<biomeId>.<apiName>.<verb>@1`). Cross-biome API imports are rejected by boundary CI — biome APIs talk to each other only through capabilities.
-
-See [SDK / Backend I ship](./sdk/backend-i-ship.md) for the `ships.apis[]` field shape and base-path conventions.
+This lets domain teams evolve independently while preserving one policy and audit funnel.
 
 ---
 
-## Storage
+## Content and contributions
 
-A biome that needs persistence either ships its own relational database schema (under `backend/api/migrations/`) or declares collections in `xema-biome.json`'s `storage` block and lets `biome-storage-api` host them. The shared data plane enforces per-tenant isolation (`org` / `project` / `sandbox`), a closed filter-grammar, field encryption, and an explicit `uninstallPolicy` (`retain` | `drop-on-uninstall`).
+Biomes extend Xema through three explicit channels:
 
-See [SDK / Storage](./sdk/storage.md).
+1. **Components** describe every executable or materialized artifact.
+2. **Convention content directories** hold multi-file content such as Agents, Skills, Workflows, workspace manifests, and deliverable specs.
+3. **Contribution envelopes** under `contributions/` or `xema.contributions.inline[]` carry typed single-file extension records.
+
+Nothing is loaded merely because arbitrary code exists in the bundle.
+
+The Agent and provisioning directories have manifest rosters that are cross-validated against files. Drift fails activation rather than silently omitting content.
 
 ---
 
-## Packaging
+## Install-time consent and runtime authority
 
-Biomes are installed from `biomes/<id>/` source folders through the fetcher. The manifest (`xema-biome.json`) carries the `contributes[]` / `requiresCapabilities[]` / `exposesCapabilities[]` / `lifecycle` / `ships` / `storage` blocks.
+A manifest can declare required and exposed capabilities plus human-readable permission hints. That declaration is not itself a grant.
 
-Biomes are packaged and distributed as **OCI artifacts** through the same registry that holds Docker images — one artifact per biome, one layer per file. Signing (`cosign`) and provenance (SLSA v1.0 in-toto attestation) ride the standard OCI flows. See [SDK / Publishing](./sdk/publishing.md#bundle-format--oci-artifacts).
+At installation, the platform presents the requested capability set and permission context for review. At runtime, every capability invocation is checked again against the acting subject, resource, Space, Execution Environment, Agent arming, and current policy.
+
+A biome therefore cannot turn a manifest declaration into authority by itself.
+
+---
+
+## Distribution and supply chain
+
+Biomes can be distributed as OCI artifacts. The distribution model supports signatures, provenance evidence, content-addressed locks, and offline verification workflows.
+
+Published versions are immutable inputs to installation and deployment. Promotion and rollback are deliberate lifecycle operations; a mutable source directory is not a production version.
+
+See [Biome Supply Chain](./security/biome-supply-chain.md) and [Versioning](./versioning.md).
+
+---
+
+## What a new customer should build
+
+A new installation should start with the Xema foundation and add only the domain biomes it needs. A useful first decomposition is:
+
+- one integration biome defining provider-neutral capability contracts and canonical events;
+- one domain biome containing the first Agents, Skills, Workflows, and experience contributions;
+- separate web components when a customer-specific product surface is needed.
+
+Existing Xema application biomes are examples of what can be built, not a mandatory application portfolio.
 
 ---
 
 ## Related concepts
 
-- [biome](./concepts/biome.md) — concept summary
-- [lifecycle](./concepts/lifecycle.md) — the `BiomeLifecycle` state machine
-- [manifest](./concepts/manifest.md) — the `xema-biome.json` contract
-- [capability](./concepts/capability.md) — the call surface every transition uses
-- [execution-environment](./concepts/execution-environment.md) — the environments biomes run in
-- [store](./store.md) — the publish/install pipeline
-- [versioning](./versioning.md) — draft vs published vs lockfile
-- [apps](./apps.md) — composing biomes into product surfaces
+- [Biome concepts](../biomes/01-concepts.md)
+- [Authoring](../biomes/02-authoring.md)
+- [Manifest Reference](../biomes/04-manifest-reference.md)
+- [Capabilities](./capabilities.md)
+- [Execution Environments](./environments.md)
+- [Store](./store.md)
+- [Apps](./apps.md)
 
 ---
 

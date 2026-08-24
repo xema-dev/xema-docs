@@ -50,15 +50,10 @@ permissions:
 jobs:
   architecture:
     title: Build architecture document
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: architecture
-      role: unit-worker
-      phaseKey: architecture
-      mounts:
-        references: true
-        deliverables: { mode: read-write }
-        deliverable-specs: true
+      agentRef: architecture
+      stageKey: architecture
       deliverableSpecRef: architecture-standard
       agentSession: false
       agentContext:

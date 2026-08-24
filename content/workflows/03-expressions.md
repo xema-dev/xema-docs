@@ -235,12 +235,13 @@ jobs:
   analyze:
     uses: xema/agent
     with:
-      agentSlug: requirements
+      agentRef: requirements
       deliverableSpecRef: risk-assessment
+      agentContext:
+        prompt: Assess the request and produce the typed risk assessment.
     outputs:
-      response: ${{ job.outputs.response }}              # markdown narrative ref
-      structuredOutput: ${{ job.outputs.structuredOutput }}  # JSON payload ref
-      deliverables: ${{ job.outputs.deliverables }}      # variadic refs
+      assessment: ${{ job.outputs.deliverable }}
+      artifacts: ${{ job.outputs.deliverables }}
 ```
 
 ### Consuming outputs in downstream jobs
@@ -252,8 +253,12 @@ jobs:
   analyze:
     uses: xema/agent
     with:
-      agentSlug: requirements
+      agentRef: requirements
       deliverableSpecRef: risk-assessment
+      agentContext:
+        prompt: Assess the request and produce the typed risk assessment.
+    outputs:
+      artifacts: ${{ job.outputs.deliverables }}
 
   publish:
     needs: [analyze]
@@ -262,9 +267,9 @@ jobs:
       spaceSlug: docs
       slug: risk-assessment
       title: Risk assessment
-      artifactId: ${{ needs.analyze.outputs.response.artifactId }}
-      versionId: ${{ needs.analyze.outputs.response.versionId }}
-      version: ${{ needs.analyze.outputs.response.version }}
+      artifactId: ${{ needs.analyze.outputs.artifacts[0].artifactId }}
+      versionId: ${{ needs.analyze.outputs.artifacts[0].versionId }}
+      version: ${{ needs.analyze.outputs.artifacts[0].version }}
 ```
 
 `xema/publish-kb` accepts the `(artifactId, versionId, version)` triple and fetches the bytes from artifact-store — workflow authors never copy bytes between steps.
@@ -279,10 +284,12 @@ time, so a typo on a payload field fails the workflow before any job dispatches.
 ```yaml
 jobs:
   audit:
-    uses: xema/agent@1.0.0
+    uses: xema/agent
     with:
-      agent: builder
+      agentRef: builder@3
       deliverableSpecRef: metrics-snapshot@1.0.0
+      agentContext:
+        prompt: Produce the current metrics snapshot.
 
   notify:
     needs: [audit]

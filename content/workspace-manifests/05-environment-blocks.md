@@ -266,7 +266,7 @@ Interactive session profiles were a parallel configuration system that pinned a 
 | Profile field | Manifest home |
 |---|---|
 | `primaryAgentSlug` | `spec.agent.slug` |
-| `workspaceManifestRef` | the manifest itself |
+| former separate manifest selection | the workspace composition owned by the published Agent revision |
 | `defaultRole` | `spec.agent.role` |
 | `workspacePersistPaths` | `spec.persistence.paths` |
 | `defaultSkillSlugs` | `spec.skills` (slug + optional semver pin) |

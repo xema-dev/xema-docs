@@ -127,7 +127,7 @@ Two properties are worth stating precisely, because both are easy to over-read.
 
 **Coverage is the capability funnel.** An action taken *through* a capability is recorded. An equivalent read taken through a service's own browser-facing route is not necessarily recorded by the same journal — the funnel is what the journal watches, so "was it audited?" is really "did it go through the router?".
 
-**The read surface is operator-tier today.** The journal's browser route is gated to the *installation* operator, not the organization admin. An org-facing audit surface — filterable by resource, showing the delegation chain — is planned and not yet shipped.
+**Organization administrators can read their own journal.** The org-facing surface is fenced by the organization-admin role and supports filtering by resource, authority, correlation, and actor. It also supports compliance export and hash-chain verification. Installation operators retain their separate operational surface; an organization admin cannot use the org route to read another organization's journal.
 
 ### Retention and legal hold
 

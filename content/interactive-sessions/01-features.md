@@ -24,18 +24,11 @@ Complete feature reference for interactive sessions.
 
 ## Session Creation & Configuration
 
-### Agent Profile
+### Agent reference
 
-Every session selects an **agent profile** (`profileKey`) that determines:
-- Which agent handles the session
-- Which model is used by default
-- Which tools and MCP servers are pre-attached
-- Which skills are loaded
+Every generic session names a published Agent with `agentRef`, as a bare slug or a version pin such as `engineering-assistant@3`. The resolved Agent is the source of truth for its prompt, recursive subagents, intrinsic Skills and Tools, capability envelope, workspace configuration, and launch policy.
 
-**Available profiles** depend on your organization's configuration. Common profiles:
-- `session` — General-purpose engineering agent
-- `review` — Code review specialist
-- `analysis` — Analysis and research agent
+When `sessionDomainKey` and `sessionDomainRef` bind the session to a domain object, the server may resolve the Agent deterministically from that registered domain mapping instead of accepting an explicit `agentRef`.
 
 ### Model Override
 
@@ -43,7 +36,7 @@ You can override the model for a specific session:
 
 ```json
 {
-  "profileKey": "session",
+  "agentRef": "architecture-reviewer@2",
   "modelId": "anthropic/claude-opus-4-5",
   "title": "Deep architecture review"
 }
@@ -58,12 +51,12 @@ Link a session to a repository and choose how branches are managed:
 | Strategy | Behavior |
 |----------|----------|
 | `auto_create` | Automatically creates a new branch when the agent makes changes |
-| `use_existing` | Uses an existing branch (specify in `branchName`) |
+| `use_existing` | Uses the repository's selected existing branch context |
 | `none` | No SCM integration |
 
 ```json
 {
-  "profileKey": "session",
+  "agentRef": "engineering-assistant@3",
   "repositoryId": "repo-123",
   "branchStrategy": "auto_create"
 }
@@ -75,7 +68,7 @@ Set a token budget to control costs:
 
 ```json
 {
-  "profileKey": "session",
+  "agentRef": "engineering-assistant@3",
   "budgetLimit": 200000
 }
 ```
@@ -96,12 +89,10 @@ Sessions go through a detailed provisioning sequence before becoming active. Eac
 | `queued` | Waiting for a worker to become available |
 | `worker_launching` | Worker container spinning up |
 | `worker_waiting_ready` | Container up, waiting for agent process |
-| `credentials_injecting` | Injecting secrets, API keys, auth tokens |
+| `credentials_injecting` | Resolving approved credential bindings for the runtime; long-lived provider secrets are not Agent configuration |
 | `workspace_preparing` | Mounting repos, knowledge base, deliverable specs |
 | `config_writing` | Writing agent configuration files |
 | `config_reloading` | Agent reloading its configuration |
-| `model_verifying` | Confirming LLM model availability |
-| `tools_verifying` | Checking tool and MCP server availability |
 | `ready` | Provisioning complete ✓ |
 | `failed` | Error occurred ✗ |
 

@@ -666,61 +666,24 @@ Activities are routed to specific task queues:
 
 ## Mounts & Filesystem
 
-Workflows have access to a **workspace filesystem** with mounted sources. For agent jobs (`xema/agent`), you can define the workspace environment either inline or by referencing a named [Workspace Manifest](../workspace-manifests/index.md).
+Agent jobs run in a **workspace filesystem** with mounted sources. The published Agent owns that workspace composition; the workflow names the Agent through `agentRef`.
 
-### Workspace Manifest Reference
+### Agent-owned workspace composition
 
-Agent jobs support three forms for declaring the workspace, exposed as two DSL contracts plus an inline shorthand:
-
-**`workspace-manifest@v1` — named manifest reference** (resolved at runtime):
+`agentRef` is the sole Agent and workspace source for the current Agent action:
 
 ```yaml
 jobs:
   implement-feature:
     uses: xema/agent
     with:
-      task: Implement the feature
-      workspaceManifestRef: engineering@stable   # slug or slug@version
+      agentRef: engineering@5
+      deliverableSpecRef: implementation-record@2
+      agentContext:
+        prompt: Implement the approved change.
 ```
 
-The platform resolves the manifest at dispatch and uses the compiled agent composition that was seeded at install time.
-
-**`agent-composition@v1` — direct composition reference** (resolved at runtime):
-
-```yaml
-jobs:
-  implement-feature:
-    uses: xema/agent
-    with:
-      task: Implement the feature
-      agentCompositionRef: engineering@stable   # slug or slug@version
-```
-
-This binds directly to a published agent composition — the runtime primitive that workspace manifests compile into. Use this form when you authored the composition in the Agent Studio (or have an org-scoped composition without an upstream `.workspace.yaml`).
-
-**Short form — inline mount list** (compiled and embedded at compile time):
-
-```yaml
-jobs:
-  implement-feature:
-    uses: xema/agent
-    with:
-      task: Implement the feature
-      mounts:
-        - path: /workspace/repo
-          source:
-            kind: scm-repo
-            repoRef: github.com/acme/myrepo
-            ref: ${{ inputs.branch }}
-        - path: /workspace/specs
-          source:
-            kind: kb-space
-            spaceId: ${{ inputs.spaceId }}
-```
-
-The short-form `mounts` block is sugar: the compiler pre-compiles it into an inline composition at workflow compile time. An expression-based `workspaceManifestRef` or `agentCompositionRef` (e.g. `${{ inputs.manifestSlug }}`) is deferred to runtime.
-
-Use `workspaceManifestRef` or `agentCompositionRef` when you want to reuse a versioned environment across multiple jobs or workflows. Use `mounts` when the workspace is a one-off configuration specific to this job. See [Workspace Manifests](../workspace-manifests/index.md) for authoring the `.workspace.yaml` format and [Interactive Sessions](../interactive-sessions/index.md) for how the same compositions power live sessions.
+At dispatch, Xema resolves the published Agent revision and obtains its mounts, persistence, Skills, tools, sub-agents, and runtime requirements. The same composition powers [Interactive Sessions](../interactive-sessions/index.md). [Workspace Manifests](../workspace-manifests/index.md) remain an authoring and packaging format, but workflow YAML does not override the Agent's workspace with separate manifest, composition, or inline-mount inputs.
 
 ### Mount Sources
 

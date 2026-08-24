@@ -66,8 +66,6 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `workspace-manifest` | `ContributionKind.WorkspaceManifest` | biome-host parser (`WorkspaceManifestParser`) | A workspace manifest contributed by a biome. |
 | `tool-profile` | `ContributionKind.ToolProfile` | biome-host parser (`ToolProfileParser`) | A tool-profile contributed by a biome. |
 | `mcp-catalog` | `ContributionKind.McpCatalog` | biome-host parser (`McpCatalogParser`) | An MCP catalog entry contributed by a biome — a catalog manifest naming a connectable MCP service and the tools it exposes. |
-| `opencode-tool` | `ContributionKind.OpenCodeTool` | RESERVED — no contribution ingestion (category 3) | No parser, and one CANNOT be shipped without first closing the build-time gap tracked as H10 in `.claude/plans/canopy-universal-agent.md` §11.1, which carries the full, component-by-component write-down of what a runtime path would require; this note is the summary. |
-| `opencode-plugin` | `ContributionKind.OpenCodePlugin` | RESERVED — no contribution ingestion (category 3) | No parser, and the contribution-registrar deliberately does NOT route this kind — its own unit test uses this member as the canonical "not routed" fixture. |
 | `capability` | `ContributionKind.Capability` | biome-host parser (`CapabilityParser`) | A `CapabilityRef` descriptor contributed by a biome — title, summary, I/O schemas, risk tier, and approval flag. |
 | `resource-ownership` | `ContributionKind.ResourceOwnership` | biome-host parser (`ResourceOwnershipParser`) | A resource-instance ownership/visibility declaration contributed by a biome — `resourceType` + `resourceId` + a `ResourceVisibilityPattern` + the owning subjects (and optional explicit shares). |
 | `resource-definition` | `ContributionKind.ResourceDefinition` | biome-host parser (`ResourceDefinitionParser`) | A provider-neutral resource definition contributed by a biome: namespaced key, exact unit, measurement/aggregation semantics, bounded dimensions, supported limit kinds, and usage-export capability. |
@@ -87,8 +85,6 @@ Do not ship a contribution of these kinds expecting it to be picked up by
 - `biome-install-schema` — RESERVED — no contribution ingestion (category 3)
 - `icon` — RESERVED — no contribution ingestion (category 3)
 - `provisioning-scaffold` — RESERVED — no contribution ingestion (category 3)
-- `opencode-tool` — RESERVED — no contribution ingestion (category 3)
-- `opencode-plugin` — RESERVED — no contribution ingestion (category 3)
 
 ## Adding a kind
 

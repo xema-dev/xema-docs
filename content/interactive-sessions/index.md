@@ -49,7 +49,7 @@ When you create a session, the platform:
 
 1. Allocates a worker from the agent pool
 2. Boots the worker and waits for readiness
-3. Injects credentials and secrets
+3. Resolves approved connection and credential bindings without making long-lived provider secrets part of the Agent configuration
 4. Prepares the workspace (mounts repos, knowledge base, deliverable specs)
 5. Writes agent configuration (model, tools, skills)
 6. Reloads the agent config
@@ -210,12 +210,12 @@ curl -X POST https://agent-session-api.xema.dev/sessions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "profileKey": "session",
+    "agentRef": "engineering-assistant@3",
     "title": "Fix authentication module"
   }'
 ```
 
-### Start a Domain-Projected Session (No Hardcoded Profile)
+### Start a Domain-Projected Session (Domain-Selected Agent)
 
 ```bash
 curl -X POST https://agent-session-api.xema.dev/sessions \
@@ -235,6 +235,7 @@ curl -X POST https://agent-session-api.xema.dev/sessions/{sessionId}/threads/{th
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
+  -H "Idempotency-Key: <unique-turn-id>" \
   -d '{
     "content": "Can you review the authentication code and suggest improvements?"
   }'

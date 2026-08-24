@@ -1,19 +1,17 @@
 ---
 slug: agent
 title: Agent
-summary: One of the four primitives of the Xema agent runtime — an identity bound to a prompt and a set of intrinsic skills and tools. An agent is the LLM-backed actor that consumes skills, calls tools, resolves models, and produces work in workflows or interactive sessions.
+summary: The unified actor primitive: identity, prompt, intrinsic Skills and Tools, inheritance, workspace policy, and an optional recursive subagent tree.
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["org"]
 stability: stable
 ---
 
-An agent is a typed actor: identity + system prompt + intrinsic
-[skills](./skill.md) and [tools](./tool.md). Agents are owned by
-`llm-registry-api` and addressed as `XemaObjectKind.Agent`. At
-invocation time the Model Resolution Matrix picks the concrete model
-based on the agent, skill, project, and (optionally) workflow phase.
-An agent is usable two ways: as a sub-agent inside an
-[composition](./composition.md), or as the root of an interactive
-session. The set of agents is open and extensible — biomes ship their
-own through [contributions](./contribution.md).
+An **Agent** is one of the four primitives of the Xema Agent runtime. It has a stable identity, one mutable draft, immutable published revisions, a prompt, intrinsic [Skills](./skill.md), intrinsic [Tools](./tool.md), and optional recursive subagents.
+
+An Agent may extend one base Agent and append or replace its prompt. A leaf Agent has no subagents; a multi-agent composition is the same Agent shape with subagents. The runtime does not store these as different primitives.
+
+The same published Agent can be launched in an Interactive Session or used as a Workflow step. The Model Resolution Matrix selects the model at invocation boundaries, while the capability layer, reach ceiling, and current policy constrain what the Agent can do.
+
+Agents are owned in a [Space](./space.md). A bare ref resolves the current live published revision; a versioned ref pins an immutable revision.

@@ -9,9 +9,9 @@ A workflow job becomes "deliverable-producing" the moment it sets `with.delivera
 ```yaml
 jobs:
   requirements:
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: requirements
+      agentRef: requirements
       deliverableSpecRef: requirements-standard
       agentContext:
         prompt: ${{ inputs.request }}
@@ -33,9 +33,9 @@ jobs:
         as: target
         keyBy: name
         maxEntries: 32
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: builder
+      agentRef: builder
       deliverableSpecRef: ${{ target.specRef }}
       agentContext:
         prompt: ${{ target.prompt }}
@@ -56,10 +56,12 @@ The matrix mechanism is the single answer to "produce a different number of deli
 
 ```yaml
 clarify:
-  uses: xema/agent@1.1.0
+  uses: xema/agent
   with:
-    agentSlug: clarification-coordinator
+    agentRef: clarification-coordinator
     deliverableSpecRef: handoff-package
+    agentContext:
+      prompt: Clarify the request and emit a typed handoff package.
   outputs:
     targets: ${{ job.outputs.deliverable.content.value.targets }}
 
@@ -70,10 +72,12 @@ build:
       from: ${{ needs.clarify.outputs.targets }}
       as: target
       keyBy: name
-  uses: xema/agent@1.1.0
+  uses: xema/agent
   with:
-    agentSlug: builder
+    agentRef: builder
     deliverableSpecRef: ${{ target.specRef }}
+    agentContext:
+      prompt: ${{ target.prompt }}
 ```
 
 A user asking for "five microservices and one frontend" produces a clarification output with six targets (five `specRef: microservice-template`, one `specRef: frontend-template`). The matrix expands to six concurrent agent runs. Zero deliverables = empty array = zero iterations.
@@ -86,7 +90,7 @@ A user asking for "five microservices and one frontend" produces a clarification
 ## Action version
 
 ```yaml
-uses: xema/agent@1.1.0
+uses: xema/agent@2.1.0
 ```
 
 ---

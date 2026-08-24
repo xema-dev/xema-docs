@@ -160,7 +160,10 @@ jobs:
     matrixGather: [dispatch-deliveries]
     uses: xema/agent
     with:
-      agentSlug: program-coordinator
+      agentRef: program-coordinator
+      deliverableSpecRef: program-summary
+      agentContext:
+        prompt: Synthesize the completed delivery outputs.
 ```
 
 Because the fan-out runs in `child_workflow` mode, `program-synthesize` can `matrixGather` every delivery run's outputs once they all complete.

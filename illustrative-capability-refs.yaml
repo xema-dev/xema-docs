@@ -15,7 +15,7 @@
 # Markdown to renderers this repo does not own — an HTML comment is invisible in
 # some and printed verbatim in others. A frontmatter key was the other candidate
 # and does not work either: ~15 content files have no frontmatter at all, and two
-# of them (`content/xema-os/shell.md`, `content/xema-os/cli.md`) are among the
+# of them (`content/xema-os/xema-os-shell.md`, `content/xema-os/cli.md`) are among the
 # heaviest ref users. A sidecar changes no published byte.
 #
 # TWO CATEGORIES, DELIBERATELY SEPARATE
@@ -48,7 +48,7 @@ illustrative:
       Demonstrates a MAJOR version bump — it is the only `@2` on the site and exists to show that a
       v2 ref is declared alongside its v1. `my-domain:` is a placeholder domain.
     files:
-      - content/xema-os/versioning.md
+      - content/xema-os/xema-os-versioning.md
 
   github-mcp:create-issue@1:
     reason: >-
@@ -143,7 +143,7 @@ unpublished:
       would make them disagree with the platform's own contracts, which is why this is recorded rather
       than "fixed" here.
     files:
-      - content/xema-os/shell.md
+      - content/xema-os/xema-os-shell.md
       - content/xema-os/concepts/xema-shell.md
 
   biome-storage:collection.write@1:
@@ -224,7 +224,7 @@ unpublished:
       `connector:llm.invoke@1` — the same table declared all three and the same paragraph advertises
       them.
     files:
-      - content/xema-os/capabilities.md
+      - content/xema-os/xema-os-capabilities.md
       - content/xema-os/connectors.md
 
   connector:chat.send-message@1:
@@ -248,7 +248,7 @@ unpublished:
       provider-scoped refs that exist. It still moves with the other two — one table declared all
       three — but its first remedy is not the same one.
     files:
-      - content/xema-os/capabilities.md
+      - content/xema-os/xema-os-capabilities.md
       - content/xema-os/connectors.md
       - content/xema-os/sdk/testing.md
 
@@ -261,5 +261,5 @@ unpublished:
       Build the connector and publish the ref, or drop it from the pilot set. Moves with the other
       two.
     files:
-      - content/xema-os/capabilities.md
+      - content/xema-os/xema-os-capabilities.md
       - content/xema-os/connectors.md

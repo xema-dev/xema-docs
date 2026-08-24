@@ -1,126 +1,123 @@
 # DSL Examples
 
-Ready-to-use workflow examples organized by topic. Each example is complete and runnable.
+Current workflow examples organised by execution pattern.
 
-## Browse by Topic
+## Browse by topic
 
 | Section | Contents |
-|---------|----------|
-| [General Patterns](./general.md) | Hello world, triggers, matrix, error handling |
-| [Interactive Sessions](./agent-sessions.md) | Human + agent collaboration patterns |
-| [Pipeline Integration](./pipeline-integration.md) | Multi-job pipelines, data flow, conditional branching |
+|---|---|
+| [General Patterns](./general.md) | Triggers, schedules, matrices, conditions, and error handling |
+| [Workflow-linked Agent Sessions](./agent-sessions.md) | Human and Agent collaboration inside a durable Workflow |
+| [Pipeline Integration](./pipeline-integration.md) | Automated paths, interactive exception paths, Decisions, and side effects |
 
----
-
-## Quick Reference
-
-### Minimal Workflow (Manual Dispatch)
+## Minimal Agent workflow
 
 ```yaml
 apiVersion: xema.dev/workflow/v1alpha1
 kind: Workflow
 metadata:
-  name: hello-world
+  name: assess-request
   version: 1.0.0
 
 on:
   workflow_dispatch:
     inputs:
-      message:
+      request:
         type: string
         required: true
 
 jobs:
-  greet:
-    uses: xema/agent
+  assess:
+    uses: xema/agent@2.1.0
     with:
-      task: ${{ inputs.message }}
+      agentRef: request-analyst@2
+      deliverableSpecRef: request-assessment@1
+      agentContext:
+        prompt: ${{ inputs.request }}
 ```
 
-### Scheduled Workflow
+## Scheduled workflow
 
 ```yaml
 on:
   schedule:
     - cron: "0 9 * * MON"
-      timezone: "UTC"
+      timezone: UTC
       inputs:
-        report_type: weekly
+        reportType: weekly
 ```
 
-### Webhook-Triggered
+## Webhook-triggered workflow
 
 ```yaml
 on:
   webhook:
-    - event: scm.pull_request
+    - event: customer.case.opened
       filters:
-        state: opened
-        targetBranch: main
+        priority: high
 ```
 
-### Session in a Pipeline
+## Live Session inside a workflow
 
 ```yaml
 jobs:
-  session:
-    uses: xema/agent-session
+  collaborate:
+    uses: xema/agent@2.1.0
+    timeout: 24h
     with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      initialPrompt: ${{ inputs.task }}
+      agentRef: operations-coordinator@5
+      deliverableSpecRef: resolution-record@1
+      agentContext:
+        prompt: Work with the operator to resolve this exception.
+      agentSession: true
     outputs:
-      pr_url: ${{ result.pr_url }}
-
-  notify:
-    needs: session
-    uses: xema/webhook
-    with:
-      url: https://api.acme.com/notify
-      payload:
-        pr_url: ${{ needs.session.outputs.pr_url }}
+      sessionId: ${{ job.outputs.sessionId }}
+      resolution: ${{ job.outputs.deliverable }}
 ```
 
-### Conditional Jobs
+## Conditional paths
 
 ```yaml
 jobs:
-  session:
-    uses: xema/agent-session
+  assess:
+    uses: xema/agent@2.1.0
+    with:
+      agentRef: risk-reviewer@4
+      deliverableSpecRef: risk-assessment@2
+      agentContext:
+        prompt: Assess the request.
     outputs:
-      risk_level: ${{ result.risk_level }}
+      assessment: ${{ job.outputs.deliverable }}
 
   review-required:
-    needs: session
-    if: ${{ needs.session.outputs.risk_level == 'high' }}
-    uses: xema/decision-gate
+    needs: [assess]
+    if: ${{ needs.assess.outputs.assessment.risk == 'high' }}
+    uses: xema/decision-gate@1.2.0
     with:
-      approverGroups: [tech-leads]
-
-  auto-proceed:
-    needs: session
-    if: ${{ needs.session.outputs.risk_level == 'low' }}
-    uses: xema/agent
-    with:
-      task: Proceed automatically
+      subject: ${{ needs.assess.outputs.assessment }}
+      recipients:
+        - kind: human
+          target:
+            userId: ${{ trigger.actorSubject }}
+      policy:
+        kind: single
 ```
 
-### Matrix Expansion
+## Matrix expansion
 
 ```yaml
 jobs:
-  test-services:
+  assess-regions:
     strategy:
       matrix:
-        service: [auth-api, user-api, catalog-api]
-        env: [staging, production]
-    uses: xema/agent
+        region: [eu-west, eu-central, eu-north]
+      maxParallel: 3
+    uses: xema/agent@2.1.0
     with:
-      task: Test ${{ matrix.service }} in ${{ matrix.env }}
+      agentRef: regional-reviewer@2
+      deliverableSpecRef: regional-assessment@1
+      agentContext:
+        prompt: Assess the operating posture for ${{ matrix.region }}.
 ```
 
----
-
-**Full DSL Reference**: [DSL Reference](../01-reference.md)  
-**Best Practices**: [Best Practices](../02-best-practices.md)
+See [Agent Step](../06-agent-step.md) for the current action contract.

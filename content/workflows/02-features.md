@@ -201,10 +201,11 @@ jobs:
   clarification-round:
     uses: xema/agent
     with:
-      agentSlug: clarification-coordinator
-      role: coordinator
+      agentRef: clarification-coordinator
+      deliverableSpecRef: clarification-record
       agentSession: true
       agentContext:
+        prompt: Clarify the project requirements with the participant.
         purpose: Clarify project requirements
         context: ${{ needs.brainstorm.outputs.response }}
 ```

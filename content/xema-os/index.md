@@ -8,7 +8,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 
 | Page | What it covers |
 |---|---|
-| [Overview](./overview.md) | What Xema OS is, the six-layer model, the four primitives + Agent Composition |
+| [Overview](./overview.md) | What Xema OS is, the conceptual architecture layers, and the four Agent primitives |
 | [Objects](./objects.md) | `XemaObject`, the typed universe, XVFS read path |
 | [Capabilities](./capabilities.md) | Capability refs, the gateway, two-stage permission model |
 | [Connectors](./connectors.md) | Typed integration points, named multi-account connections, wallet credentials, OAuth flow |
@@ -33,10 +33,10 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Versioning](./versioning.md) | Draft vs published, rollback as a pointer flip, lockfile shape, capability auto-bump |
 | [Apps](./apps.md) | App model, delegated sessions and the signing key ring, audience policies, ingress caps, embed snippet |
 | [SDK / Getting Started](./sdk/getting-started.md) | Author your first biome with the `xema` CLI |
-| [SDK / Manifest](./sdk/manifest.md) | Every field of `xema-biome.json`, contribution kinds, lifecycle |
+| [Manifest Reference](../biomes/04-manifest-reference.md) | Generated, field-by-field contract for the current `xema-biome.json` schema |
 | [SDK / Contributions](./sdk/contributions.md) | Authoring the Contribution Protocol — `*.contribution.json` files |
 | [SDK / Lifecycle Hooks](./sdk/lifecycle-hooks.md) | `onInstall`, `onUninstall`, `onUpgrade`, `onEnable`, `onDisable` — declared, not yet invoked |
-| [SDK / Backend I ship](./sdk/backend-i-ship.md) | Multi-API biomes, base-path conventions, capability namespaces |
+| [SDK / Backend I ship](./sdk/backend-i-ship.md) | Component-based service, worker, job, adapter, content, and web artifacts |
 | [SDK / Storage](./sdk/storage.md) | Declared collections, isolation, `uninstallPolicy` |
 | [SDK / Publishing](./sdk/publishing.md) | The four publishing transitions, bundle format, signing intent |
 | [SDK / UI I contribute](./sdk/ui-i-contribute.md) | `HostExtensionSlots`, route contributions, nav registry |
@@ -47,7 +47,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 
 Read in order:
 
-1. **[Overview](./overview.md)** — orient yourself in the six layers and the four-concept runtime model.
+1. **[Overview](./overview.md)** — orient yourself in the conceptual layers and the four-concept runtime model.
 2. **[Objects](./objects.md)** — see how everything in Xema is a typed `XemaObject`.
 3. **[Spaces](./spaces.md)** — where data lives and who owns it.
 4. **[Execution Environments](./environments.md)** — the trust profiles capability calls run under.
@@ -62,21 +62,4 @@ Read in order:
 13. **[CLI](./cli.md)** — install and use the `xema` binary.
 14. **[Xema-as-Code](./iac.md)** — provision the platform declaratively with `xema.yaml` or Terraform.
 15. **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome.
-16. **[SDK / Manifest](./sdk/manifest.md)** — reference for every manifest field.
-
-## Phase rollout
-
-Xema OS lands in phases. This documentation tree grows in lockstep:
-
-| Phase | New pages |
-|---|---|
-| 1A | Overview, Objects (intro), Capabilities (intro), SDK / Manifest, SDK / Getting Started |
-| 1B | Capabilities (connector pilot section) |
-| 2 | Objects (full XVFS) |
-| 3 | Capabilities (gateway runtime) |
-| 4 | Execution Environments, Spaces, Execution Contexts, Policy |
-| 5 | Shell |
-| 6 (this wave) | Biomes, SDK / Lifecycle Hooks, SDK / Backend I ship, SDK / Storage |
-| 7 (this wave) | Apps |
-| 8 (this wave) | Store, Versioning, SDK / Publishing |
-| 9 (this wave) | SDK / UI I contribute, SDK / Events I subscribe, SDK / Testing |
+16. **[Manifest Reference](../biomes/04-manifest-reference.md)** — reference for every current manifest field.

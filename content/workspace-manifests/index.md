@@ -33,7 +33,7 @@ Ordered reading path for new integrators:
 | Consumer | How |
 |---|---|
 | Interactive sessions | Each session resolves the workspace defined by its agent composition and applies it before the session becomes active |
-| Workflow jobs | Agent jobs (`xema/agent`) reference an environment via the DSL contract `workspace-manifest@v1` (`workspaceManifestRef: slug@version`) or the newer `agent-composition@v1` (`agentCompositionRef: slug@version`); the compiler also accepts an inline `mounts:` block as shorthand |
+| Workflow jobs | Agent jobs use `agentRef`; the resolved published Agent owns the workspace composition |
 | Biome contributions | Biomes ship manifests under `workspace-manifests/*.workspace.yaml`; on biome install each manifest is compiled and seeded into the LLM Registry as a published agent composition available to all orgs |
 
 ## Schema

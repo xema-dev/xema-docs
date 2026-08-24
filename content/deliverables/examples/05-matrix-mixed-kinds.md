@@ -43,15 +43,10 @@ permissions:
 jobs:
   clarify:
     title: Decide what to build
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: clarification-coordinator
-      role: clarification-coordinator
-      phaseKey: clarification
-      mounts:
-        references: true
-        deliverables: { mode: read-write }
-        deliverable-specs: true
+      agentRef: clarification-coordinator
+      stageKey: clarification
       deliverableSpecRef: build-plan
       agentSession: true
       agentContext:
@@ -69,16 +64,11 @@ jobs:
         keyBy: name
         maxEntries: 16
       maxParallel: 4
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: builder
-      role: engineer
-      phaseKey: build
+      agentRef: builder
+      stageKey: build
       changeUnitId: ${{ matrix.target.name }}
-      mounts:
-        references: true
-        repos: { mode: read-write }
-        deliverable-specs: true
       deliverableSpecRef: ${{ matrix.target.specRef }}
       agentSession: false
       agentContext:
@@ -93,14 +83,10 @@ jobs:
   publish-summary:
     needs: [build]
     matrixGather: [build]
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: governance
-      role: coordinator
-      phaseKey: governance
-      mounts:
-        references: true
-        deliverables: { mode: read-only }
+      agentRef: governance
+      stageKey: governance
       deliverableSpecRef: build-summary
       agentSession: false
       agentContext:

@@ -63,15 +63,10 @@ permissions:
 jobs:
   clarify:
     title: Clarify request and emit handoff package
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: clarification-coordinator
-      role: clarification-coordinator
-      phaseKey: clarification
-      mounts:
-        references: true
-        deliverables: { mode: read-write }
-        deliverable-specs: true
+      agentRef: clarification-coordinator
+      stageKey: clarification
       deliverableSpecRef: handoff-package
       agentSession: true
       agentContext:
@@ -89,11 +84,10 @@ jobs:
         as: changeUnit
         keyBy: id
         maxEntries: 32
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: requirements
-      role: unit-worker
-      phaseKey: requirements
+      agentRef: requirements
+      stageKey: requirements
       changeUnitId: ${{ matrix.changeUnit.id }}
       deliverableSpecRef: requirements-standard
       agentSession: false

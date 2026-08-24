@@ -46,16 +46,10 @@ permissions:
 jobs:
   engineer:
     title: Engineering implementation
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: engineering
-      role: engineer
-      phaseKey: engineering
-      mounts:
-        references: true
-        repos: { mode: read-write }
-        deliverables: { mode: read-write }
-        deliverable-specs: true
+      agentRef: engineering
+      stageKey: engineering
       deliverableSpecRef: engineering-standard
       agentSession: false
       agentContext:

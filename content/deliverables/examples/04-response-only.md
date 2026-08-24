@@ -41,16 +41,12 @@ jobs:
 
   review:
     needs: [checkout]
-    uses: xema/agent@1.1.0
+    uses: xema/agent
     with:
-      agentSlug: gate-reviewer-quality
-      role: gate-reviewer
-      phaseKey: utility
+      agentRef: gate-reviewer-quality
+      stageKey: utility
       deliverableSpecRef: commit-review-summary
       agentSession: false
-      mounts:
-        repos: { mode: read-only }
-        deliverable-specs: true
       agentContext:
         prompt: ${{ format('Review the diff at {0}', trigger.payload.diffUrl) }}
         repoRef: ${{ trigger.payload.repoRef }}

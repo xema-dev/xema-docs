@@ -1,22 +1,15 @@
 ---
 slug: composition
 title: Agent Composition
-summary: The recursive workflow-as-agent primitive. A composition is an Agent armed with Skills and Tools whose children are themselves fully-armed composition nodes. The same composition shape powers interactive sessions and Xema workflow steps.
+summary: The recursive face of the unified Agent primitive. An Agent with subagents is a composition; an Agent without them is a leaf specialist.
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["org"]
 stability: stable
 ---
 
-Agent Composition is how Xema scales a single [agent](./agent.md) into
-a multi-step, multi-role piece of work without splitting the model into
-session-vs-workflow forms. A composition node references an agent by
-`slug@version`, attaches optional extra [skills](./skill.md),
-[tools](./tool.md), and a `modelOverride`, and lists child nodes that
-are themselves compositions. Compositions move through the
-[lifecycle](./lifecycle.md) — only `published` compositions can be
-resolved. The Model Resolution Matrix resolves the model per node at
-invocation boundaries (start, sub-agent spawn, `/skill` launch) and
-never mid-turn. Publishing a composition is a dedicated capability
-call (`composition:publish@1`), dispatched through the
-[Xema Shell](./xema-shell.md).
+**Agent Composition** is not a second resource model. It is the recursive face of an [Agent](./agent.md).
+
+An Agent's subagent tree references other published Agents. Each node may add Skills, Tools, instructions, a model override, permission narrowing, and runtime limits. Children can have children, so a coordinator can delegate to specialists while remaining one published, inspectable Agent definition.
+
+The same definition works in an Interactive Session and a Workflow Agent step. Published resolution pins every referenced revision and fails fast on missing refs, cycles, invalid inheritance, or unsatisfied requirements.

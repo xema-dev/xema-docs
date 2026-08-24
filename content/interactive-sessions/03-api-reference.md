@@ -22,13 +22,17 @@ POST /sessions
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `profileKey` | string | Yes | Agent profile (e.g., `session`) |
+| `agentRef` | string | Conditional | Published Agent slug or `slug@version`; omit only when a registered `sessionDomainKey` resolves it |
+| `sessionDomainKey` | string | Conditional | Domain projection kind; requires `sessionDomainRef` |
+| `sessionDomainRef` | string | Conditional | Opaque domain resource id; requires `sessionDomainKey` |
 | `title` | string | No | Human-readable session title |
 | `modelId` | string | No | Override the default model |
 | `repositoryId` | string | No | SCM repository to link |
 | `branchStrategy` | string | No | `auto_create` \| `use_existing` \| `none` |
 | `budgetLimit` | number | No | Max token budget |
 | `customConfig` | object | No | Advanced agent config overrides |
+| `lifecyclePolicy` | string | No | `ephemeral` or `persistent` |
+| `placement` | string | No | `reuse_if_available` or `force_isolated` |
 
 **Example**:
 
@@ -37,7 +41,7 @@ curl -X POST https://agent-session-api.xema.dev/sessions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "profileKey": "session",
+    "agentRef": "engineering-assistant@3",
     "title": "Refactor auth module",
     "repositoryId": "repo-123",
     "branchStrategy": "auto_create",
@@ -54,7 +58,6 @@ curl -X POST https://agent-session-api.xema.dev/sessions \
   "projectId": "proj-456",
   "title": "Refactor auth module",
   "status": "creating",
-  "profileKey": "session",
   "agentSlug": "engineering",
   "modelId": "anthropic/claude-sonnet-4-20250514",
   "tokenUsage": null,

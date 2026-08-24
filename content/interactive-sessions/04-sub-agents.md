@@ -1,139 +1,93 @@
-# Sub-agents (Delegates)
+# Subagents
 
-A **sub-agent** is an agent the primary agent can hand off a focused task to mid-turn. The primary stays in charge of the conversation; the sub-agent runs in a child execution context, completes its task, and returns a summarised result.
+A **subagent** is another published Agent referenced from an Agent's recursive `subagents` tree. It is not a separate primitive or a special session profile.
 
-Sub-agents are how a session stays focused while still doing breadth-heavy work — codebase exploration, web research, build verification, standards lookup — without polluting the primary's working memory.
-
----
-
-## What is a sub-agent?
-
-A sub-agent is **just an agent** with a default role hint of `subagent` instead of `primary`. The role is decided at *binding time* by the consumer (your session, your workflow step), not at definition time:
-
-- **The same agent slug** can serve as a primary in one session and as a sub-agent in another.
-- **Biomes ship agents**, and any agent with `mode: subagent` in its frontmatter becomes available as a sub-agent across the platform.
-- **The primary delegates** by calling the built-in `task` tool; the platform opens a fresh child session for the sub-agent, runs it, and returns the final response to the primary.
+The parent remains responsible for the overall interaction. It delegates a focused task, the child runs in a bounded execution context, and the result returns to the parent.
 
 ---
 
-## Where sub-agents come from
+## Where subagents are defined
 
-Four layers compose the effective sub-agent set for any session or workflow step. Lower layers establish a floor; higher layers add to it (sub-agents are additive — no layer can remove a slug a lower layer declared).
+The authoritative subagent tree is part of the published Agent revision. Each node references another Agent by slug and optional version pin.
 
-| Layer | Source | When applied |
-|---|---|---|
-| **Intrinsic floor** | The primary agent's own manifest declares `permission.task: <slug>: allow` for each delegate it expects to use. | Always. Cannot be removed at the session/step level. |
-| **Workspace manifest** | `agent.subAgents[]` in the bound workspace manifest (a versioned template like `engineering-standard@1.1.0`). | Whenever that manifest is mounted. |
-| **Interactive session profile** | `defaultSubAgents` on the profile. | Every session created from the profile. |
-| **Session / workflow step** | `Session.subAgentBindings` (set via the Delegates panel) or DSL `with.subAgents` on a workflow step. | Per session or per step. |
+A node can add:
 
-Same-slug collisions across layers resolve by **highest-layer-wins** for the model override. The slug stays mounted exactly once.
+- an alias;
+- extra Skills;
+- extra Tools;
+- appended instructions;
+- a model override;
+- permission narrowing;
+- recursive children;
+- structural runtime limits.
 
----
-
-## Attaching sub-agents to an interactive session
-
-Open the session, expand the **Tools** drawer, and use the **Delegates** section.
-
-- The list shows the *effective* set — intrinsic delegates appear with a lock icon and a "from agent definition" label. You can refine their model but you cannot unmount them.
-- Click **Add delegate** to pick from the agents your organization has visible. Biomes and org-authored agents both appear here.
-- Each binding has its own optional model override (Strategy or Pinned model). Leaving it blank means the delegate inherits the primary's model on every invocation.
-
-Detaching only removes session-level bindings. Intrinsic / manifest / profile bindings stay regardless.
-
-### API
-
-```bash
-# Attach
-curl -X POST https://agent-session-api.xema.dev/sessions/{sessionId}/subagents \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "slug": "web-explorer",
-    "modelOverride": { "kind": "strategy", "modelClass": "utility" }
-  }'
-
-# Refine the model on an existing or intrinsic binding
-curl -X PATCH https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-explorer \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "modelOverride": null }'
-
-# Detach a non-intrinsic binding
-curl -X DELETE https://agent-session-api.xema.dev/sessions/{sessionId}/subagents/web-explorer \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-`DELETE` on an intrinsic slug returns `400` — intrinsics are the floor.
+Invocation overlays can refine the launch where the contract allows, but they do not create a second profile-based composition model and cannot broaden authority beyond the published and policy-controlled ceilings.
 
 ---
 
-## Model overrides
+## Model resolution
 
-Every binding accepts an optional `ModelRef`:
+A subagent can:
 
-```yaml
-# Pin a concrete model
-modelOverride:
-  kind: concrete
-  modelId: anthropic/claude-haiku-4-5-20251001
-  providerSlug: anthropic       # optional disambiguation
+- inherit the parent invocation's resolved model behavior;
+- carry a concrete model override;
+- route through a model strategy such as `utility`, `review`, or `planning`.
 
-# Route through a strategy
-modelOverride:
-  kind: strategy
-  modelClass: utility            # coding | review | creative | planning | utility
-```
-
-- **Concrete** pins the sub-agent to a specific credentialed model. Re-resolution is a no-op until you change the binding.
-- **Strategy** routes the request through the named model class. Rebinding the strategy (e.g. CODING is re-pointed at a different model) takes effect on the next invocation with no edits to the session or workflow.
-- **No override** lets the sub-agent inherit the primary's resolved model at invocation time.
+Model resolution happens at invocation boundaries, including subagent spawn. The selected model does not change unpredictably in the middle of a turn.
 
 ---
 
-## Sub-agents in workflows
+## Runtime limits
 
-The `xema/agent` action step accepts a `subAgents` input — same shape as the session-level binding, applied for that step only.
+An Agent can declare limits for its recursive work:
+
+- maximum depth;
+- maximum concurrent fan-out;
+- maximum total spawns;
+- optional token budget where supported by the launching runtime.
+
+Depth, fan-out, and spawn limits are enforced by the runtime. They are not advisory text in the system prompt.
+
+---
+
+## In Interactive Sessions
+
+The session resolves the published Agent revision and its full recursive tree at launch. The parent can delegate through its task capability. Session events record the parent tool call and child execution lifecycle so the work remains inspectable.
+
+The Session supplies real-time conversation, workspace, thread, and lifecycle behavior; the Agent supplies the composition.
+
+---
+
+## In Workflows
+
+The `xema/agent` action names the primary Agent with `agentRef`. Its current action contract also supports per-step subagent bindings and coordinator limits where a Workflow needs a narrower or more explicit launch envelope.
 
 ```yaml
 jobs:
-  engineering:
+  investigate:
     uses: xema/agent
     with:
-      agentSlug: engineering
+      agentRef: incident-coordinator@3
+      deliverableSpecRef: incident-report@1
+      agentContext:
+        prompt: Investigate the incident and return a verified action plan.
       subAgents:
-        - slug: build-verifier
-        - slug: web-explorer
-          model:
-            kind: concrete
-            modelId: anthropic/claude-haiku-4-5-20251001
+        - slug: policy-researcher
+          modelOverride:
+            kind: strategy
+            modelClass: utility
+      composition:
+        limits:
+          maxDepth: 3
+          maxFanout: 4
+          maxSpawns: 12
 ```
 
-The Workflow Designer's Inspector exposes the same fields as form controls — see [DSL: Agent Step](../dsl/06-agent-step.md).
-
 ---
 
-## How invocation works
+## Good subagent design
 
-1. The primary agent decides it needs help and calls the `task` tool with the sub-agent slug and prompt.
-2. The Xema Agent Runtime opens a child session for that sub-agent.
-3. The child session runs to completion in its own execution context with its own (possibly overridden) model.
-4. The child's final response is returned to the primary as the `task` tool result.
-5. Conversation continues; the primary keeps the focused, summarised answer rather than the full back-and-forth.
-
-The session event ledger records both the primary's `tool_call_started` for `task` and the child session's lifecycle events, so the audit trail is complete.
-
----
-
-## Designing a good sub-agent
-
-Sub-agents shine when their job is **narrow, repeatable, and side-effect-light**:
-
-- **Discovery**: codebase exploration, standards lookup, API documentation retrieval.
-- **Verification**: build verification, lint runs, security scans on a small change set.
-- **Synthesis**: summarising a long document into a few decisions, drafting a one-line commit message from a diff.
-
-They are a poor fit for tasks that need long-running multi-step state, share mutable resources with the primary, or require the same broad context the primary already has.
+Use subagents for bounded specialist work: research, verification, synthesis, comparison, or provider-specific analysis. Keep shared mutable state and broad orchestration with the parent or a durable Workflow.
 
 ---
 

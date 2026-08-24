@@ -1,441 +1,141 @@
-# Examples: Interactive Sessions
+# Examples: Workflow-linked Agent Sessions
 
-DSL examples for workflows that use interactive sessions — spawning sessions, integrating human collaboration, and connecting session outputs back to pipeline jobs.
+An interactive collaboration point is a normal `xema/agent@2.1.0` job with `agentSession: true`. The same published Agent can therefore run autonomously or collaborate with people without introducing a second Agent definition or a separate Session action.
 
 ---
 
-## Minimal Session Workflow
-
-Dispatch a workflow that spawns a single interactive session:
+## Minimal interactive Agent job
 
 ```yaml
 apiVersion: xema.dev/workflow/v1alpha1
 kind: Workflow
 metadata:
-  name: single-session
+  name: guided-exception-resolution
   version: 1.0.0
 
 on:
   workflow_dispatch:
     inputs:
-      task_description:
-        type: string
-        required: true
-      repository_id:
+      caseId:
         type: string
         required: true
 
 jobs:
-  engineering-session:
-    title: Engineering Session
-    uses: xema/agent-session
+  resolve:
+    uses: xema/agent@2.1.0
+    timeout: 24h
     with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      initialPrompt: ${{ inputs.task_description }}
+      agentRef: operations-coordinator@5
+      deliverableSpecRef: exception-resolution@2
+      agentContext:
+        prompt: Work with the operator to investigate and resolve this exception.
+        caseId: ${{ inputs.caseId }}
+      agentSession: true
     outputs:
-      session_id: ${{ result.session_id }}
-      pr_url: ${{ result.pr_url }}
+      sessionId: ${{ job.outputs.sessionId }}
+      resolution: ${{ job.outputs.deliverable }}
+      artifacts: ${{ job.outputs.deliverables }}
 ```
+
+Xema opens the Session, sends the prompt as the first turn, and keeps the workflow job durable until the Session produces its structured handoff. The `sessionId` allows an experience to open the live conversation.
 
 ---
 
-## Session with Pre-Analysis
-
-Run automated analysis first, then hand off to human + agent session:
+## Prepare, collaborate, then continue
 
 ```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: analyze-then-session
-  version: 1.0.0
-
-on:
-  workflow_dispatch:
-    inputs:
-      feature_request:
-        type: string
-        required: true
-      repository_id:
-        type: string
-        required: true
-
 jobs:
-  analyze:
-    title: Analyze Feature Request
-    uses: xema/agent
+  prepare:
+    uses: xema/agent@2.1.0
     with:
-      task: Analyze feature request and produce implementation context
-      request: ${{ inputs.feature_request }}
+      agentRef: case-analyst@3
+      deliverableSpecRef: case-brief@2
+      agentContext:
+        prompt: Prepare the evidence and unresolved questions for this case.
+        caseId: ${{ inputs.caseId }}
     outputs:
-      context: ${{ result.context }}
-      affected_files: ${{ result.affected_files }}
-      estimated_complexity: ${{ result.complexity }}
+      brief: ${{ job.outputs.deliverable }}
 
-  implement:
-    title: Implementation Session
-    needs: analyze
-    uses: xema/agent-session
+  collaborate:
+    needs: [prepare]
+    uses: xema/agent@2.1.0
+    timeout: 24h
     with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      context: |
-        ## Feature Analysis
-        ${{ needs.analyze.outputs.context }}
-
-        ## Affected Files
-        ${{ needs.analyze.outputs.affected_files }}
-      initialPrompt: >
-        Based on the analysis above, implement the feature:
-        "${{ inputs.feature_request }}"
+      agentRef: operations-coordinator@5
+      deliverableSpecRef: exception-resolution@2
+      agentContext:
+        prompt: Review the prepared brief with the operator and agree the resolution.
+        caseId: ${{ inputs.caseId }}
+        brief: ${{ needs.prepare.outputs.brief }}
+      agentSession: true
     outputs:
-      session_id: ${{ result.session_id }}
-      pr_url: ${{ result.pr_url }}
+      sessionId: ${{ job.outputs.sessionId }}
+      resolution: ${{ job.outputs.deliverable }}
 
-  notify:
-    title: Notify Team
-    needs: implement
-    if: ${{ success() && needs.implement.outputs.pr_url != null }}
-    uses: xema/webhook
+  record:
+    needs: [collaborate]
+    uses: customer/case-record-resolution@1.0.0
     with:
-      url: https://api.acme.com/notifications/pr-ready
-      payload:
-        pr_url: ${{ needs.implement.outputs.pr_url }}
-        session_id: ${{ needs.implement.outputs.session_id }}
-        feature: ${{ inputs.feature_request }}
+      caseId: ${{ inputs.caseId }}
+      resolution: ${{ needs.collaborate.outputs.resolution }}
 ```
+
+The preparation and recording jobs remain automated. Only the job that benefits from human judgement becomes interactive.
 
 ---
 
-## Session with Post-Validation
+## Decision gate before collaboration
 
-Validate session output with an automated job before notifying reviewers:
+Use a Decision when the workflow needs explicit authority before opening or continuing a human-guided operation:
 
 ```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: session-with-validation
-  version: 1.0.0
-
-on:
-  workflow_dispatch:
-    inputs:
-      repository_id:
-        type: string
-        required: true
-
 jobs:
-  session:
-    uses: xema/agent-session
+  propose:
+    uses: xema/agent@2.1.0
     with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
+      agentRef: risk-reviewer@4
+      deliverableSpecRef: action-proposal@1
+      agentContext:
+        prompt: Prepare a bounded action proposal for this request.
     outputs:
-      session_id: ${{ result.session_id }}
-      pr_url: ${{ result.pr_url }}
+      proposal: ${{ job.outputs.deliverable }}
 
-  validate-code:
-    needs: session
-    uses: xema/agent
+  approve:
+    needs: [propose]
+    uses: xema/decision-gate@1.2.0
     with:
-      task: Review pull request for code quality, security, and test coverage
-      pr_url: ${{ needs.session.outputs.pr_url }}
-    outputs:
-      quality_score: ${{ result.quality_score }}
-      security_issues: ${{ result.security_issues }}
-      test_coverage: ${{ result.test_coverage }}
-      ready_for_review: ${{ result.ready_for_review }}
+      subject: ${{ needs.propose.outputs.proposal }}
+      recipients:
+        - kind: human
+          target:
+            userId: ${{ trigger.actorSubject }}
+      policy:
+        kind: single
 
-  request-human-review:
-    needs: validate-code
-    if: ${{ needs.validate-code.outputs.ready_for_review == true }}
-    uses: xema/decision-gate
+  execute-with-operator:
+    needs: [approve]
+    if: ${{ needs.approve.outputs.outcome == 'approved' }}
+    uses: xema/agent@2.1.0
+    timeout: 24h
     with:
-      approverGroups: [tech-leads]
-      context: |
-        PR ready for review.
-
-        **Quality Score**: ${{ needs.validate-code.outputs.quality_score }}
-        **Security Issues**: ${{ needs.validate-code.outputs.security_issues }}
-        **Test Coverage**: ${{ needs.validate-code.outputs.test_coverage }}
-
-        **PR**: ${{ needs.session.outputs.pr_url }}
-      timeout: "2 days"
-
-  flag-issues:
-    needs: validate-code
-    if: ${{ needs.validate-code.outputs.ready_for_review == false }}
-    uses: xema/webhook
-    with:
-      url: https://api.acme.com/notifications/session-needs-work
-      payload:
-        session_id: ${{ needs.session.outputs.session_id }}
-        pr_url: ${{ needs.session.outputs.pr_url }}
-        issues: ${{ needs.validate-code.outputs.security_issues }}
+      agentRef: operations-coordinator@5
+      deliverableSpecRef: execution-record@1
+      agentContext:
+        prompt: Execute the approved proposal with the operator.
+        approvedProposal: ${{ needs.propose.outputs.proposal }}
+      agentSession: true
 ```
+
+The Decision owns the approval evidence; the Agent Session owns the collaborative execution; the Workflow owns the durable sequence.
 
 ---
 
-## Multi-Session Pipeline
+## Design guidance
 
-Sequential sessions for different workflow phases:
+- Use the same `agentRef` for automated and interactive execution when the responsibility is the same.
+- Pin `agentRef` and `deliverableSpecRef` versions for reproducible production workflows.
+- Give interactive jobs a timeout that reflects human response time.
+- Carry business state through typed deliverables rather than relying on transcript parsing.
+- Use the `sessionId` to deep-link from the workflow run into the collaboration surface.
 
-```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: multi-session-pipeline
-  version: 1.0.0
-
-on:
-  workflow_dispatch:
-    inputs:
-      feature_request:
-        type: string
-        required: true
-      repository_id:
-        type: string
-        required: true
-
-jobs:
-  # Phase 1: Architecture session
-  architecture:
-    title: Architecture Design Session
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      deliverableSpecRef: architecture-decision-record@1.0.0
-      initialPrompt: Design the architecture for ${{ inputs.feature_request }}
-    outputs:
-      architecture_doc: ${{ result.artifact_id }}
-      decisions: ${{ result.decisions }}
-
-  # Phase 2: Requirements session (uses architecture output)
-  requirements:
-    title: Requirements Documentation Session
-    needs: architecture
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      deliverableSpecRef: requirements-standard@1.0.0
-      context: |
-        ## Architecture Decisions
-        ${{ needs.architecture.outputs.decisions }}
-      initialPrompt: Write detailed requirements based on the architecture above
-    outputs:
-      requirements_doc: ${{ result.artifact_id }}
-
-  # Phase 3: Implementation session (uses requirements)
-  implementation:
-    title: Implementation Session
-    needs: requirements
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      context: ${{ needs.requirements.outputs.requirements_doc }}
-      initialPrompt: Implement the feature according to the requirements
-    outputs:
-      pr_url: ${{ result.pr_url }}
-      session_id: ${{ result.session_id }}
-
-  # Phase 4: Automated review
-  review:
-    title: Automated Review
-    needs: implementation
-    uses: xema/agent
-    with:
-      task: Review implementation against requirements
-      pr_url: ${{ needs.implementation.outputs.pr_url }}
-      requirements: ${{ needs.requirements.outputs.requirements_doc }}
-    outputs:
-      approved: ${{ result.approved }}
-      review_summary: ${{ result.summary }}
-```
-
----
-
-## Session Triggered by Webhook
-
-Spawn a session when a specific GitHub PR event occurs:
-
-```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: pr-session-on-review-request
-  version: 1.0.0
-
-on:
-  webhook:
-    - event: scm.pull_request
-      filters:
-        state: review_requested
-
-jobs:
-  review-session:
-    title: Code Review Session
-    uses: xema/agent-session
-    with:
-      profileKey: review
-      repositoryId: ${{ trigger.payload.repository.id }}
-      context: |
-        ## Pull Request
-        **Title**: ${{ trigger.payload.pull_request.title }}
-        **Branch**: ${{ trigger.payload.pull_request.branch }}
-        **Author**: ${{ trigger.payload.pull_request.author }}
-      initialPrompt: >
-        Please review this pull request for code quality, correctness,
-        security, and adherence to our standards. Post your review
-        as a PR comment when complete.
-    outputs:
-      session_id: ${{ result.session_id }}
-```
-
----
-
-## Session with Approval Gate and Retry
-
-Use approval gates to allow iterating before finalizing:
-
-```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: session-with-iteration
-  version: 1.0.0
-
-on:
-  workflow_dispatch:
-    inputs:
-      task:
-        type: string
-        required: true
-      repository_id:
-        type: string
-        required: true
-
-jobs:
-  initial-session:
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      initialPrompt: ${{ inputs.task }}
-    outputs:
-      session_id: ${{ result.session_id }}
-      pr_url: ${{ result.pr_url }}
-
-  # Gate: engineer reviews and decides
-  review-gate:
-    needs: initial-session
-    uses: xema/decision-gate
-    with:
-      approverGroups: [engineers]
-      context: |
-        Session completed. Please review the PR.
-
-        **PR**: ${{ needs.initial-session.outputs.pr_url }}
-        **Session**: ${{ needs.initial-session.outputs.session_id }}
-      choices:
-        - label: Looks good — merge it
-          value: approve
-        - label: Needs more work — continue session
-          value: iterate
-      timeout: "24 hours"
-    outputs:
-      decision: ${{ result.choice }}
-
-  # Approved path
-  auto-merge:
-    needs: review-gate
-    if: ${{ needs.review-gate.outputs.decision == 'approve' }}
-    uses: xema/agent
-    with:
-      task: Merge the pull request
-      pr_url: ${{ needs.initial-session.outputs.pr_url }}
-
-  # Iterate path: resume or fork session
-  iteration-session:
-    needs: review-gate
-    if: ${{ needs.review-gate.outputs.decision == 'iterate' }}
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      parentSessionId: ${{ needs.initial-session.outputs.session_id }}  # Fork from first session
-      initialPrompt: Continue working on the feedback from the review
-    outputs:
-      session_id: ${{ result.session_id }}
-      pr_url: ${{ result.pr_url }}
-```
-
----
-
-## Scheduled Daily Engineering Session
-
-Run a scheduled session to handle daily maintenance tasks:
-
-```yaml
-apiVersion: xema.dev/workflow/v1alpha1
-kind: Workflow
-metadata:
-  name: daily-maintenance-session
-  version: 1.0.0
-
-on:
-  schedule:
-    - cron: "0 9 * * MON-FRI"
-      timezone: "UTC"
-      inputs:
-        task_type: daily_maintenance
-  workflow_dispatch:
-    inputs:
-      task_type:
-        type: string
-        enum: [daily_maintenance, security_patches, dependency_updates]
-        required: true
-      repository_id:
-        type: string
-        required: true
-
-concurrency:
-  group: maintenance-${{ inputs.repository_id }}
-  mode: skip
-
-jobs:
-  maintenance-session:
-    uses: xema/agent-session
-    with:
-      profileKey: session
-      repositoryId: ${{ inputs.repository_id }}
-      branchStrategy: auto_create
-      initialPrompt: >
-        Run the ${{ inputs.task_type }} workflow:
-        - Check for outdated dependencies and propose updates
-        - Review and fix any linting errors
-        - Ensure all tests pass
-        - Create a PR with a summary of changes
-    outputs:
-      pr_url: ${{ result.pr_url }}
-
-  notify-on-completion:
-    needs: maintenance-session
-    uses: xema/webhook
-    with:
-      url: https://api.acme.com/maintenance/report
-      payload:
-        task_type: ${{ inputs.task_type }}
-        pr_url: ${{ needs.maintenance-session.outputs.pr_url }}
-        triggered_by: ${{ trigger.kind }}
-```
-
----
-
-**See Also**: [Interactive Sessions Overview](../../interactive-sessions/index.md) | [Pipeline Integration](../../interactive-sessions/02-pipeline-integration.md)
+See [Agent Step](../06-agent-step.md) and [Interactive Sessions](../../interactive-sessions/index.md).

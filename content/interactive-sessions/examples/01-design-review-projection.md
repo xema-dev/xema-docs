@@ -101,7 +101,7 @@ export async function createDesignReview(input: {
 
 Important behavior:
 
-- You can omit `profileKey` when `sessionDomainKey` is present.
+- You can omit `agentRef` when `sessionDomainKey` resolves a registered domain Agent.
 - Runtime resolves profile deterministically from the domain marker.
 - Invalid mapping fails fast.
 - The actor is derived from the bearer token on `POST /sessions`.

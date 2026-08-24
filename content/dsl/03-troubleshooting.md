@@ -24,10 +24,12 @@ Debugging guide for common workflow issues.
 **Error**: `Invalid input: budget must be a number`
 
 **Diagnosis**:
+
 - Input validation failed during dispatch
 - User provided wrong type
 
 **Solution**:
+
 ```bash
 # Check workflow input schema
 curl https://workflow-engine-api.xema.dev/workflows/wf_123 \
@@ -44,6 +46,7 @@ curl -X POST https://workflow-engine-api.xema.dev/workflows/wf_123/dispatch \
 ```
 
 **Prevention**:
+
 - Define input types explicitly
 - Use enums for closed sets
 - Test dispatch before deploying
@@ -57,28 +60,31 @@ curl -X POST https://workflow-engine-api.xema.dev/workflows/wf_123/dispatch \
 **Error**: `Action xema/unknown not found`
 
 **Diagnosis**:
+
 - Action reference typo
 - Action doesn't exist
 - Version uses an unsupported range form
 
 **Solution**:
+
 ```yaml
 # ✅ Correct — omit the version to pin the current one at compile time
 uses: xema/agent
 
 # ✅ Correct — or pin an exact version
-uses: xema/agent@1.0.0
+uses: xema/agent@2.1.0
 
-# ❌ Range — `@1.0` is a range, not an exact version; not supported
-uses: xema/agent@1.0
+# ❌ Range — `@2.1` is a range, not an exact version; not supported
+uses: xema/agent@2.1
 
 # ❌ Wrong action — this action does not exist
 uses: xema/undefined
 ```
 
-A `uses:` reference is `namespace/action` with an optional exact `@MAJOR.MINOR.PATCH` version. Omit `@<version>` to pin the action's current version at compile time. Ranges (`@1.0`, `^1.0.0`) are not supported — see the [Language Reference](./01-reference.md#uses).
+A `uses:` reference is `namespace/action` with an optional exact `@MAJOR.MINOR.PATCH` version. Omit `@<version>` to pin the action's current version at compile time. Ranges (`@2.1`, `^2.1.0`) are not supported — see the [Language Reference](./01-reference.md#uses).
 
 **Available Actions**:
+
 - `xema/agent` — LLM agent
 - `xema/review` — Draft + review loop
 - `xema/emit-artifact` — Save artifact
@@ -91,9 +97,11 @@ A `uses:` reference is `namespace/action` with an optional exact `@MAJOR.MINOR.P
 **Error**: `Circular dependency detected: job1 → job2 → job1`
 
 **Diagnosis**:
+
 - Jobs reference each other in `needs`
 
 **Solution**:
+
 ```yaml
 ❌ Bad:
 jobs:
@@ -117,9 +125,11 @@ jobs:
 **Error**: `Missing required input: project_name`
 
 **Diagnosis**:
+
 - Workflow definition requires input but dispatch didn't provide it
 
 **Solution**:
+
 ```yaml
 # In workflow.yaml
 on:
@@ -150,26 +160,30 @@ curl -X POST https://workflow-engine-api.xema.dev/workflows/wf_123/dispatch \
 **Error**: `Job 'analyze' exceeded timeout of 1h`
 
 **Diagnosis**:
+
 - Job is taking longer than timeout
 - External service is slow
 
 **Solution**:
+
 ```yaml
 # Increase timeout
 jobs:
   slow-task:
-    timeout: "4h"        # Was 1h
+    timeout: '4h' # Was 1h
     uses: xema/agent
 ```
 
 Or:
+
 ```yaml
 # Increase default timeout
 defaults:
-  timeout: "4h"
+  timeout: '4h'
 ```
 
 **Debug**:
+
 ```bash
 # Check job logs
 curl https://workflow-engine-api.xema.dev/runs/run_123/logs \
@@ -182,20 +196,23 @@ curl https://workflow-engine-api.xema.dev/runs/run_123/logs \
 **Error**: `Job 'deploy' failed after 3 retries`
 
 **Diagnosis**:
+
 - Job repeatedly failed
 - Retry policy exhausted
 
 **Solution**:
+
 ```yaml
 # Increase retry attempts
 jobs:
   deploy:
     retry:
-      maxAttempts: 5     # Was 3
+      maxAttempts: 5 # Was 3
     uses: xema/agent
 ```
 
 Or implement fallback:
+
 ```yaml
 jobs:
   primary-deploy:
@@ -209,6 +226,7 @@ jobs:
 ```
 
 **Debug**:
+
 ```bash
 # Get retry details
 curl https://workflow-engine-api.xema.dev/runs/run_123 \
@@ -224,10 +242,12 @@ curl https://workflow-engine-api.xema.dev/runs/run_123 \
 **Error**: `Invalid expression: ${{ inputs.name.toUpperCase() }}`
 
 **Diagnosis**:
+
 - Expression contains invalid syntax
 - Function doesn't exist
 
 **Solution**:
+
 ```yaml
 ✅ Valid:
 ${{ inputs.name }}
@@ -245,10 +265,12 @@ ${{ inputs.name.. }}               # Syntax error
 **Error**: `Variable 'projects' not found in context`
 
 **Diagnosis**:
+
 - Referenced variable doesn't exist
 - Typo in variable name
 
 **Solution**:
+
 ```yaml
 ✅ Correct:
 ${{ vars.organization }}
@@ -266,9 +288,11 @@ ${{ needs.job1.output }}  # Should be 'outputs'
 **Error**: `Cannot compare string with number: 'high' >= 100`
 
 **Diagnosis**:
+
 - Expression compares incompatible types
 
 **Solution**:
+
 ```yaml
 ✅ Correct types:
 ${{ inputs.budget >= 100000 }}          # Both numbers
@@ -288,23 +312,25 @@ ${{ inputs.budget == 'large' }}         # Number vs string
 **Error**: `Output 'summary' not found in job 'analyze'`
 
 **Diagnosis**:
+
 - Job doesn't declare output
 - Output name typo
 - Accessing from non-dependent job
 
 **Solution**:
+
 ```yaml
 # Declare output
 jobs:
   analyze:
     uses: xema/agent
     outputs:
-      summary: ${{ result.summary }}    # Declare it
+      summary: ${{ result.summary }} # Declare it
 
   process:
     needs: analyze
     with:
-      summary: ${{ needs.analyze.outputs.summary }}  # Then use it
+      summary: ${{ needs.analyze.outputs.summary }} # Then use it
 ```
 
 ### Issue: Matrix Outputs Not Expanding
@@ -312,10 +338,12 @@ jobs:
 **Error**: `Cannot expand matrix output: needs.test.outputs is not array`
 
 **Diagnosis**:
+
 - Matrix job didn't produce outputs
 - Incorrect output syntax
 
 **Solution**:
+
 ```yaml
 jobs:
   test-all:
@@ -324,14 +352,14 @@ jobs:
         version: [20, 21, 22]
     uses: xema/agent
     outputs:
-      result: ${{ result.output }}      # Declare output
+      result: ${{ result.output }} # Declare output
 
   report:
     needs: test-all
     with:
       # Correct: Access all outputs
       results: ${{ needs.test-all.outputs[*] }}
-      
+
       # ❌ Wrong:
       # results: ${{ needs.test-all.output }}    # Missing 's'
 ```
@@ -341,10 +369,12 @@ jobs:
 **Error**: `trigger.payload is null`
 
 **Diagnosis**:
+
 - Workflow not triggered by webhook
 - Accessing non-webhook context
 
 **Solution**:
+
 ```yaml
 # Only available in webhook triggers
 on:
@@ -357,13 +387,14 @@ jobs:
     with:
       # ✅ Available here
       provider: ${{ trigger.provider }}
-      
+
       # ❌ Not available if triggered manually
 ```
 
 Or check trigger type:
+
 ```yaml
-if: ${{ trigger.provider != null }}     # Only if webhook
+if: ${{ trigger.provider != null }} # Only if webhook
 ```
 
 ---
@@ -375,14 +406,16 @@ if: ${{ trigger.provider != null }}     # Only if webhook
 **Error**: `Insufficient permissions: 'write' permission required for 'backlog'`
 
 **Diagnosis**:
+
 - Workflow doesn't have required permission
 - Attempting operation beyond declared scope
 
 **Solution**:
+
 ```yaml
 # Add permission
 permissions:
-  backlog: write          # Was: read
+  backlog: write # Was: read
 
 jobs:
   update-issue:
@@ -393,6 +426,7 @@ jobs:
 ```
 
 **Available Scopes**:
+
 - `repos` — SCM access (read, limited, write)
 - `kb` — Knowledge base (read, limited, write)
 - `backlog` — Issue tracking (read, limited, write)
@@ -408,11 +442,13 @@ jobs:
 **Error**: `Workflow took 8 hours to complete (expected < 2 hours)`
 
 **Diagnosis**:
+
 - Sequential jobs that could be parallel
 - Large matrix expansion
 - Network timeouts
 
 **Solution - Parallelize**:
+
 ```yaml
 ❌ Sequential:
 jobs:
@@ -437,6 +473,7 @@ jobs:
 ```
 
 **Solution - Limit Matrix**:
+
 ```yaml
 ✅ Safe expansion:
 strategy:
@@ -456,15 +493,17 @@ strategy:
 **Error**: `Queue full: Too many jobs scheduled (max: 100)`
 
 **Diagnosis**:
+
 - Matrix explosion
 - Need to limit parallelism
 
 **Solution**:
+
 ```yaml
 strategy:
   matrix:
     version: [18, 19, 20, 21, 22]
-  maxParallel: 2            # Limit to 2 at a time
+  maxParallel: 2 # Limit to 2 at a time
 ```
 
 ---

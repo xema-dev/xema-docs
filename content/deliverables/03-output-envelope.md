@@ -1,172 +1,103 @@
-# Output envelope
+# Agent output envelope
 
-Every workflow activity returns a flat envelope of named outputs. Each declared output is an **artifact reference** — a stable pointer to bytes in artifact-store — never inline content embedded in the workflow event stream.
-
----
-
-## The canonical shape
-
-An activity declares its outputs by name and type. At runtime each declared output is returned as an `ArtifactRef`:
-
-```ts
-interface ArtifactRef {
-  artifactId: string;
-  versionId: string;
-  version: number;     // monotonic per-artifact integer (1, 2, 3, …)
-  hash: string;        // content hash
-  type: string;        // OutputKind: markdown_doc, json_payload, external_blob, …
-  title?: string;      // optional display label
-}
-```
-
-A declared output is always either:
-
-- a single `ArtifactRef` (e.g. `response: ArtifactRef`),
-- a `readonly ArtifactRef[]` when the output is variadic (e.g. `deliverables: ArtifactRef[]`),
-- `null` when the activity declares the output as optional and the run produced nothing for it.
-
-The envelope's other fields (`outcome`, `durationMs`, status counters) are orchestration metadata. They never carry reviewable bytes.
-
-## Per-activity outputs
-
-The standard activities expose the following named outputs.
-
-### `xema/agent`
-
-| Output | Shape | Kind |
-|---|---|---|
-| `response` | `ArtifactRef` | `markdown_doc` — the agent's final narrative |
-| `structuredOutput` | `ArtifactRef \| null` | `json_payload` — only when the run used a JSON output schema |
-| `deliverables` | `ArtifactRef[]` | mixed kinds — files the agent harvested from `/workspace/deliverables/` |
-
-### `xema/http`
-
-| Output | Shape | Kind |
-|---|---|---|
-| `response` | `ArtifactRef` | `json_payload` for `application/json`, `markdown_doc` for `text/*`, `external_blob` otherwise |
-| `status`, `headers`, `contentType` | plain fields | response metadata, not reviewable bytes |
-
-### `xema/webhook`
-
-| Output | Shape | Kind |
-|---|---|---|
-| `response` | `ArtifactRef \| null` | `markdown_doc` — null when the upstream returned no body |
-
-### `xema/endpoint-fetch`
-
-| Output | Shape | Kind |
-|---|---|---|
-| `results` | `ArtifactRef[]` | one per fetched endpoint |
-| `resultsManifest` | `ArtifactRef` | `json_payload` — per-endpoint status / size / error table |
-
-### `xema/scm-post-review`
-
-| Output | Shape | Kind |
-|---|---|---|
-| `postedComments` | `ArtifactRef` | `json_payload` — the comments the activity posted |
-
-### `xema/emit-artifact`
-
-| Output | Shape | Notes |
-|---|---|---|
-| `artifactId`, `versionId`, `version`, `hash` | plain fields | the ref the workflow author emitted, surfaced as separate fields for ergonomic access |
+The current `xema/agent@2.1.0` action separates execution metadata, harvested artifacts, and the optional typed deliverable. Workflow authors pass references and structured values between jobs; large reviewable content remains in the artifact store.
 
 ---
 
-## Reading outputs from a workflow
+## Current Agent outputs
 
-### Same-job projection
+| Output | Shape | Meaning |
+|---|---|---|
+| `allocationId` | `string` | Runtime allocation used for the job |
+| `outcome` | enum | `succeeded`, `empty-response`, or `partial` |
+| `deliverables` | `DeliverableArtifactRef[]` | Files harvested from the Agent workspace |
+| `deliverable` | object or `null` | The typed deliverable governed by `deliverableSpecRef` |
+| `renderedContextHash` | string or `null` | Hash of the rendered invocation context |
+| `resolvedAgentSnapshotHash` | string or `null` | Hash of the resolved Agent snapshot |
+| `mountDiagnostic` | object or `null` | Workspace-mount diagnostic |
+| `durationMs` | integer | Execution duration |
+| `sessionId` | string or `null` | Workflow-linked Session id when `agentSession: true` |
 
-A job's `outputs:` block selects which fields it re-exports to downstream consumers. Each entry is an arbitrary expression — the simplest form just forwards an activity output as-is.
+Each item in `deliverables` is a stable, versioned artifact reference containing fields such as `artifactId`, `versionId`, `version`, `hash`, `path`, `sizeBytes`, and `sha256`.
 
-```yaml
-draft:
-  uses: xema/agent
-  with:
-    agentSlug: requirements
-    deliverableSpecRef: feature-spec
-  outputs:
-    response: ${{ job.outputs.response }}        # the markdown narrative ArtifactRef
-    structuredOutput: ${{ job.outputs.structuredOutput }}
-    deliverables: ${{ job.outputs.deliverables }}
-```
-
-### Cross-job access
-
-Downstream jobs read outputs via `needs.<job>.outputs.<name>`. Because each output is an `ArtifactRef`, you can reach into its fields directly.
-
-```yaml
-publish:
-  needs: [draft]
-  uses: xema/publish-kb
-  with:
-    spaceSlug: docs
-    slug: feature-spec
-    title: Feature spec
-    artifactId: ${{ needs.draft.outputs.response.artifactId }}
-    versionId: ${{ needs.draft.outputs.response.versionId }}
-    version: ${{ needs.draft.outputs.response.version }}
-```
-
-`xema/publish-kb` accepts an `(artifactId, versionId, version)` triple as its publish source — it fetches the bytes from artifact-store. Other activities that need the ref pass the whole shape.
-
-### Review subjects
-
-The `xema/review` and `xema/comment-review` activities accept `ArtifactRef`-shaped subjects directly:
-
-```yaml
-gate:
-  needs: [draft]
-  uses: xema/decision-gate
-  with:
-    subjectArtifacts:
-      - artifactId: ${{ needs.draft.outputs.response.artifactId }}
-        versionId: ${{ needs.draft.outputs.response.versionId }}
-        version: ${{ needs.draft.outputs.response.version }}
-```
-
-The reviewer panel renders the artifact with its content-type-appropriate renderer, exposes version history, and accepts anchored comments — uniformly across every kind of reviewable output.
-
-### Variadic outputs
-
-Outputs declared as arrays (e.g. `deliverables`) are indexed positionally:
-
-```yaml
-publish-doc:
-  needs: [draft]
-  uses: xema/publish-kb
-  with:
-    artifactId: ${{ needs.draft.outputs.deliverables[0].artifactId }}
-    versionId: ${{ needs.draft.outputs.deliverables[0].versionId }}
-    version: ${{ needs.draft.outputs.deliverables[0].version }}
-```
-
-### Matrix-keyed access
-
-Matrix and dynamic jobs surface their outputs under `byKey[<key>]` (when `keyBy:` is declared) or by integer index in `byMatrix[N]`. The same `ArtifactRef` shape applies inside each iteration:
-
-```yaml
-publish-keyed:
-  needs: [requirements]
-  uses: xema/publish-kb
-  with:
-    artifactId: ${{ needs.requirements.outputs.byKey[matrix.changeUnit.id].deliverables[0].artifactId }}
-    versionId: ${{ needs.requirements.outputs.byKey[matrix.changeUnit.id].deliverables[0].versionId }}
-    version: ${{ needs.requirements.outputs.byKey[matrix.changeUnit.id].deliverables[0].version }}
-```
+The singular `deliverable` carries the structured result selected by the deliverable specification. Its envelope includes the specification reference, kind, target slot, content, and whether self-correction was attempted.
 
 ---
 
-## Why every output is an artifact reference
+## Projecting outputs from a job
 
-This is the unified-outputs contract: workflow authors emit content, the platform handles persistence. Every reviewable byte that flows through a workflow lives in artifact-store, gets a stable id and version, and is addressable through the same `ArtifactRef` shape.
+```yaml
+jobs:
+  draft:
+    uses: xema/agent@2.1.0
+    with:
+      agentRef: requirements@3
+      deliverableSpecRef: feature-spec@2
+      agentContext:
+        prompt: Draft the feature specification.
+    outputs:
+      spec: ${{ job.outputs.deliverable }}
+      artifacts: ${{ job.outputs.deliverables }}
+      agentSnapshotHash: ${{ job.outputs.resolvedAgentSnapshotHash }}
+```
 
-The benefits:
+Downstream jobs read projected values through `needs.<job>.outputs.<name>`:
 
-- **Review tooling is uniform.** Anchored comments, version history, and content-type-aware rendering work the same way for every output, because every output is an artifact-store row.
-- **Replays are deterministic.** The compiled run pins each consumer to a specific `versionId`, so a re-emit upstream never silently shifts what a downstream consumer saw.
-- **No event-stream payload limits.** Inline strings, however small in the source workflow, ballooned in matrix expansion. References are constant-size pointers.
-- **Authors write content, not artifact-store calls.** The activity body returns a string or a JSON object on a declared output; the platform promotes it to an artifact transparently.
+```yaml
+jobs:
+  publish:
+    needs: [draft]
+    uses: customer/publish-feature-spec@1.0.0
+    with:
+      spec: ${{ needs.draft.outputs.spec }}
+      supportingArtifacts: ${{ needs.draft.outputs.artifacts }}
+```
+
+## Reading a harvested artifact
+
+```yaml
+jobs:
+  publish-first-artifact:
+    needs: [draft]
+    uses: xema/publish-kb@1.2.3
+    with:
+      spaceSlug: specifications
+      slug: feature-spec
+      title: Feature specification
+      artifactId: ${{ needs.draft.outputs.artifacts[0].artifactId }}
+      versionId: ${{ needs.draft.outputs.artifacts[0].versionId }}
+      version: ${{ needs.draft.outputs.artifacts[0].version }}
+```
+
+## Matrix outputs
+
+Dynamic and matrix jobs can expose iteration outputs by key. The same `deliverable` and `deliverables` shapes apply inside every iteration:
+
+```yaml
+jobs:
+  build:
+    strategy:
+      dynamic:
+        from: ${{ needs.plan.outputs.targets }}
+        as: target
+        keyBy: name
+    uses: xema/agent@2.1.0
+    with:
+      agentRef: builder@4
+      deliverableSpecRef: ${{ matrix.target.specRef }}
+      agentContext:
+        prompt: ${{ matrix.target.prompt }}
+    outputs:
+      result: ${{ job.outputs.deliverable }}
+```
+
+## Why references and hashes matter
+
+- Reviewable files have stable ids, versions, hashes, and paths.
+- Workflow history stays compact because large content does not need to be copied through every event.
+- Downstream jobs can pin the exact artifact version they consumed.
+- The resolved Agent and rendered-context hashes make an execution easier to reproduce and audit.
+- Structured deliverables preserve business contracts across Agent, Workflow, and application boundaries.
 
 ---
 

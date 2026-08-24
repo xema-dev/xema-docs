@@ -41,9 +41,9 @@ Every capability call in Xema OS is described by exactly four concepts working t
 
 ---
 
-## The six layers
+## Seven conceptual architecture layers
 
-Each layer has one responsibility and one direction of dependency (downward only).
+These are a product-explanation model, from infrastructure to experience. They are not the repository's dependency tiers. Code and biome boot order use the four enforced scope tiers `kernel`, `system`, `base`, and `platform`.
 
 | Layer | Owns |
 |---|---|
@@ -88,7 +88,7 @@ Plus the per-invocation envelope that wires them together: **[Execution Context]
 
 ## Deployment profiles
 
-Xema OS deploys in three shapes from the same codebase. There is no fork between dev and production — the same primitives, same contracts, the same `xema` CLI.
+Xema OS deploys in four profiles from the same codebase. There is no separate product model between development and production.
 
 | Profile | Use case | Topology |
 |---|---|---|
@@ -107,7 +107,7 @@ Capability calls produce identical `PolicyDecision` outputs across all three pro
 - **[Objects](./objects.md)** — how Xema represents every addressable thing as a typed `XemaObject`.
 - **[Capabilities](./capabilities.md)** — the invocation plane every biome calls through.
 - **[SDK / Getting Started](./sdk/getting-started.md)** — author your first biome manifest.
-- **[SDK / Manifest](./sdk/manifest.md)** — the full manifest reference, including the Phase 1A additive fields.
+- **[Manifest Reference](../biomes/04-manifest-reference.md)** — the generated, field-by-field current manifest contract.
 
 ---
 

@@ -1,8 +1,8 @@
-# Agent Step (`xema/agent`)
+# Agent Step (`xema/agent@2.1.0`)
 
-The **agent step** runs an AI agent against a workspace and returns its result. It is the most-used job type in Xema workflows — every phase that needs language-model work uses it.
+The Agent step runs a published Xema Agent in a governed workspace. The Agent reference is the single source of truth for the Agent definition, its recursive sub-agent tree, Skills, tools, model defaults, and workspace layout.
 
-This page documents the full input surface for `xema/agent`. For the broader DSL grammar see [DSL Reference](./01-reference.md).
+For the broader workflow grammar, see [DSL Reference](./01-reference.md).
 
 ---
 
@@ -11,183 +11,166 @@ This page documents the full input surface for `xema/agent`. For the broader DSL
 ```yaml
 jobs:
   draft-spec:
-    uses: xema/agent
+    uses: xema/agent@2.1.0
     with:
-      agentSlug: requirements
-      deliverableSpecRef: feature-spec
+      agentRef: requirements@3
+      deliverableSpecRef: feature-spec@2
+      agentContext:
+        prompt: Draft a feature specification from the supplied request.
 ```
 
-`agentSlug` and `deliverableSpecRef` are the two required inputs. Every other field is optional and falls back to the agent's defaults.
+`agentRef`, `deliverableSpecRef`, and `agentContext` are required keys. Use `deliverableSpecRef: null` when the invocation does not need a typed deliverable.
 
 ---
 
-## Inputs
+## Core inputs
 
-### `agentSlug` *(required)*
+### `agentRef` *(required)*
 
-The agent that runs the step. The Workflow Designer's Inspector shows a searchable list of agents visible to the org; in raw YAML you use the slug directly. Filtering takes role and phase from sibling fields when present.
+A bare Agent slug or a pinned `slug@version` reference. A bare slug resolves to the latest published revision; a versioned reference makes the workflow reproducible against that exact revision.
 
-### `deliverableSpecRef` *(required)*
+The workflow does not separately select a workspace manifest. Workspace composition is owned by the resolved Agent.
 
-The contract for what the step must produce. Resolved against the deliverable-specs catalog; an unknown ref fails compile.
+### `deliverableSpecRef` *(required, nullable)*
 
-### `workspaceManifestRef`
+The contract for the structured output the Agent must produce. An unknown literal reference fails validation. Set the field to `null` for an invocation that does not require a typed deliverable.
 
-An `xema://manifest/<slug>@<version>` reference. Mounts the manifest's repos, skills, MCP services, and sub-agents for this step. Mutually exclusive with inline mounts.
+### `agentContext` *(required)*
+
+A context object supplied to the Agent. Use `prompt` for the invocation-specific instruction and add domain fields when the Agent expects them.
 
 ```yaml
 with:
-  agentSlug: engineering
-  workspaceManifestRef: xema://manifest/engineering-standard@1.1.0
+  agentRef: risk-reviewer@4
+  deliverableSpecRef: risk-assessment@2
+  agentContext:
+    prompt: Review the proposed change and identify material risks.
+    changeId: ${{ inputs.change_id }}
+    severityFloor: medium
 ```
+
+---
+
+## Optional execution controls
 
 ### `model`
 
-Per-step model override. Two shapes (discriminated by `kind`):
+Override the Agent's normal model resolution for this job. Prefer a strategy when the organisation should be able to change the concrete provider or model centrally.
 
 ```yaml
-# Pin a concrete model
-with:
-  model:
-    kind: concrete
-    modelId: anthropic/claude-opus-4-7
-    providerSlug: anthropic            # optional
-    temperature: 0.2                   # optional
-
-# Route through a model strategy
 with:
   model:
     kind: strategy
-    modelClass: coding                 # coding | review | creative | planning | utility
+    modelClass: review # coding | review | creative | planning | utility
     temperature: 0.2
 ```
 
-- **Absent** → the agent's own `modelClass` cascade resolves the model at dispatch.
-- **`concrete`** → pinned. Re-resolution is a no-op until you change the binding.
-- **`strategy`** → routed. A strategy rebind (e.g. `coding` re-points at a different model) takes effect on the next dispatch without editing YAML.
+A concrete pin is also supported:
+
+```yaml
+with:
+  model:
+    kind: concrete
+    modelId: provider/model-id
+    providerSlug: provider
+    temperature: 0.2
+```
 
 ### `subAgents`
 
-Additional sub-agent bindings layered on top of the primary's intrinsic delegates (see [Sub-agents](../interactive-sessions/04-sub-agents.md) for the model). Each entry:
+Add invocation-specific sub-agent bindings to the resolved Agent's intrinsic delegates. Each binding names a sub-agent slug and may assign an alias or model override.
 
 ```yaml
 with:
-  agentSlug: engineering
   subAgents:
-    - slug: build-verifier
-    - slug: web-explorer
-      alias: rfc-researcher           # optional display name
-      model:                          # optional per-binding model override
-        kind: concrete
-        modelId: anthropic/claude-haiku-4-5-20251001
+    - slug: policy-researcher
+    - slug: data-reviewer
+      alias: evidence-reviewer
+      modelOverride:
+        kind: strategy
+        modelClass: review
 ```
 
-A binding may target an intrinsic slug **purely to refine its model** — the slug stays mounted regardless. Same-slug duplicates within the list are rejected at compile.
-
-### `agentContext`
-
-Free-form context object passed to the agent's prompt template. The template decides which keys it interpolates; both sides may evolve. Always allowed additional properties.
+For recursive composition limits, use `composition.limits`; `composition.allowedSubAgents` can narrow which delegates the coordinator may invoke.
 
 ```yaml
 with:
-  agentSlug: review
-  agentContext:
-    prompt: "Focus on test coverage and SQL injection vectors."
-    severity_floor: high
+  composition:
+    limits:
+      maxDepth: 3
+      maxFanout: 4
+      maxSpawns: 16
+    allowedSubAgents: [policy-researcher, data-reviewer]
 ```
 
-### `allowAgentToolInquiries`
+### `agentSession`
 
-When `true`, the agent may pause mid-turn to ask the user a question via the inquiry channel. When `false`, mid-turn questions auto-resolve to a default answer.
+Set `agentSession: true` to turn the Agent job into a workflow-linked, real-time human collaboration point. Xema opens a Session, sends `agentContext.prompt` as the first turn, keeps the workflow durable while people collaborate, and resumes when the Session produces its structured handoff.
 
 ```yaml
-with:
-  agentSlug: requirements
-  allowAgentToolInquiries: true
+jobs:
+  resolve-exception:
+    uses: xema/agent@2.1.0
+    timeout: 24h
+    with:
+      agentRef: operations-coordinator@5
+      deliverableSpecRef: exception-resolution@2
+      agentContext:
+        prompt: Investigate this exception with the operator and propose a resolution.
+        caseId: ${{ inputs.case_id }}
+      agentSession: true
 ```
+
+The `sessionId` output is populated for this branch so a product surface can deep-link to the conversation. Use a generous job timeout because the human interaction may take hours.
+
+### Inquiries and resumption
+
+- `allowAgentToolInquiries` enables in-band questions from tools.
+- `toolInquiryRecipients` and `toolInquiryPolicy` define who may answer and how answers are combined.
+- `resumeFrom` names a prior Agent Session when a coordinator must resume the same conversational state after a gate.
 
 ---
 
 ## Outputs
 
-The agent step emits three named outputs, each an artifact reference:
+The current Agent action exposes:
 
-| Output | Shape | Content |
-|---|---|---|
-| `response` | `ArtifactRef` | The agent's final markdown narrative (always emitted; type `markdown_doc`). |
-| `structuredOutput` | `ArtifactRef \| null` | The validated JSON payload when the run used a JSON output schema; `null` otherwise (type `json_payload`). |
-| `deliverables` | `ArtifactRef[]` | Files the agent harvested from `/workspace/deliverables/`. One ref per file; per-file kind comes from the spec. |
+| Output | Meaning |
+|---|---|
+| `allocationId` | Runtime allocation used for the job |
+| `outcome` | `succeeded`, `empty-response`, or `partial` |
+| `deliverables` | Versioned artifact references harvested from the Agent workspace |
+| `deliverable` | Structured deliverable payload, or `null` |
+| `renderedContextHash` | Hash of the rendered invocation context when available |
+| `resolvedAgentSnapshotHash` | Hash of the resolved Agent snapshot when available |
+| `mountDiagnostic` | Workspace mount diagnostic when available |
+| `durationMs` | Execution duration |
+| `sessionId` | Workflow-linked Session id when `agentSession: true` |
 
-See [Output Envelope](../deliverables/03-output-envelope.md) for the full `ArtifactRef` shape and how it flows through downstream activities.
-
-Downstream jobs read each output by name and can reach into its `ArtifactRef` fields directly:
+Declare job outputs from the fields the workflow needs:
 
 ```yaml
 jobs:
-  draft:
-    uses: xema/agent
+  assess:
+    uses: xema/agent@2.1.0
     with:
-      agentSlug: requirements
-      deliverableSpecRef: feature-spec
-
-  review:
-    needs: [draft]
-    uses: xema/review
-    with:
-      subjects:
-        # The narrative goes through the standard reviewer panel — markdown
-        # renderer, anchored comments, version history — automatically.
-        - artifactId: ${{ needs.draft.outputs.response.artifactId }}
-          versionId: ${{ needs.draft.outputs.response.versionId }}
-          version: ${{ needs.draft.outputs.response.version }}
-          type: markdown_doc
-
-  publish:
-    needs: [review]
-    if: ${{ needs.review.outputs.outcome == 'approved' }}
-    uses: xema/publish-kb
-    with:
-      spaceSlug: docs
-      slug: feature-spec
-      title: Feature spec
-      # `xema/publish-kb` accepts the ref triple directly — it fetches
-      # the bytes from artifact-store.
-      artifactId: ${{ needs.draft.outputs.response.artifactId }}
-      versionId: ${{ needs.draft.outputs.response.versionId }}
-      version: ${{ needs.draft.outputs.response.version }}
+      agentRef: risk-reviewer@4
+      deliverableSpecRef: risk-assessment@2
+      agentContext:
+        prompt: Assess the request.
+    outputs:
+      assessment: ${{ job.outputs.deliverable }}
+      artifacts: ${{ job.outputs.deliverables }}
 ```
-
-Each harvested deliverable is addressable positionally:
-
-```yaml
-publish-doc:
-  needs: [draft]
-  uses: xema/publish-kb
-  with:
-    artifactId: ${{ needs.draft.outputs.deliverables[0].artifactId }}
-    versionId: ${{ needs.draft.outputs.deliverables[0].versionId }}
-    version: ${{ needs.draft.outputs.deliverables[0].version }}
-```
-
----
-
-## Designer Inspector
-
-Open a workflow YAML in the Studio canvas, select an `xema/agent` job, and the right-side Inspector renders form controls for every input above:
-
-- **Model** — three modes (Agent default / Use strategy / Pin to model). The "Pin" mode shows a filterable list of every registry-active model with provider + display name.
-- **Sub-agents** — list editor with an inline picker (filter by slug or name) and a per-row model override (same three modes).
-- All other inputs render through the SpecForm framework — domain-bound fields (deliverable specs, workspace manifests, repos, knowledge-base spaces, sub-agent slugs) come up as searchable pickers, never free-text.
-
-The YAML buffer is the source of truth — Inspector edits flow through the same `setJobWithField` mutations as direct text edits.
 
 ---
 
 ## See also
 
-- [DSL Reference](./01-reference.md) — full grammar
-- [Sub-agents](../interactive-sessions/04-sub-agents.md) — delegate model in depth
-- [Best Practices](./02-best-practices.md) — designing robust agent jobs
+- [Interactive Sessions](../interactive-sessions/index.md)
+- [Sub-agents](../interactive-sessions/04-sub-agents.md)
+- [Deliverable specifications](../deliverables/index.md)
+- [Best Practices](./02-best-practices.md)
 
 ---
 

@@ -1,232 +1,74 @@
-# SDK — Manifest Reference
+# SDK — Biome Manifest
 
-The biome manifest is the single declarative entry point for a biome. It identifies the package, declares the contributions it ships, and declares the capabilities it requires and exposes.
+The biome manifest is the declarative entry point for everything a biome ships. The current contract is generated directly from the Kernel schema at [Manifest Reference](../../biomes/04-manifest-reference.md); use that page for exact fields, enum values, and required properties.
 
-> **Naming.** The manifest filename is `xema-biome.json` and the SDK package is `@xemahq/biome-host-sdk`. The current Xema OS shape uses `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`, `permissions`, `lifecycle`, `ships`, and `storage`.
-
-This page mirrors the runtime Zod schema. The schema is the source of truth; this doc is the human-readable view.
+This page explains the design rather than duplicating the generated schema.
 
 ---
 
-## Top-level
+## Top-level shape
 
 ```jsonc
 {
-  "name":    "@your-scope/your-biome",   // npm package name (required, scoped)
-  "version": "1.0.0",                    // semver (required)
-  "xema":    { /* see below */ }         // platform metadata (required)
+  "name": "@your-scope/your-biome",
+  "version": "1.0.0",
+  "xema": {
+    "id": "your-biome",
+    "displayName": "Your Biome",
+    "scope": "platform",
+    "target": "server",
+    "components": []
+  }
 }
 ```
 
----
-
-## The `xema` block
-
-```jsonc
-{
-  "id":                   "your-biome",
-  "name":                 "Your Biome",
-  "version":              "1.0.0",
-  "trustTier":            "verified-store",
-  "space":                "third-party",
-
-  "contributions":        { ... },
-  "requiresCapabilities": [ ... ],
-  "exposesCapabilities":  [ ... ],
-  "requires":             { ... },
-  "permissions":          { ... },
-  "lifecycle":            { ... },
-  "ships":                { "apis": [ ... ] },
-  "storage":              { ... }
-}
-```
-
-### `id` (string, required)
-
-Kebab-case (`^[a-z][a-z0-9-]*$`). Globally unique across the deployment. Every biome-scoped resource, action, and ref namespaces under this id.
-
-### `name` (string, required)
-
-The human-readable display name shown wherever the platform lists biomes. Free-form, short.
-
-### `version` (string, required)
-
-Semver. Same string as the package's `version`. Lockfiles pin exact versions; the platform enforces immutability of published versions.
-
-### `trustTier` (enum, required at Phase 6; tolerated at 1A)
-
-Closed set: `first-party | verified-store | org-private | unverified`. Drives default profile suggestions and Store visibility.
-
-### `space` (enum, required)
-
-`first-party | third-party`. Drives UI badges and audit signals. (Previously named `scope`.)
+`xema.target` selects the server or web manifest shape. `xema.scope` is the enforced dependency and boot tier: `kernel`, `system`, `base`, or `platform`. Customer and third-party biomes use `platform`.
 
 ---
 
-## `requiresCapabilities[]` (Phase 1A additive)
+## Components are authoritative
 
-The capabilities the biome may invoke. The host refuses to enable a biome whose required capabilities cannot be satisfied by the install environment. Listed as capability refs.
+`xema.components[]` is the current artifact model. Each entry describes one `content`, `web`, `adapter`, `service`, `worker`, or `job` component and includes:
 
-```jsonc
-"requiresCapabilities": [
-  "kb:page.read@1",
-  "kb:space.list@1",
-  "connector:tracker.issue.create@1"
-]
-```
+- an artifact kind and `artifact.path`;
+- an entrypoint and protocol;
+- supported execution modes;
+- complete runtime requirements for tenancy, isolation, trust, locality, state, resources, runtime, I/O, scaling, readiness, and drain.
 
-These feed Stage 1 of the permission model — the install-time digest the org admin reviews. See [Capabilities](../capabilities.md).
+The retired `ships.apis[]` shape must not be used for new manifests.
 
 ---
 
-## `exposesCapabilities[]` (Phase 1A additive)
+## Content and contributions
 
-The capability refs the biome implements. The contribution registry indexes these so the gateway can route calls.
+Multi-file content is discovered from documented convention directories. Typed single-file contributions are delivered through `xema.contributions.directory` and/or `xema.contributions.inline[]`.
 
-```jsonc
-"exposesCapabilities": [
-  "connector:scm.create-pull-request@1",
-  "connector:scm.merge@1"
-]
-```
-
-A biome may both require and expose capabilities — for instance, a connector biome exposes provider verbs while requiring `mcp-tool:invoke@1`.
+Agents and provisioning scaffolds also have explicit manifest rosters that are checked against their files.
 
 ---
 
-## `contributions` (every typed object the biome ships)
+## Capability and permission declarations
 
-The unified surface for everything a biome ships. Two equivalent forms:
+- `requiresCapabilities[]` states what the biome may request.
+- `exposesCapabilities[]` states what the biome implements.
+- `ownsCapabilityDomains[]` declares domains it owns where applicable.
+- `permissions` supplies the install-time recommendation and human-readable reasons.
 
-```jsonc
-// Form 1: point at a directory of *.contribution.json files
-"contributions": {
-  "directory": "./contributions"
-}
-
-// Form 2: inline the contributions in the manifest
-"contributions": {
-  "inline": [
-    { "kind": "agent-definition",    "path": "./agents/greeter.agent.yaml" },
-    { "kind": "workflow-definition", "path": "./workflows/escalation.workflow.yaml" },
-    { "kind": "deliverable-spec",    "path": "./deliverable-specs/spec.json" },
-    { "kind": "mount-source",        "module": "./dist/mount-sources/cve-feed.js" }
-  ]
-}
-
-// Form 3: combine both — the merged set is the union
-"contributions": {
-  "directory": "./contributions",
-  "inline": [ /* ... */ ]
-}
-```
-
-The `kind` value is a `ContributionKind` enum — closed set, extended only by kernel PR. Adding a new kind is two files: one enum entry plus the Zod schema for its manifest. No new top-level directory, no new seeder. See [SDK / Contributions](./contributions.md) for authoring details.
+These fields describe intent. Runtime authority still comes from the current subject, Space, Execution Environment, Agent arming, resource reach, and policy decision.
 
 ---
 
-## `requires` (dependency declarations)
+## Dependencies and installation requirements
 
-The biome's hard dependencies on other biomes by id and semver range. The host refuses to enable a biome whose required dependencies are not installed.
+Use manifest dependencies and requirement blocks to make installation prerequisites explicit. A host should refuse an unsatisfied dependency or runtime requirement instead of booting a partial biome.
 
-```jsonc
-"requires": {
-  "biomes": [
-    { "id": "software-dev", "version": "^2.0.0" }
-  ]
-}
-```
+Lifecycle-hook paths are schema-valid declarations but are not currently invoked by the host. See [Lifecycle Hooks](./lifecycle-hooks.md).
 
 ---
 
-## `permissions`
+## Exact reference
 
-Per-capability metadata that powers the install-time digest. Each entry pairs a capability with a human-readable reason and a suggested resource scope. Optional capability **groups** let the install UI render "one toggle grants this whole group".
-
-```jsonc
-"permissions": {
-  "capabilityHints": [
-    {
-      "capability": "kb:page.read@1",
-      "reason": "Search the knowledge base when answering questions.",
-      "suggestedResource": "xema://orgs/${orgId}/projects/${projectId}/kb/support-*",
-      "riskTier": "low"
-    }
-  ],
-  "groups": [
-    { "name": "kb-read", "capabilities": ["kb:page.read@1", "kb:space.list@1"] }
-  ]
-}
-```
-
-The `defaultProfile` (e.g. `read-only-assistant`, `support-chatbot`, `connector-bridge`) is read from this block by the install UI to pre-select a permission template.
-
----
-
-## `lifecycle` (Phase 6)
-
-Optional module paths, one per biome lifecycle transition. **Declared but never invoked** — the manifest parser validates that each value is a non-empty string, and nothing else happens. No host resolves the paths, so declaring this block has no runtime effect. See [Lifecycle Hooks](./lifecycle-hooks.md).
-
-```jsonc
-"lifecycle": {
-  "onInstall":   "dist/hooks/on-install.js",
-  "onUninstall": "dist/hooks/on-uninstall.js",
-  "onUpgrade":   "dist/hooks/on-upgrade.js",
-  "onEnable":    "dist/hooks/on-enable.js",
-  "onDisable":   "dist/hooks/on-disable.js"
-}
-```
-
-The field names above record the intended `BiomeLifecycle` transition for each path. Until a host invokes them, put install-time work in the biome's own service startup.
-
----
-
-## `ships`
-
-The optional list of runtime artifacts the biome distributes beyond pure contributions — backend API services, frontend route bundles, controller modules.
-
-```jsonc
-"ships": {
-  "apis": [
-    { "name": "invoice-api", "path": "./api", "openapi": "./api/openapi.json" }
-  ]
-}
-```
-
-A biome may ship zero, one, or many backend services. Each gets its own Helm sub-chart, its own image, its own subdomain, and its own capability namespace.
-
----
-
-## `storage` (Phase 6)
-
-Declares biome-owned data collections that the platform's biome data plane will provision and scope-enforce. Each collection specifies field types, encrypted fields, indexes, and per-tenant isolation rules.
-
-```jsonc
-"storage": {
-  "collections": [
-    {
-      "name": "ticket-cache",
-      "fields": {
-        "id":     { "type": "string", "primaryKey": true },
-        "body":   { "type": "string", "encrypted": true },
-        "status": { "type": "enum", "values": ["open", "closed"] }
-      },
-      "indexes": [{ "fields": ["status"] }],
-      "scope": "project"
-    }
-  ]
-}
-```
-
-The data plane enforces tenancy, encryption at rest, quotas, and a closed filter-grammar at runtime. Biomes never receive raw DB handles.
-
----
-
-## See also
-
-- [Contributions](./contributions.md) — authoring `*.contribution.json` files in the `contributions/` directory.
-- [Capabilities](../capabilities.md) — the surface every `requiresCapabilities`/`exposesCapabilities` ref names.
-- [Developer Annotations](../developer-annotations.md) — generate capability and route manifests from controllers.
+Read [Biomes → Manifest Reference](../../biomes/04-manifest-reference.md). That page is generated from the current runtime schema and is the only public field-by-field reference.
 
 ---
 
