@@ -49,7 +49,7 @@ Refs are stable, addressable, and unambiguous. They are what the Shell, the Capa
 - Agent runtime: `Agent`, `AgentComposition`, `Skill`, `Tool`, `Model`, `ModelResolutionRule`.
 - Workflow: `Workflow`, `WorkflowRun`, `GateAction`.
 - Connectivity and data: `Connector`, `ConnectorBinding`, `MountSource`, `ArtifactType`, `Artifact`.
-- Knowledge and documents: `KnowledgeSpace`, `KnowledgePage`, `DocumentTemplate`, `DocumentTheme`, `ChartRuntime`, `PresentationRuntime`, `WidgetKind`.
+- Knowledge and documents: `KnowledgeSpace`, `KnowledgePage`, `ChartRuntime`, `PresentationRuntime`, `WidgetKind`. Authored Templates and DesignSystems use the generic `Resource` object kind with their resource kind in the address.
 - Authorization: `Capability`, `ExecutionEnvironment`, `CapabilityGrant`, `ApprovalRule`.
 - Runtime and bookkeeping: `Memory`, `MemoryRelation`, `Session`, `EventStream`, `EventSubscription`, `ContributionEntry`.
 
