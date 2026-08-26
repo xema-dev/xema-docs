@@ -12,7 +12,7 @@
 // implementation in @xemahq/distribution-source-hash so the tag CI pushes and
 // the tag a distribution lock names can never be two different computations.
 //
-// sourceInputsDigest: 4a144b69269a97d2a5969c9d7da09c188209e887aad160957e2011f711c0bb4f
+// sourceInputsDigest: 4c8fee6af5c88c96a2bdb07640e459a4e21bd9932102f8e37232089ddca1a314
 //
 // The file is ESM (a .mjs the workflows call by name) wrapping the CommonJS
 // module bodies tsc emits. `createRequire` supplies the Node builtins and the
@@ -1166,6 +1166,8 @@ const __modules = {
     const TOP_LEVEL_SCALAR_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
     const TOP_LEVEL_BLOCK_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*):$/;
     const ENTRY_HEADER_PATTERN = /^ {2}(\S.*?):(?: (\{\}))?$/;
+    const EXPLICIT_KEY_PATTERN = /^ {2}\? (\S.*)$/;
+    const EXPLICIT_VALUE_PATTERN = /^ {2}: (\S.*)$/;
     const ENTRY_BLOCK_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*):$/;
     const ENTRY_SCALAR_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
     const IMPORTER_DEPENDENCY_PATTERN = /^ {6}(\S.*?):$/;
@@ -1196,6 +1198,7 @@ const __modules = {
         let section;
         let skipping = false;
         let entry;
+        let pendingExplicitKey;
         for (const [index, line] of lines.entries()) {
             const lineNumber = index + 1;
             if (line.trim().length === 0)
@@ -1245,6 +1248,33 @@ const __modules = {
             if (section === undefined) {
                 throw lockfileError(contextPath, `line ${lineNumber} is indented but belongs to no section — ` +
                     JSON.stringify(line));
+            }
+            const explicitKey = EXPLICIT_KEY_PATTERN.exec(line);
+            if (explicitKey) {
+                if (pendingExplicitKey !== undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} opens an explicit key while "${pendingExplicitKey}" ` +
+                        `is still waiting for its ": " value line`);
+                }
+                pendingExplicitKey = unquoteScalar(explicitKey[1], contextPath, lineNumber);
+                continue;
+            }
+            const explicitValue = EXPLICIT_VALUE_PATTERN.exec(line);
+            if (explicitValue) {
+                if (pendingExplicitKey === undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} is an explicit-key value line with no preceding "? " key`);
+                }
+                const entries = sections.get(section);
+                if (entries.has(pendingExplicitKey)) {
+                    throw lockfileError(contextPath, `line ${lineNumber} declares "${pendingExplicitKey}" a second time in "${section}"`);
+                }
+                entry = [`    ${explicitValue[1]}`];
+                entries.set(pendingExplicitKey, entry);
+                pendingExplicitKey = undefined;
+                continue;
+            }
+            if (pendingExplicitKey !== undefined) {
+                throw lockfileError(contextPath, `line ${lineNumber} follows the explicit key "${pendingExplicitKey}" ` +
+                    `without the ": " value line YAML requires — ${JSON.stringify(line)}`);
             }
             const header = ENTRY_HEADER_PATTERN.exec(line);
             if (header) {
