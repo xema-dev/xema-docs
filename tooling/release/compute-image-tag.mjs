@@ -12,7 +12,7 @@
 // implementation in @xemahq/distribution-source-hash so the tag CI pushes and
 // the tag a distribution lock names can never be two different computations.
 //
-// sourceInputsDigest: 4c8fee6af5c88c96a2bdb07640e459a4e21bd9932102f8e37232089ddca1a314
+// sourceInputsDigest: 26882f8781dd8ab9d32f8faac53c3ffe10e3c5b0e1adb29eb380c3f3f28c3748
 //
 // The file is ESM (a .mjs the workflows call by name) wrapping the CommonJS
 // module bodies tsc emits. `createRequire` supplies the Node builtins and the
@@ -1204,6 +1204,11 @@ const __modules = {
             if (line.trim().length === 0)
                 continue;
             if (!line.startsWith(' ')) {
+                if (pendingExplicitKey !== undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} ends section "${String(section)}" while the ` +
+                        `explicit key "${pendingExplicitKey}" is still waiting for its ` +
+                        `"  : " value`);
+                }
                 section = undefined;
                 skipping = false;
                 entry = undefined;
@@ -1252,8 +1257,8 @@ const __modules = {
             const explicitKey = EXPLICIT_KEY_PATTERN.exec(line);
             if (explicitKey) {
                 if (pendingExplicitKey !== undefined) {
-                    throw lockfileError(contextPath, `line ${lineNumber} opens an explicit key while "${pendingExplicitKey}" ` +
-                        `is still waiting for its ": " value line`);
+                    throw lockfileError(contextPath, `line ${lineNumber} opens a second explicit key while ` +
+                        `"${pendingExplicitKey}" is still waiting for its "  : " value`);
                 }
                 pendingExplicitKey = unquoteScalar(explicitKey[1], contextPath, lineNumber);
                 continue;
@@ -1261,20 +1266,27 @@ const __modules = {
             const explicitValue = EXPLICIT_VALUE_PATTERN.exec(line);
             if (explicitValue) {
                 if (pendingExplicitKey === undefined) {
-                    throw lockfileError(contextPath, `line ${lineNumber} is an explicit-key value line with no preceding "? " key`);
+                    throw lockfileError(contextPath, `line ${lineNumber} is an explicit-key value with no "  ? " key ` +
+                        `before it — ${JSON.stringify(line)}`);
                 }
                 const entries = sections.get(section);
                 if (entries.has(pendingExplicitKey)) {
-                    throw lockfileError(contextPath, `line ${lineNumber} declares "${pendingExplicitKey}" a second time in "${section}"`);
+                    throw lockfileError(contextPath, `line ${lineNumber} declares "${pendingExplicitKey}" a second time ` +
+                        `in "${section}"`);
                 }
-                entry = [`    ${explicitValue[1]}`];
+                entry = [];
                 entries.set(pendingExplicitKey, entry);
                 pendingExplicitKey = undefined;
+                const inline = explicitValue[1];
+                if (inline !== '{}') {
+                    entry.push(`    ${inline}`);
+                }
                 continue;
             }
             if (pendingExplicitKey !== undefined) {
-                throw lockfileError(contextPath, `line ${lineNumber} follows the explicit key "${pendingExplicitKey}" ` +
-                    `without the ": " value line YAML requires — ${JSON.stringify(line)}`);
+                throw lockfileError(contextPath, `line ${lineNumber} follows the explicit key ` +
+                    `"${pendingExplicitKey}" but is not its "  : " value — ` +
+                    JSON.stringify(line));
             }
             const header = ENTRY_HEADER_PATTERN.exec(line);
             if (header) {
@@ -1295,6 +1307,10 @@ const __modules = {
                 throw lockfileError(contextPath, `line ${lineNumber} is entry content before any entry in "${section}"`);
             }
             entry.push(line);
+        }
+        if (pendingExplicitKey !== undefined) {
+            throw lockfileError(contextPath, `the file ends while the explicit key "${pendingExplicitKey}" is still ` +
+                `waiting for its "  : " value`);
         }
         if (lockfileVersion === undefined) {
             throw lockfileError(contextPath, 'no lockfileVersion is declared');
