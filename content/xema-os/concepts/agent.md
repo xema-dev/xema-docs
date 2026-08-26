@@ -1,7 +1,7 @@
 ---
 slug: agent
 title: Agent
-summary: The unified actor primitive: identity, prompt, intrinsic Skills and Tools, inheritance, workspace policy, and an optional recursive subagent tree.
+summary: "The unified actor primitive: identity, prompt, intrinsic Skills and Tools, inheritance, workspace policy, and an optional recursive subagent tree."
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["org"]

@@ -71,3 +71,15 @@ jobs:
       # else has already succeeded.
       - name: Every tracked source file is readable by search
         run: node tooling/boundaries/lib/source-readability.mjs
+
+      # AFTER the install, unlike the gate above, because this one parses YAML
+      # and `js-yaml` is a declared devDependency rather than a node builtin.
+      #
+      # It exists because one unquoted `: ` in one concept's frontmatter emptied
+      # the entire concept list in production on 2026-08-26: the registry loads
+      # every concept as ONE set, so a single unparseable file fails the whole
+      # projection, and the object registry it feeds is an in-memory cache with
+      # no durable store. The page kept returning 200 throughout — the only
+      # evidence was a service log in a different repository.
+      - name: Every concept page projects
+        run: npm run check:concept-frontmatter

@@ -13,13 +13,15 @@
   },
   "bugs": "https://github.com/xema-dev/xema-docs/issues",
   "scripts": {
-    "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "check:source-readability": "node tooling/boundaries/lib/source-readability.mjs"
+    "check:concept-frontmatter": "node tooling/boundaries/check-concept-frontmatter.mjs --self-test && node tooling/boundaries/check-concept-frontmatter.mjs",
+    "check:source-readability": "node tooling/boundaries/lib/source-readability.mjs",
+    "dev": "astro dev",
+    "preview": "astro preview"
   },
   "devDependencies": {
-    "astro": "^7.2.2"
+    "astro": "^7.2.2",
+    "js-yaml": "^4.1.0"
   },
   "overrides": {
     "sharp": "^0.35.0",
