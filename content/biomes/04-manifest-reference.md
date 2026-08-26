@@ -44,22 +44,14 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `extends` | string \| string[] | no | — |
 | `trustTier` | enum | no | one of: `first-party`, `third-party` |
 | `connectorRequirements` | array of objects — see **xema.connectorRequirements[]** | no | — |
-| `webhookFilters` | array of objects — see **xema.webhookFilters[]** | no | — |
-| `mcpWorkflowTools` | array of objects — see **xema.mcpWorkflowTools[]** | no | — |
-| `mcpTools` | array of objects — see **xema.mcpTools[]** | no | — |
-| `agents` | array of objects — see **xema.agents[]** | no | — |
 | `provisioning` | array of objects — see **xema.provisioning[]** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
 | `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
 | `signedBy` | string | no | — |
-| `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
-| `permissions` | object — see **xema.permissions** | no | — |
-| `lifecycle` | object — see **xema.lifecycle** | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
 | `kind` | enum | no | one of: `app`, `connector`, `library` |
@@ -95,40 +87,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `optional` | boolean | no | — |
 | `purpose` | string | yes | — |
 | `capabilities` | string[] | yes | entries: pattern `/^[a-z]+(\.[a-z][a-z0-9-]*)+$/` |
-
-### `xema.webhookFilters[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `workflowId` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
-| `event` | string | yes | — |
-| `entityKind` | string | no | — |
-| `predicate` | expression (recursive structure — see the connector filter-expression contract) | yes | — |
-
-### `xema.mcpWorkflowTools[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `key` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
-| `workflowSlug` | string | yes | — |
-| `displayName` | string | yes | — |
-| `description` | string | yes | — |
-| `outputProjection` | object — see **xema.mcpWorkflowTools[].outputProjection** | yes | — |
-| `mount` | object — see **xema.mcpWorkflowTools[].mount** | no | — |
-
-### `xema.mcpTools[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `key` | string | yes | pattern `/^[a-z][a-z0-9-]*$/` |
-| `handler` | object — see **xema.mcpTools[].handler** | yes | — |
-
-### `xema.agents[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `slug` | string | yes | pattern `/^[a-z][a-z0-9-_]*$/` |
-| `mode` | enum | yes | one of: `primary`, `subagent` |
 
 ### `xema.provisioning[]`
 
@@ -176,26 +134,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `directory` | string | no | — |
 | `inline` | array of objects — see **xema.contributions.inline[]** | no | — |
-
-### `xema.permissions`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `defaultProfile` | enum | yes | one of: `read-only-assistant`, `support-chatbot`, `internal-agent`, `workflow-runner`, `connector-bridge`, `power-user-developer`, `org-admin-tool`, `sandbox-only`, `unrestricted` |
-| `hints` | array of objects — see **xema.permissions.hints[]** | yes | — |
-| `groups` | array of objects — see **xema.permissions.groups[]** | no | — |
-
-### `xema.lifecycle`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `onInstall` | string | no | — |
-| `onUninstall` | string | no | — |
-| `onUpgrade` | string | no | — |
-| `onEnable` | string | no | — |
-| `onDisable` | string | no | — |
 
 ### `xema.components[].artifact`
 
@@ -304,27 +243,6 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `io` | object — see **xema.components[].requirements.io** | yes | — |
 | `scaling` | object — see **xema.components[].requirements.scaling** | yes | — |
 
-### `xema.mcpWorkflowTools[].outputProjection`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `kind` | literal "deliverable" | yes | — |
-| `slug` | string | yes | — |
-
-### `xema.mcpWorkflowTools[].mount`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `slot` | enum | yes | one of: `inputs`, `references`, `deliverables` |
-| `as` | string | yes | — |
-
-### `xema.mcpTools[].handler`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `kind` | literal "biome_api" | yes | — |
-| `method` | enum | no | one of: `POST`; default `"POST"` |
-
 ### `xema.provisioning[].selector`
 
 | Field | Type | Required | Notes |
@@ -336,26 +254,9 @@ A server biome ships backend contributions — agents, skills, workflows, option
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `template-kind`, `design-system-kind`, `template`, `design-system`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
-
-### `xema.permissions.hints[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `capability` | string | yes | pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
-| `reason` | string | yes | — |
-| `suggestedResource` | string | no | — |
-| `suggestedScope` | map<string, unknown (free-form JSON)> | no | — |
-| `riskTier` | enum | yes | one of: `low`, `medium`, `high`, `critical` |
-
-### `xema.permissions.groups[]`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `name` | string | yes | — |
-| `capabilities` | string[] | yes | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 
 ### `xema.components[].protocol.capabilities[]`
 
@@ -534,29 +435,17 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `target` | literal "web" | yes | — |
 | `components` | array of objects — see **xema.components[]** | yes | — |
 | `systemSurface` | boolean | no | — |
-| `requiresServerBiomes` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `optionalServerBiomes` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
-| `capabilities` | object — see **xema.capabilities** | no | — |
 | `signature` | object — see **xema.signature** | no | — |
 | `bundleSource` | object (discriminated on `kind`) — see **xema.bundleSource (kind: "npm")**, **xema.bundleSource (kind: "tarball")**, **xema.bundleSource (kind: "oci")** | no | — |
 | `signedBy` | string | no | — |
-| `requires` | map<string, string> | no | — |
-| `contributes` | enum[] | no | entries one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `model-resolution-dimension`, `widget-kind`, `surface-kind`, `artifact-type`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
-| `permissions` | object — see **xema.permissions** | no | — |
-| `lifecycle` | object — see **xema.lifecycle** | no | — |
 | `audience` | enum | no | one of: `org`, `operator` |
 | `storeListed` | boolean | no | — |
 | `kind` | enum | no | one of: `app`, `connector`, `library` |
-
-### `xema.capabilities`
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `slots` | string[] | no | — |
 
 ### `xema.signature`
 
@@ -574,7 +463,7 @@ Biome content is discovered by **on-disk presence** — there is no per-kind dec
 
 | Content kind | Directory | What goes in it |
 |---|---|---|
-| `agents` | `agents/` | Agent definition files, one `<slug>.md` per agent. Every file must also be declared in `xema.agents[]` (parity is validated at boot). |
+| `agents` | `agents/` | Agent definition files, one authoritative `<slug>.md` per agent; mode and metadata come from frontmatter. |
 | `artifactTypes` | `artifact-types/` | Custom artifact type definitions. |
 | `biomeInstallSchema` | `install-schema/` | Install-wizard resource-selection schema. Required when the biome declares `integrationRequirements[]`. |
 | `deliverableSpecs` | `deliverable-specs/` | Deliverable spec bundles (structured output contracts). |
@@ -592,9 +481,8 @@ Biome content is discovered by **on-disk presence** — there is no per-kind dec
 | `workspaceManifestTemplates` | `workspace-manifest-templates/` | Reusable agent-workspace manifest templates. |
 | `workspaceManifests` | `workspace-manifests/` | Agent workspace manifests, one `<slug>.workspace.yaml` per workspace. |
 
-Two content kinds pair a presence-discovered directory with an explicit manifest roster (parity is validated at boot):
+One content kind pairs a presence-discovered directory with an explicit manifest roster:
 
-- `agents/` ⟷ `xema.agents[]` — every `agents/<slug>.md` must be declared with its execution `mode`.
 - `provisioning/` ⟷ `xema.provisioning[]` — every `provisioning/<id>.yaml` must have a matching scaffold declaration.
 
 ---
@@ -603,7 +491,7 @@ Two content kinds pair a presence-discovered directory with an explicit manifest
 
 Single-file, typed contributions (capabilities, connector bindings, document templates, …) ship through the contribution protocol instead of a convention directory. Two equivalent forms, both validated against the same envelope shape:
 
-1. **File-per-contribution** — one `*.contribution.json` per entry inside the biome's contributions directory (default `./contributions`, override with `xema.contributions.directory`).
+1. **File-per-contribution** — one `*.contribution.json` per entry inside the biome's conventional `contributions/` directory.
 2. **Inline** — entries under `xema.contributions.inline[]` in the manifest itself.
 
 Directory entries are read first; inline entries layer on top (last write wins on a `(kind, id)` collision between the two forms, and duplicate entries fail the biome's boot fast).
@@ -618,7 +506,7 @@ Each envelope carries:
 }
 ```
 
-- `kind` — a closed contribution-kind token (see the enum values in the `xema.contributes` row above).
+- `kind` — a closed contribution-kind token from the contribution contract.
 - `id` — kind-local slug, unique per `(kind, biome)`; the platform namespaces it with the biome id at install time.
 - `manifest` — the kind-specific body, validated by the owning platform service at boot.
 
