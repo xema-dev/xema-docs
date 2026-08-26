@@ -12,7 +12,7 @@
 // implementation in @xemahq/distribution-source-hash so the tag CI pushes and
 // the tag a distribution lock names can never be two different computations.
 //
-// sourceInputsDigest: fac817273a381556c544168c5c177a8c01f6cbcda7382c4b3e4fc78ebfb8cef7
+// sourceInputsDigest: 4a144b69269a97d2a5969c9d7da09c188209e887aad160957e2011f711c0bb4f
 //
 // The file is ESM (a .mjs the workflows call by name) wrapping the CommonJS
 // module bodies tsc emits. `createRequire` supplies the Node builtins and the
@@ -98,7 +98,7 @@ const __modules = {
             commit: parsed.commit,
             crossRepoInputs: parsed.vendored,
             buildStepDirectories: parsed.buildStepDirectories,
-        }, source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV1);
+        }, source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV2);
         process.stdout.write(`${tag}\n`);
     }
     try {
@@ -352,7 +352,9 @@ const __modules = {
                 throw new Error(`cannot resolve Dockerfile build inputs: "${dockerfilePath}" has a COPY ` +
                     `with fewer than two operands`);
             }
-            const destination = resolveDestination(expandVariables(positional[positional.length - 1], variables, dockerfilePath, true), workdirs[index]);
+            const rawDestination = expandVariables(positional[positional.length - 1], variables, dockerfilePath, true);
+            const destination = resolveDestination(rawDestination, workdirs[index]);
+            const destinationIsDirectory = rawDestination.endsWith('/') || positional.length > 2;
             if (fromStage !== undefined) {
                 const referenced = stageAliases.get(fromStage);
                 if (referenced === undefined) {
@@ -387,17 +389,18 @@ const __modules = {
                             `"${candidate}", which does not exist in the build context at this ` +
                             `commit and is not declared as a build-step context directory`);
                     }
-                    contextCopies.push({
-                        path: candidate,
-                        kind: kind === git_tree_paths_ts_1.GitTreeEntryKind.File
-                            ? DockerfileContextInputKind.File
-                            : DockerfileContextInputKind.Directory,
-                        stage: index,
-                    });
+                    const inputKind = kind === git_tree_paths_ts_1.GitTreeEntryKind.File
+                        ? DockerfileContextInputKind.File
+                        : DockerfileContextInputKind.Directory;
+                    contextCopies.push({ path: candidate, kind: inputKind, stage: index });
+                    const landingPath = inputKind === DockerfileContextInputKind.File &&
+                        (destinationIsDirectory || hasWildcard)
+                        ? `${destination === '/' ? '' : destination}/${candidate.split('/').pop()}`
+                        : destination;
                     const destinations = stageCopies[index];
-                    const existing = destinations.get(destination) ?? [];
+                    const existing = destinations.get(landingPath) ?? [];
                     existing.push(candidate);
-                    destinations.set(destination, existing);
+                    destinations.set(landingPath, existing);
                 }
             }
         }
@@ -839,6 +842,7 @@ const __modules = {
     const hash_git_source_tree_ts_1 = require("./hash-git-source-tree.js");
     const image_build_inputs_declaration_ts_1 = require("./image-build-inputs-declaration.js");
     const pnpm_filter_selectors_ts_1 = require("./pnpm-filter-selectors.js");
+    const pnpm_lock_graph_ts_1 = require("./pnpm-lock-graph.js");
     const source_hash_algorithm_ts_1 = require("./source-hash-algorithm.js");
     const workspace_closure_ts_1 = require("./workspace-closure.js");
     exports.CANONICAL_SERVICE_DOCKERFILE_PATH = 'infra/docker/nestjs-service.dockerfile';
@@ -849,6 +853,7 @@ const __modules = {
         ImageBuildInputComponentKind["WorkspacePackage"] = "workspace-package";
         ImageBuildInputComponentKind["Dockerfile"] = "dockerfile";
         ImageBuildInputComponentKind["ContextFile"] = "context-file";
+        ImageBuildInputComponentKind["PnpmLockGraph"] = "pnpm-lock-graph";
         ImageBuildInputComponentKind["ContextDirectoryResidue"] = "context-directory-residue";
         ImageBuildInputComponentKind["CrossRepoTree"] = "cross-repo-tree";
     })(ImageBuildInputComponentKind || (exports.ImageBuildInputComponentKind = ImageBuildInputComponentKind = {}));
@@ -886,6 +891,7 @@ const __modules = {
             if (name === undefined)
                 continue;
             authorities.set(name, {
+                name,
                 directory,
                 closure: [directory, ...(0, workspace_closure_ts_1.workspaceClosure)(directory, graph, commit)],
             });
@@ -909,7 +915,7 @@ const __modules = {
         return covering;
     }
     function hashImageBuildInputs(request, algorithm) {
-        if (algorithm !== source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV1) {
+        if (algorithm !== source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV2) {
             throw new Error(`cannot hash image build inputs: unsupported algorithm "${String(algorithm)}"`);
         }
         const { repoDir, service, commit } = request;
@@ -958,6 +964,17 @@ const __modules = {
         });
         for (const input of contextInputs) {
             if (input.kind === dockerfile_context_inputs_ts_1.DockerfileContextInputKind.File) {
+                const lockAuthorities = input.path === pnpm_lock_graph_ts_1.PNPM_LOCKFILE
+                    ? coveringAuthorities(input, narrowingAuthorities)
+                    : undefined;
+                if (lockAuthorities !== undefined) {
+                    components.push({
+                        kind: ImageBuildInputComponentKind.PnpmLockGraph,
+                        key: input.path,
+                        digest: sha256Hex(Buffer.from((0, pnpm_lock_graph_ts_1.pnpmFilteredLockGraph)(repoDir, commit, tree, workspaceGraph, lockAuthorities.map((authority) => authority.name)), 'utf8')),
+                    });
+                    continue;
+                }
                 components.push({
                     kind: ImageBuildInputComponentKind.ContextFile,
                     key: input.path,
@@ -1003,7 +1020,7 @@ const __modules = {
         components.sort((left, right) => (0, compare_strings_ts_1.compareStrings)(left.kind, right.kind) || (0, compare_strings_ts_1.compareStrings)(left.key, right.key));
         const seen = new Set();
         const hash = (0, node_crypto_1.createHash)('sha256');
-        hash.update(`${source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV1}\0`);
+        hash.update(`${source_hash_algorithm_ts_1.ImageBuildInputHashAlgorithm.ImageInputV2}\0`);
         (0, framed_hash_ts_1.updateFramedHash)(hash, 'service\0', service);
         for (const component of components) {
             const identity = `${component.kind}\0${component.key}`;
@@ -1112,6 +1129,380 @@ const __modules = {
     }
     //# sourceMappingURL=pnpm-filter-selectors.js.map
   },
+  "lib/pnpm-lock-graph.js": function (exports, require, module) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PNPM_LOCKFILE = void 0;
+    exports.readPnpmLockfileSections = readPnpmLockfileSections;
+    exports.pnpmFilteredLockGraph = pnpmFilteredLockGraph;
+    const compare_strings_ts_1 = require("./compare-strings.js");
+    const git_decode_ts_1 = require("./git-decode.js");
+    const git_tree_paths_ts_1 = require("./git-tree-paths.js");
+    const workspace_closure_ts_1 = require("./workspace-closure.js");
+    exports.PNPM_LOCKFILE = 'pnpm-lock.yaml';
+    const SUPPORTED_LOCKFILE_VERSION = '9.0';
+    const PROJECTION_FORMAT = 'xema-pnpm-lock-graph-v1';
+    const RESOLUTION_INPUT_SECTIONS = new Set([
+        'settings',
+        'overrides',
+        'catalogs',
+    ]);
+    const GRAPH_SECTIONS = ['importers', 'packages', 'snapshots'];
+    const IMPORTER_DEPENDENCY_BLOCKS = new Set([
+        'dependencies',
+        'devDependencies',
+        'optionalDependencies',
+    ]);
+    const SNAPSHOT_DEPENDENCY_BLOCKS = new Set([
+        'dependencies',
+        'optionalDependencies',
+    ]);
+    const SNAPSHOT_NON_EDGE_BLOCKS = new Set([
+        'transitivePeerDependencies',
+    ]);
+    const LINK_PREFIX = 'link:';
+    const RESOLVED_VERSION_PATTERN = /^\d/;
+    const ALIASED_REFERENCE_PATTERN = /^(?:@[^/@]+\/)?[^@/]+@\d/;
+    const TOP_LEVEL_SCALAR_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
+    const TOP_LEVEL_BLOCK_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*):$/;
+    const ENTRY_HEADER_PATTERN = /^ {2}(\S.*?):(?: (\{\}))?$/;
+    const ENTRY_BLOCK_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*):$/;
+    const ENTRY_SCALAR_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
+    const IMPORTER_DEPENDENCY_PATTERN = /^ {6}(\S.*?):$/;
+    const IMPORTER_FIELD_PATTERN = /^ {8}([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
+    const SNAPSHOT_EDGE_PATTERN = /^ {6}(\S.*?): (.+)$/;
+    const SEQUENCE_ITEM_PATTERN = /^ {6}- \S/;
+    function lockfileError(contextPath, detail) {
+        return new Error(`cannot read "${contextPath}": ${detail}`);
+    }
+    function unquoteScalar(raw, contextPath, lineNumber) {
+        if (raw.startsWith("'")) {
+            if (raw.length < 2 || !raw.endsWith("'")) {
+                throw lockfileError(contextPath, `line ${lineNumber} opens a single-quoted scalar that does not close — ` +
+                    JSON.stringify(raw));
+            }
+            return raw.slice(1, -1).replaceAll("''", "'");
+        }
+        if (raw.startsWith('"')) {
+            throw lockfileError(contextPath, `line ${lineNumber} is a double-quoted scalar, which this reader does ` +
+                `not model — ${JSON.stringify(raw)}`);
+        }
+        return raw;
+    }
+    function readPnpmLockfileSections(source, contextPath) {
+        const lines = source.split('\n');
+        const sections = new Map();
+        let lockfileVersion;
+        let section;
+        let skipping = false;
+        let entry;
+        for (const [index, line] of lines.entries()) {
+            const lineNumber = index + 1;
+            if (line.trim().length === 0)
+                continue;
+            if (!line.startsWith(' ')) {
+                section = undefined;
+                skipping = false;
+                entry = undefined;
+                const scalar = TOP_LEVEL_SCALAR_PATTERN.exec(line);
+                if (scalar) {
+                    const [, key, rawValue] = scalar;
+                    if (key !== 'lockfileVersion') {
+                        throw lockfileError(contextPath, `line ${lineNumber} declares an unmodelled top-level scalar ` +
+                            `"${key}". Classify it: either it records a resolution INPUT ` +
+                            `already written down in importers/snapshots (add it to ` +
+                            `RESOLUTION_INPUT_SECTIONS), or it changes what an install ` +
+                            `produces and must be projected.`);
+                    }
+                    lockfileVersion = unquoteScalar(rawValue, contextPath, lineNumber);
+                    continue;
+                }
+                const block = TOP_LEVEL_BLOCK_PATTERN.exec(line);
+                if (!block) {
+                    throw lockfileError(contextPath, `line ${lineNumber} is not a top-level key — ${JSON.stringify(line)}`);
+                }
+                const key = block[1];
+                if (RESOLUTION_INPUT_SECTIONS.has(key)) {
+                    skipping = true;
+                    continue;
+                }
+                if (!GRAPH_SECTIONS.includes(key)) {
+                    throw lockfileError(contextPath, `line ${lineNumber} declares an unmodelled top-level section ` +
+                        `"${key}". Classify it: either it records a resolution INPUT ` +
+                        `already written down in importers/snapshots (add it to ` +
+                        `RESOLUTION_INPUT_SECTIONS), or it changes what an install ` +
+                        `produces and must be projected.`);
+                }
+                section = key;
+                if (sections.has(section)) {
+                    throw lockfileError(contextPath, `line ${lineNumber} declares section "${key}" a second time`);
+                }
+                sections.set(section, new Map());
+                continue;
+            }
+            if (skipping)
+                continue;
+            if (section === undefined) {
+                throw lockfileError(contextPath, `line ${lineNumber} is indented but belongs to no section — ` +
+                    JSON.stringify(line));
+            }
+            const header = ENTRY_HEADER_PATTERN.exec(line);
+            if (header) {
+                const key = unquoteScalar(header[1], contextPath, lineNumber);
+                const entries = sections.get(section);
+                if (entries.has(key)) {
+                    throw lockfileError(contextPath, `line ${lineNumber} declares "${key}" a second time in "${section}"`);
+                }
+                entry = [];
+                entries.set(key, entry);
+                continue;
+            }
+            if (!line.startsWith('    ')) {
+                throw lockfileError(contextPath, `line ${lineNumber} sits at an indentation this reader does not model ` +
+                    `inside "${section}" — ${JSON.stringify(line)}`);
+            }
+            if (entry === undefined) {
+                throw lockfileError(contextPath, `line ${lineNumber} is entry content before any entry in "${section}"`);
+            }
+            entry.push(line);
+        }
+        if (lockfileVersion === undefined) {
+            throw lockfileError(contextPath, 'no lockfileVersion is declared');
+        }
+        if (lockfileVersion !== SUPPORTED_LOCKFILE_VERSION) {
+            throw lockfileError(contextPath, `lockfileVersion "${lockfileVersion}" is not modelled — this reader ` +
+                `implements exactly "${SUPPORTED_LOCKFILE_VERSION}"`);
+        }
+        for (const name of GRAPH_SECTIONS) {
+            if (!sections.has(name)) {
+                throw lockfileError(contextPath, `there is no "${name}" section`);
+            }
+        }
+        return {
+            lockfileVersion,
+            importers: sections.get('importers'),
+            packages: sections.get('packages'),
+            snapshots: sections.get('snapshots'),
+        };
+    }
+    function importerEdges(directory, body, contextPath) {
+        const edges = [];
+        let block;
+        let name;
+        let value;
+        const flush = () => {
+            if (name === undefined)
+                return;
+            if (value === undefined) {
+                throw lockfileError(contextPath, `importer "${directory}" declares "${name}" with no resolved version`);
+            }
+            edges.push({ block: block, name, value });
+            name = undefined;
+            value = undefined;
+        };
+        for (const line of body) {
+            const blockHeader = ENTRY_BLOCK_PATTERN.exec(line);
+            if (blockHeader) {
+                flush();
+                block = blockHeader[1];
+                if (!IMPORTER_DEPENDENCY_BLOCKS.has(block)) {
+                    throw lockfileError(contextPath, `importer "${directory}" declares an unmodelled block "${block}"`);
+                }
+                continue;
+            }
+            const dependency = IMPORTER_DEPENDENCY_PATTERN.exec(line);
+            if (dependency) {
+                if (block === undefined) {
+                    throw lockfileError(contextPath, `importer "${directory}" declares a dependency outside any block`);
+                }
+                flush();
+                name = unquoteScalar(dependency[1], contextPath, 0);
+                continue;
+            }
+            const field = IMPORTER_FIELD_PATTERN.exec(line);
+            if (field) {
+                if (name === undefined) {
+                    throw lockfileError(contextPath, `importer "${directory}" declares a field outside any dependency`);
+                }
+                if (field[1] === 'version') {
+                    value = unquoteScalar(field[2], contextPath, 0);
+                }
+                continue;
+            }
+            throw lockfileError(contextPath, `importer "${directory}" has a line this reader does not model — ` +
+                JSON.stringify(line));
+        }
+        flush();
+        return edges;
+    }
+    function snapshotEdges(key, body, contextPath) {
+        const edges = [];
+        let block;
+        for (const line of body) {
+            const blockHeader = ENTRY_BLOCK_PATTERN.exec(line);
+            if (blockHeader) {
+                block = blockHeader[1];
+                if (!SNAPSHOT_DEPENDENCY_BLOCKS.has(block) &&
+                    !SNAPSHOT_NON_EDGE_BLOCKS.has(block)) {
+                    throw lockfileError(contextPath, `snapshot "${key}" declares an unmodelled block "${block}"`);
+                }
+                continue;
+            }
+            if (ENTRY_SCALAR_PATTERN.test(line)) {
+                block = undefined;
+                continue;
+            }
+            if (SEQUENCE_ITEM_PATTERN.test(line)) {
+                if (block === undefined || !SNAPSHOT_NON_EDGE_BLOCKS.has(block)) {
+                    throw lockfileError(contextPath, `snapshot "${key}" has a sequence item in block ` +
+                        `"${String(block)}", which this reader does not model`);
+                }
+                continue;
+            }
+            const edge = SNAPSHOT_EDGE_PATTERN.exec(line);
+            if (edge) {
+                if (block === undefined) {
+                    throw lockfileError(contextPath, `snapshot "${key}" declares a dependency outside any block`);
+                }
+                if (!SNAPSHOT_DEPENDENCY_BLOCKS.has(block)) {
+                    throw lockfileError(contextPath, `snapshot "${key}" declares "${edge[1]}" inside ` +
+                        `"${block}", which carries no edges`);
+                }
+                edges.push({
+                    block,
+                    name: unquoteScalar(edge[1], contextPath, 0),
+                    value: unquoteScalar(edge[2], contextPath, 0),
+                });
+                continue;
+            }
+            throw lockfileError(contextPath, `snapshot "${key}" has a line this reader does not model — ` +
+                JSON.stringify(line));
+        }
+        return edges;
+    }
+    function resolveLinkTarget(base, target, contextPath, origin) {
+        const segments = base === '.' ? [] : base.split('/');
+        for (const segment of target.split('/')) {
+            if (segment.length === 0 || segment === '.')
+                continue;
+            if (segment === '..') {
+                if (segments.length === 0) {
+                    throw lockfileError(contextPath, `${origin} links to "${target}", which escapes the repository root`);
+                }
+                segments.pop();
+                continue;
+            }
+            segments.push(segment);
+        }
+        return segments.length === 0 ? '.' : segments.join('/');
+    }
+    function snapshotKeyFor(edge, contextPath, origin) {
+        if (edge.value.startsWith(LINK_PREFIX))
+            return undefined;
+        if (RESOLVED_VERSION_PATTERN.test(edge.value)) {
+            return `${edge.name}@${edge.value}`;
+        }
+        if (ALIASED_REFERENCE_PATTERN.test(edge.value))
+            return edge.value;
+        throw lockfileError(contextPath, `${origin} resolves "${edge.name}" to ${JSON.stringify(edge.value)}, ` +
+            `which is neither a version, an aliased reference, nor a link`);
+    }
+    function packageKeyFor(snapshotKey) {
+        const suffix = snapshotKey.indexOf('(');
+        return suffix === -1 ? snapshotKey : snapshotKey.slice(0, suffix);
+    }
+    function pnpmFilteredLockGraph(repoDir, commit, tree, graph, packageNames) {
+        const filters = [...new Set(packageNames)].sort(compare_strings_ts_1.compareStrings);
+        if (filters.length === 0) {
+            throw new Error(`cannot project ${exports.PNPM_LOCKFILE} without a pnpm package filter`);
+        }
+        if (!tree.isFile(exports.PNPM_LOCKFILE)) {
+            throw new Error(`${exports.PNPM_LOCKFILE} is not a file at commit "${commit}"`);
+        }
+        const contextPath = `${commit}:${exports.PNPM_LOCKFILE}`;
+        const lockfile = readPnpmLockfileSections((0, git_decode_ts_1.decodeExactUtf8)((0, git_tree_paths_ts_1.readGitBlobAtPath)(repoDir, exports.PNPM_LOCKFILE, commit), `"${contextPath}"`), contextPath);
+        const pendingImporters = [];
+        for (const name of filters) {
+            const workspacePackage = graph.byName.get(name);
+            if (workspacePackage === undefined) {
+                throw new Error(`cannot project ${exports.PNPM_LOCKFILE}: no workspace package at commit ` +
+                    `"${commit}" declares the filtered name "${name}"`);
+            }
+            pendingImporters.push(workspacePackage.directory, ...(0, workspace_closure_ts_1.workspaceClosure)(workspacePackage.directory, graph, commit));
+        }
+        const visitedImporters = new Set();
+        const visitedSnapshots = new Set();
+        const pendingSnapshots = [];
+        const framedImporterEdges = [];
+        const enqueueEdge = (edge, base, origin) => {
+            if (edge.value.startsWith(LINK_PREFIX)) {
+                const target = resolveLinkTarget(base, edge.value.slice(LINK_PREFIX.length), contextPath, origin);
+                if (!visitedImporters.has(target))
+                    pendingImporters.push(target);
+                return;
+            }
+            const snapshotKey = snapshotKeyFor(edge, contextPath, origin);
+            if (snapshotKey === undefined)
+                return;
+            if (visitedSnapshots.has(snapshotKey))
+                return;
+            visitedSnapshots.add(snapshotKey);
+            pendingSnapshots.push(snapshotKey);
+        };
+        while (pendingImporters.length > 0) {
+            const directory = pendingImporters.pop();
+            if (visitedImporters.has(directory))
+                continue;
+            visitedImporters.add(directory);
+            const body = lockfile.importers.get(directory);
+            if (body === undefined) {
+                throw lockfileError(contextPath, `there is no importer for workspace package directory ` +
+                    `"${directory}", so the lockfile does not describe what ` +
+                    `"pnpm --filter" would install for it`);
+            }
+            for (const edge of importerEdges(directory, body, contextPath)) {
+                framedImporterEdges.push([directory, edge.block, edge.name, edge.value]);
+                enqueueEdge(edge, directory, `importer "${directory}"`);
+            }
+        }
+        const framedSnapshots = [];
+        const framedPackages = new Map();
+        while (pendingSnapshots.length > 0) {
+            const key = pendingSnapshots.pop();
+            const body = lockfile.snapshots.get(key);
+            if (body === undefined) {
+                throw lockfileError(contextPath, `there is no snapshot for "${key}", which the graph reaches`);
+            }
+            framedSnapshots.push([key, ...body]);
+            const packageKey = packageKeyFor(key);
+            if (!framedPackages.has(packageKey)) {
+                const packageBody = lockfile.packages.get(packageKey);
+                if (packageBody === undefined) {
+                    throw lockfileError(contextPath, `snapshot "${key}" has no "${packageKey}" entry in packages:`);
+                }
+                framedPackages.set(packageKey, [packageKey, ...packageBody]);
+            }
+            for (const edge of snapshotEdges(key, body, contextPath)) {
+                enqueueEdge(edge, '.', `snapshot "${key}"`);
+            }
+        }
+        framedImporterEdges.sort((left, right) => (0, compare_strings_ts_1.compareStrings)(left[0], right[0]) ||
+            (0, compare_strings_ts_1.compareStrings)(left[1], right[1]) ||
+            (0, compare_strings_ts_1.compareStrings)(left[2], right[2]));
+        framedSnapshots.sort((left, right) => (0, compare_strings_ts_1.compareStrings)(left[0], right[0]));
+        const framedPackageEntries = [...framedPackages.values()].sort((left, right) => (0, compare_strings_ts_1.compareStrings)(left[0], right[0]));
+        return `${JSON.stringify({
+            format: PROJECTION_FORMAT,
+            lockfileVersion: lockfile.lockfileVersion,
+            filters,
+            importers: [...visitedImporters].sort(compare_strings_ts_1.compareStrings),
+            importerEdges: framedImporterEdges,
+            packages: framedPackageEntries,
+            snapshots: framedSnapshots,
+        })}\n`;
+    }
+    //# sourceMappingURL=pnpm-lock-graph.js.map
+  },
   "lib/pnpm-workspace-globs.js": function (exports, require, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -1208,7 +1599,7 @@ const __modules = {
     })(SourceTreeHashAlgorithm || (exports.SourceTreeHashAlgorithm = SourceTreeHashAlgorithm = {}));
     var ImageBuildInputHashAlgorithm;
     (function (ImageBuildInputHashAlgorithm) {
-        ImageBuildInputHashAlgorithm["ImageInputV1"] = "xema-image-input-sha256-v1";
+        ImageBuildInputHashAlgorithm["ImageInputV2"] = "xema-image-input-sha256-v2";
     })(ImageBuildInputHashAlgorithm || (exports.ImageBuildInputHashAlgorithm = ImageBuildInputHashAlgorithm = {}));
     //# sourceMappingURL=source-hash-algorithm.js.map
   },
