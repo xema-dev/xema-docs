@@ -12,7 +12,7 @@
 // implementation in @xemahq/distribution-source-hash so the tag CI pushes and
 // the tag a distribution lock names can never be two different computations.
 //
-// sourceInputsDigest: 4a144b69269a97d2a5969c9d7da09c188209e887aad160957e2011f711c0bb4f
+// sourceInputsDigest: 26882f8781dd8ab9d32f8faac53c3ffe10e3c5b0e1adb29eb380c3f3f28c3748
 //
 // The file is ESM (a .mjs the workflows call by name) wrapping the CommonJS
 // module bodies tsc emits. `createRequire` supplies the Node builtins and the
@@ -1166,6 +1166,8 @@ const __modules = {
     const TOP_LEVEL_SCALAR_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
     const TOP_LEVEL_BLOCK_PATTERN = /^([A-Za-z][A-Za-z0-9_-]*):$/;
     const ENTRY_HEADER_PATTERN = /^ {2}(\S.*?):(?: (\{\}))?$/;
+    const EXPLICIT_KEY_PATTERN = /^ {2}\? (\S.*)$/;
+    const EXPLICIT_VALUE_PATTERN = /^ {2}: (\S.*)$/;
     const ENTRY_BLOCK_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*):$/;
     const ENTRY_SCALAR_PATTERN = /^ {4}([A-Za-z][A-Za-z0-9_-]*): (.+)$/;
     const IMPORTER_DEPENDENCY_PATTERN = /^ {6}(\S.*?):$/;
@@ -1196,11 +1198,17 @@ const __modules = {
         let section;
         let skipping = false;
         let entry;
+        let pendingExplicitKey;
         for (const [index, line] of lines.entries()) {
             const lineNumber = index + 1;
             if (line.trim().length === 0)
                 continue;
             if (!line.startsWith(' ')) {
+                if (pendingExplicitKey !== undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} ends section "${String(section)}" while the ` +
+                        `explicit key "${pendingExplicitKey}" is still waiting for its ` +
+                        `"  : " value`);
+                }
                 section = undefined;
                 skipping = false;
                 entry = undefined;
@@ -1246,6 +1254,40 @@ const __modules = {
                 throw lockfileError(contextPath, `line ${lineNumber} is indented but belongs to no section — ` +
                     JSON.stringify(line));
             }
+            const explicitKey = EXPLICIT_KEY_PATTERN.exec(line);
+            if (explicitKey) {
+                if (pendingExplicitKey !== undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} opens a second explicit key while ` +
+                        `"${pendingExplicitKey}" is still waiting for its "  : " value`);
+                }
+                pendingExplicitKey = unquoteScalar(explicitKey[1], contextPath, lineNumber);
+                continue;
+            }
+            const explicitValue = EXPLICIT_VALUE_PATTERN.exec(line);
+            if (explicitValue) {
+                if (pendingExplicitKey === undefined) {
+                    throw lockfileError(contextPath, `line ${lineNumber} is an explicit-key value with no "  ? " key ` +
+                        `before it — ${JSON.stringify(line)}`);
+                }
+                const entries = sections.get(section);
+                if (entries.has(pendingExplicitKey)) {
+                    throw lockfileError(contextPath, `line ${lineNumber} declares "${pendingExplicitKey}" a second time ` +
+                        `in "${section}"`);
+                }
+                entry = [];
+                entries.set(pendingExplicitKey, entry);
+                pendingExplicitKey = undefined;
+                const inline = explicitValue[1];
+                if (inline !== '{}') {
+                    entry.push(`    ${inline}`);
+                }
+                continue;
+            }
+            if (pendingExplicitKey !== undefined) {
+                throw lockfileError(contextPath, `line ${lineNumber} follows the explicit key ` +
+                    `"${pendingExplicitKey}" but is not its "  : " value — ` +
+                    JSON.stringify(line));
+            }
             const header = ENTRY_HEADER_PATTERN.exec(line);
             if (header) {
                 const key = unquoteScalar(header[1], contextPath, lineNumber);
@@ -1265,6 +1307,10 @@ const __modules = {
                 throw lockfileError(contextPath, `line ${lineNumber} is entry content before any entry in "${section}"`);
             }
             entry.push(line);
+        }
+        if (pendingExplicitKey !== undefined) {
+            throw lockfileError(contextPath, `the file ends while the explicit key "${pendingExplicitKey}" is still ` +
+                `waiting for its "  : " value`);
         }
         if (lockfileVersion === undefined) {
             throw lockfileError(contextPath, 'no lockfileVersion is declared');
