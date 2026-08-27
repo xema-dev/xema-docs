@@ -212,7 +212,15 @@ export async function registerSelf({ semver }) {
       endpoints: [{ protocol: 'http', url, auth: 'none' }],
       exposesCapabilities: [],
       requiresServices: [],
-      healthEndpoint: `${url}/health/ready`,
+      // No `healthEndpoint`. It is still DECLARED on `ServiceDescriptor` in
+      // @xemahq/kernel-contracts (optional), but nothing in the fleet reads it
+      // and this line was its only writer anywhere — it wrote a URL nothing
+      // ever fetched. Re-measured 2026-08-31 across all 28 repositories at
+      // `origin/main`: exactly two occurrences, the declaration and this write.
+      // Liveness is the KernelState lease TTL, which is the contract's sole
+      // proof-of-liveness, and the lease below is what provides it. This file
+      // builds the descriptor by hand (it ships no Xema SDK), so nothing would
+      // have caught the orphan write on its own.
     };
     await client.put(
       key,
