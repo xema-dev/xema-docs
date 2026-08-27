@@ -76,7 +76,20 @@ concurrency:
   # redo — but the content coordinate is content-addressed, and a cancelled run
   # can leave `:<contentHash>` unpublished for source that no later push
   # touches. Queueing is the cheap side of that trade.
-  group: build-image-${{ github.ref }}
+  #
+  # `cancel-in-progress: false` was the whole of that queueing, and it did NOT
+  # deliver it on main. GitHub keeps at most ONE pending run per concurrency
+  # group and cancels the previously pending one as soon as a newer run enters;
+  # `cancel-in-progress` governs the IN-FLIGHT run and has no say over the
+  # pending one. So with the group keyed only on `github.ref`, a second push
+  # while a build was running discarded the first one's queued successor — the
+  # precise "`:<contentHash>` unpublished for source no later push touches"
+  # outcome this comment was written to prevent.
+  #
+  # Keying the group per commit on main is what actually queues them: each
+  # merged SHA gets its own group and nothing can supersede it. PR branches keep
+  # the shared group and the no-cancel posture, unchanged.
+  group: build-image-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'shared' }}
   cancel-in-progress: false
 
 permissions:
