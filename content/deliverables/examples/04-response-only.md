@@ -77,18 +77,19 @@ agentResult: {
       kind: 'response',
       text: '## Commit Review\n\n- Looks good overall\n- Minor: prefer const for line 42...',
     },
-    selfCorrectionAttempted: false,
   },
 }
 ```
 
 `deliverable.content.text` carries the agent's closing assistant message verbatim. Downstream `scm-post-review` posts it as a PR comment.
 
-## What validation catches
+## Validating the result
 
-- Agent finished the session with empty / whitespace-only text → `EMPTY_RESPONSE`. Self-correction sends "your previous attempt produced no closing message; please respond with the review summary."
+A `response-only` spec with no `content` accepts free-form text, so there is no shape to check — the spec author's prompt is what elicits the right response.
 
-That's the only check. Response-only specs trust the spec author to write a prompt that elicits the right shape of response.
+A `response-only` spec that *does* carry `content` is different: `content` must be a JSON Schema object, and it is enforced at inference time. The activity passes it to the runtime as `outputFormat: { type: 'json_schema', schema }` so the structured-output tool validates the answer as the agent produces it, rather than after the fact.
+
+Either way, `xema/validate-deliverables` downstream still gives the workflow a verdict to branch on — for a response-only spec its built-in rules are the artifact-count rules. See [04 Validation](../04-validation.md).
 
 ---
 

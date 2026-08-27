@@ -227,10 +227,6 @@ Every event a subscriber may receive over the unified realtime stream. Materiali
 | `workflow.activity.attempt_failed` | PROJECT | Xema workflow worker service | A Xema runtime activity attempt failed and is being retried (bridge: synthesized from describeWorkflowExecution.pendingActivities). |
 | `workflow.activity.cancel_requested` | PROJECT | Xema workflow worker service | Cancellation requested for a Xema runtime activity task. |
 | `workflow.activity.completed` | PROJECT | Xema workflow worker service | A Xema runtime activity task completed (bridge: ActivityTaskCompleted). |
-| `workflow.activity.deliverable.self-correction-failed` | PROJECT | Xema workflow worker service | Re-harvest after the self-correction message still failed validation. The activity throws DELIVERABLE_CONTRACT_VIOLATED (non-retryable) and the workflow terminates cleanly. |
-| `workflow.activity.deliverable.self-correction-started` | PROJECT | Xema workflow worker service | Agent activity sent the structured correction follow-up message into the same Xema Agent Runtime session (turnId reused). Frontend shows  |
-| `workflow.activity.deliverable.self-correction-succeeded` | PROJECT | Xema workflow worker service | Re-harvest after the self-correction message produced a deliverable that satisfies the spec contract. The activity returns the canonical envelope with  |
-| `workflow.activity.deliverable.validation-failed` | PROJECT | Xema workflow worker service | Agent activity harvested its workspace and the deliverable spec output contract failed. Carries  |
 | `workflow.activity.failed` | PROJECT | Xema workflow worker service | A Xema runtime activity task failed (bridge: ActivityTaskFailed). |
 | `workflow.activity.heartbeat` | PROJECT | Xema workflow worker service | A worker activity reported in-progress mid-execution. |
 | `workflow.activity.scheduled` | PROJECT | Xema workflow worker service | A Xema runtime activity task was scheduled (bridge: ActivityTaskScheduled). |

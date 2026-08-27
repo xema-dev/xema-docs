@@ -96,16 +96,33 @@ agentResult: {
         { slug: 'deployment', title: 'Deployment', artifactId: 'art-4', versionId: 'ver-4', version: 1 },
       ],
     },
-    selfCorrectionAttempted: false,
   },
 }
 ```
 
 Downstream consumers read pages individually via `${{ needs.architecture.outputs.deliverable.content.pages }}` (the array) or pin a specific artifact by index off `outputs.deliverables[0]` for the publish step.
 
-## What validation catches
+## Validating the result
 
-If the agent returns three pages but the spec declared four, validation fails with `MISSING_PAGE` and triggers the self-correction loop. The agent receives a correction message naming the missing slug and asking for a focused fix.
+Validation is a job of its own. Add `xema/validate-deliverables` between the producing job and the publish, and gate the publish on its verdict:
+
+```yaml
+  validate:
+    needs: [architecture]
+    uses: xema/validate-deliverables@1.0.2
+    with:
+      deliverableSpecRef: architecture-standard
+      strictness: standard
+      artifactIds:
+        - ${{ needs.architecture.outputs.deliverables[0].artifactId }}
+    outputs:
+      verdict: ${{ job.outputs.verdict }}
+      issues: ${{ job.outputs.issues }}
+```
+
+`publish` then declares `needs: [architecture, validate]` and `if: ${{ needs.validate.outputs.verdict == 'pass' }}`.
+
+The validator's built-in rules are artifact-count rules — it does not verify page-slug coverage today. A document spec that needs a floor states it as `rules.minArtifactCount`; producing fewer than that surfaces an `INSUFFICIENT_ARTIFACTS` issue and a `fail` verdict. See [04 Validation](../04-validation.md).
 
 ---
 

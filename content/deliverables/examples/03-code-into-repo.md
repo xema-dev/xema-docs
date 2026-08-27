@@ -91,19 +91,33 @@ agentResult: {
           contentKind: 'text', sizeBytes: 412 },
       ],
     },
-    selfCorrectionAttempted: false,
   },
 }
 ```
 
 The downstream `scm-open-pr` action consumes the artifact ids to build a PR with all written files.
 
-## What validation catches
+## Validating the result
 
-- Agent wrote files outside `/workspace/repos/my-service/` → `WRONG_TARGET_SLOT`.
-- Agent wrote no files at all → `MISSING_FILE`.
+Files written outside the declared slot are simply not harvested — the harvester only walks the paths the spec's output contract declares, so nothing outside `/workspace/repos/my-service/` becomes an artifact.
 
-A `WRONG_TARGET_SLOT` failure includes the misplaced paths in the actual summary, so the correction prompt names them explicitly.
+That makes "the agent wrote nothing usable" visible as an artifact count, which is what `xema/validate-deliverables` checks. Add it as a job between `engineer` and `open-pr`, pass it the artifact ids the producing job emitted (up to 128), and gate the PR on the verdict:
+
+```yaml
+  validate:
+    needs: [engineer]
+    uses: xema/validate-deliverables@1.0.2
+    with:
+      deliverableSpecRef: engineering-standard
+      strictness: standard
+      artifactIds:
+        - ${{ needs.engineer.outputs.deliverables[0].artifactId }}
+    outputs:
+      verdict: ${{ job.outputs.verdict }}
+      issues: ${{ job.outputs.issues }}
+```
+
+With nothing harvested the verdict is `fail` with an `INSUFFICIENT_ARTIFACTS` issue, and `open-pr` — declaring `needs: [engineer, validate]` and `if: ${{ needs.validate.outputs.verdict == 'pass' }}` — never runs. See [04 Validation](../04-validation.md).
 
 ## Tighter contracts
 
@@ -120,7 +134,7 @@ Add a `files[]` block to require specific paths exist:
 ]
 ```
 
-Now the harvester verifies `src/handler.ts` is among the written files. Missing it produces a `MISSING_FILE` reason naming the path.
+`files[]` is what the harvester walks: it is the list of paths considered, in order, when looking for the deliverable. A declared path the agent never wrote is simply not found, and the harvester records the paths it tried in its warnings.
 
 ---
 

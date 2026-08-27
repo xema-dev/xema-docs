@@ -118,20 +118,23 @@ agentResult: {
         problemLandscape: 'Legacy SSO blocks SaaS rollout...',
       },
     },
-    selfCorrectionAttempted: false,
   },
 }
 ```
 
 `deliverable.content.value` IS the validated JSON payload. Sub-fields (`value.changeUnits`, `value.problemLandscape`) are available directly to downstream expressions.
 
-## What validation catches
+## Where the schema is enforced
 
-- Missing `changeUnits` field → `SCHEMA_VIOLATION` with the JSON Pointer `/changeUnits`.
-- `changeUnits` is a string instead of an array → `SCHEMA_VIOLATION` with the path.
-- Agent emitted markdown instead of JSON → `MALFORMED_JSON`.
+The `contentSchema` is enforced at **harvest time**, as discovery. The harvester walks the paths the spec's output contract declares, parses each as JSON, and asks `deliverable-specs-api` which candidate matches — Ajv (Draft 2020-12) compiles the schema and validates the payload. A file that does not match is rejected as a candidate with a recorded reason:
 
-Each triggers the self-correction loop with a deterministic correction prompt naming the exact violation.
+- Missing `changeUnits`, or `changeUnits` typed as a string → `SCHEMA_MISMATCH`, with the JSON Pointer.
+- The file parsed but is not a JSON object → `NOT_OBJECT`.
+- Markdown where JSON was declared → the candidate does not parse and is skipped.
+
+When no candidate matches, the harvester returns no structured value and records a warning naming every path it tried. It does not throw; `clarify.outputs.changeUnits` is then simply absent for downstream jobs.
+
+To turn that into a gate the workflow can branch on, add an `xema/validate-deliverables` job downstream. See [04 Validation](../04-validation.md).
 
 ---
 

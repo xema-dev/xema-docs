@@ -85,7 +85,7 @@ A user asking for "five microservices and one frontend" produces a clarification
 ## What you don't need to declare
 
 - No output-key mapping. Workflow expressions read `deliverable.content.<...>` directly.
-- No retry policy for hallucination. The agent gets exactly one structured self-correction attempt automatically. Authors don't opt in.
+- No validation flag on the producing job. Validation is a job of its own — add `xema/validate-deliverables` downstream when you want a verdict to gate on. See [04 Validation](./04-validation.md).
 
 ## Action version
 

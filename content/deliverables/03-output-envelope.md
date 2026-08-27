@@ -20,7 +20,7 @@ The current `xema/agent@2.1.0` action separates execution metadata, harvested ar
 
 Each item in `deliverables` is a stable, versioned artifact reference containing fields such as `artifactId`, `versionId`, `version`, `hash`, `path`, `sizeBytes`, and `sha256`.
 
-The singular `deliverable` carries the structured result selected by the deliverable specification. Its envelope includes the specification reference, kind, target slot, content, and whether self-correction was attempted.
+The singular `deliverable` carries the structured result selected by the deliverable specification. Its envelope includes the specification reference, kind, target slot, and the kind-discriminated content body.
 
 ---
 
@@ -102,4 +102,4 @@ jobs:
 ---
 
 **Previous**: [← Authoring](./02-authoring.md)
-**Next**: [Validation & Self-Correction →](./04-validation-and-self-correction.md)
+**Next**: [Validation →](./04-validation.md)
