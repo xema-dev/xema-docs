@@ -1,19 +1,23 @@
 # Validation
 
-A deliverable spec is checked in two different places, and they answer two different questions. The **harvester**, inside the producing job, asks *which file in the workspace is the deliverable*. The **`xema/validate-deliverables`** action, in a job you write, asks *do the produced artifacts satisfy the spec* — and it answers with a verdict the workflow branches on rather than an exception.
+**`xema/validate-deliverables`** asks *do these artifacts satisfy the spec*, and answers with a verdict the workflow branches on rather than an exception. You give it artifact ids; it resolves the spec server-side and returns a judgement.
+
+A second check is described below for completeness and is **not running today**: harvest-time discovery, inside the producing job, which asked *which file in the workspace is the deliverable*. The harvester is not constructed by anything, so no workspace file becomes an artifact. See [the note on the section index](./index.md).
 
 ---
 
 ## Two checks, two jobs
 
-| Where | What it decides | On a mismatch |
-|---|---|---|
-| Harvest — inside the producing job | Which of the files the agent wrote is the structured deliverable | Records warnings and returns no structured value. The job does not throw. |
-| `xema/validate-deliverables` — a job you author | Whether the produced artifacts satisfy the spec | Returns `verdict: fail`. The job itself still succeeds. |
+| Where | What it decides | On a mismatch | Status |
+|---|---|---|---|
+| Harvest — inside the producing job | Which of the files the agent wrote is the structured deliverable | Records warnings and returns no structured value. The job does not throw. | **Not running** |
+| `xema/validate-deliverables` — a job you author | Whether the produced artifacts satisfy the spec | Returns `verdict: fail`. The job itself still succeeds. | Live |
 
 Neither of them ends the run on its own. Validation is a fact the workflow reads; what a failing verdict *means* is a decision the workflow author writes as an `if:` gate.
 
-## Harvest-time discovery
+## Harvest-time discovery (not running)
+
+This section describes the harvester's intended behaviour. Nothing constructs it today, so none of it happens: no workspace file becomes an artifact, and a producing job emits only its structured handoff.
 
 Discovery is schema-driven, not name-driven. The harvester walks the `canonicalPath` and any `fallbackPaths` declared by the spec's output contract, parses each candidate as JSON, and asks `deliverable-specs-api` — `POST /deliverable-specs/{ref}/validate-content` — which one matches the spec's content shape. The first match wins; when several match, the canonical path is preferred. The agent can write any reasonable filename and discovery still works.
 
@@ -31,11 +35,13 @@ validate:
     deliverableSpecRef: architecture-standard
     strictness: standard
     artifactIds:
-      - ${{ needs.draft.outputs.deliverables[0].artifactId }}
+      - ${{ needs.draft.outputs.structuredOutput.artifactId }}
   outputs:
     verdict: ${{ job.outputs.verdict }}
     issues: ${{ job.outputs.issues }}
 ```
+
+`artifactIds` takes any artifact ids. The only artifact a workflow agent job emits today is its promoted `structuredOutput` handoff, so that is what there is to pass. Note that validating a JSON handoff against a spec written for a markdown document will not pass — the spec and the artifact have to be about the same thing.
 
 | Input | Required | Meaning |
 |---|---|---|
@@ -47,7 +53,7 @@ validate:
 |---|---|---|
 | `verdict` | `pass` \| `fail` \| `warn` | The single value downstream `if:` gates read |
 | `issues` | `ValidationIssue[]` | Every issue found, in artifact order |
-| `specVersion` | string | Version of the spec the verdict was computed against |
+| `contractVersion` | string | Version of the contract the verdict was computed against |
 | `checkedAt` | ISO-8601 timestamp | When the verdict was computed |
 
 Each issue is `{ severity, code, message, artifactId, path }`, where `severity` is `error` or `warning` and `artifactId` / `path` may be `null`.
@@ -92,21 +98,9 @@ So `lenient` turns what would have been a `fail` into a `warn` — the issues ar
 
 ## Branching on the verdict
 
-The point of returning a verdict rather than throwing is that the workflow author decides what happens next. Both branches are ordinary jobs:
+The point of returning a verdict rather than throwing is that the workflow author decides what happens next. The branch is an ordinary job with an `if:`:
 
 ```yaml
-publish-pass:
-  needs: [draft, validate]
-  if: ${{ needs.validate.outputs.verdict == 'pass' }}
-  uses: xema/publish-kb@1.2.3
-  with:
-    spaceSlug: architecture
-    slug: ${{ format('arch-{0}', xema.run.id) }}
-    title: Architecture deliverable
-    artifactId: ${{ needs.draft.outputs.deliverables[0].artifactId }}
-    versionId: ${{ needs.draft.outputs.deliverables[0].versionId }}
-    version: ${{ needs.draft.outputs.deliverables[0].version }}
-
 publish-fail:
   needs: [validate]
   if: ${{ needs.validate.outputs.verdict != 'pass' }}
@@ -119,6 +113,8 @@ publish-fail:
 ```
 
 The same `issues` array is what an author renders, files, or forwards. Nothing else has to be reconstructed from the run history.
+
+The mirror-image `publish-pass` job — publishing the produced deliverable itself on a passing verdict — is **not expressible today**, so no example of it is given here. `xema/publish-kb`'s `artifactId` branch reads `payload.body` from the artifact version and refuses any other shape; the agent job's one artifact is a `json_payload` handoff, which has no `body`. Only the inline `markdown` form, above, reaches the knowledge base.
 
 ## Retrying a failed deliverable
 

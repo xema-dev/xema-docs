@@ -33,8 +33,7 @@ jobs:
       agentSession: true
     outputs:
       sessionId: ${{ job.outputs.sessionId }}
-      resolution: ${{ job.outputs.deliverable }}
-      artifacts: ${{ job.outputs.deliverables }}
+      resolution: ${{ job.outputs.structuredOutput }}
 ```
 
 Xema opens the Session, sends the prompt as the first turn, and keeps the workflow job durable until the Session produces its structured handoff. The `sessionId` allows an experience to open the live conversation.
@@ -54,7 +53,7 @@ jobs:
         prompt: Prepare the evidence and unresolved questions for this case.
         caseId: ${{ inputs.caseId }}
     outputs:
-      brief: ${{ job.outputs.deliverable }}
+      brief: ${{ job.outputs.structuredOutput }}
 
   collaborate:
     needs: [prepare]
@@ -70,7 +69,7 @@ jobs:
       agentSession: true
     outputs:
       sessionId: ${{ job.outputs.sessionId }}
-      resolution: ${{ job.outputs.deliverable }}
+      resolution: ${{ job.outputs.structuredOutput }}
 
   record:
     needs: [collaborate]
@@ -98,7 +97,7 @@ jobs:
       agentContext:
         prompt: Prepare a bounded action proposal for this request.
     outputs:
-      proposal: ${{ job.outputs.deliverable }}
+      proposal: ${{ job.outputs.structuredOutput }}
 
   approve:
     needs: [propose]

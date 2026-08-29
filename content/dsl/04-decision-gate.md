@@ -68,7 +68,7 @@ jobs:
 | `correlationId` | string | yes | Run correlation id for audit. Typically `${{ trigger.correlationId }}`. |
 | `inquiryId` | string | optional | Stable id used as the inquiry key. Defaults to a deterministic value derived from the parent workflow + job key. |
 | `description` | string | optional | Free-form context shown to humans + included in agent decider prompts. |
-| `subjectArtifacts` | array | optional | Upstream job outputs whose `deliverables[]` arrays carry pinned `(artifactId, versionId, version, hash)` references. The gate flattens them into the inquiry. Empty/omitted means the gate is wrapping a non-deliverable concern (e.g. a release sign-off without a specific artifact). |
+| `subjectArtifacts` | array | optional | Upstream job outputs carrying pinned `(artifactId, versionId, version, hash)` references — for an Agent job, its promoted `structuredOutput`. The gate flattens them into the inquiry. Empty/omitted means the gate is wrapping a non-deliverable concern (e.g. a release sign-off without a specific artifact). |
 | `recipients` | array (1+) | yes | Who decides. Each entry is a discriminated `{ kind, target }` — see below. |
 | `policy` | object | yes | How replies aggregate. See **Reply policies** below. |
 

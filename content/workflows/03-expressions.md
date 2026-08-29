@@ -240,8 +240,7 @@ jobs:
       agentContext:
         prompt: Assess the request and produce the typed risk assessment.
     outputs:
-      assessment: ${{ job.outputs.deliverable }}
-      artifacts: ${{ job.outputs.deliverables }}
+      assessment: ${{ job.outputs.structuredOutput }}
 ```
 
 ### Consuming outputs in downstream jobs
@@ -258,16 +257,13 @@ jobs:
       agentContext:
         prompt: Assess the request and produce the typed risk assessment.
     outputs:
-      artifacts: ${{ job.outputs.deliverables }}
+      assessment: ${{ job.outputs.structuredOutput }}
 
   publish:
     needs: [analyze]
-    uses: xema/publish-kb
+    uses: customer/file-risk-assessment@1.0.0
     with:
-      spaceSlug: docs
-      slug: risk-assessment
-      title: Risk assessment
-      artifactId: ${{ needs.analyze.outputs.artifacts[0].artifactId }}
+      artifactId: ${{ needs.analyze.outputs.assessment.artifactId }}
       versionId: ${{ needs.analyze.outputs.artifacts[0].versionId }}
       version: ${{ needs.analyze.outputs.artifacts[0].version }}
 ```

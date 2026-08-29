@@ -1,6 +1,12 @@
 # Example: Document Template
 
-A multi-page architecture document. The agent writes `manifest.json` + per-page markdown files. Downstream jobs consume the page list.
+A multi-page architecture document. The spec declares `manifest.json` + per-page markdown files.
+
+> **Not runnable today.** This example depends on the workspace harvest, which is
+> not running: nothing turns the files the agent writes into artifacts, so the
+> page list below is never produced and the publish step has nothing to read.
+> The spec itself is still valid and still installs. See
+> [the note on the section index](../index.md).
 
 ---
 
@@ -59,26 +65,17 @@ jobs:
       agentContext:
         prompt: ${{ inputs.request }}
     outputs:
-      deliverables: ${{ job.outputs.deliverables }}
-      deliverable: ${{ job.outputs.deliverable }}
-
-  publish:
-    needs: [architecture]
-    uses: xema/publish-kb@1.2.1
-    with:
-      spaceSlug: architecture
-      spaceTitle: Architecture
-      createSpaceIfMissing: true
-      slug: ${{ format('arch-{0}', xema.run.id) }}
-      title: Architecture deliverable
-      artifactId: ${{ needs.architecture.outputs.deliverables[0].artifactId }}
-      versionId: ${{ needs.architecture.outputs.deliverables[0].versionId }}
-      version: ${{ needs.architecture.outputs.deliverables[0].version }}
+      handoff: ${{ job.outputs.structuredOutput }}
 ```
+
+A `publish` job reading the harvested pages back out used to follow here. It is
+removed rather than rewritten: `xema/publish-kb` resolves an `artifactId` by
+reading `payload.body`, and no artifact with that shape is produced today.
 
 ## Reading the result
 
-The producing job exposes:
+This is the envelope the harvest was designed to expose. **It is not produced
+today** — shown so the spec's intent is legible, not as something to consume:
 
 ```ts
 agentResult: {
@@ -100,7 +97,9 @@ agentResult: {
 }
 ```
 
-Downstream consumers read pages individually via `${{ needs.architecture.outputs.deliverable.content.pages }}` (the array) or pin a specific artifact by index off `outputs.deliverables[0]` for the publish step.
+Neither `outputs.deliverable` nor `outputs.deliverables` resolves to this: the
+singular output does not exist on the action, and the plural is always empty.
+What the job does expose is `structuredOutput`, the agent's structured handoff.
 
 ## Validating the result
 
@@ -114,7 +113,7 @@ Validation is a job of its own. Add `xema/validate-deliverables` between the pro
       deliverableSpecRef: architecture-standard
       strictness: standard
       artifactIds:
-        - ${{ needs.architecture.outputs.deliverables[0].artifactId }}
+        - ${{ needs.architecture.outputs.structuredOutput.artifactId }}
     outputs:
       verdict: ${{ job.outputs.verdict }}
       issues: ${{ job.outputs.issues }}
@@ -122,7 +121,9 @@ Validation is a job of its own. Add `xema/validate-deliverables` between the pro
 
 `publish` then declares `needs: [architecture, validate]` and `if: ${{ needs.validate.outputs.verdict == 'pass' }}`.
 
-The validator's built-in rules are artifact-count rules — it does not verify page-slug coverage today. A document spec that needs a floor states it as `rules.minArtifactCount`; producing fewer than that surfaces an `INSUFFICIENT_ARTIFACTS` issue and a `fail` verdict. See [04 Validation](../04-validation.md).
+Passing the handoff artifact to a `document-template` spec will not produce a
+passing verdict — a JSON handoff is not the multi-page document the spec
+describes. The validator's built-in rules are artifact-count rules — it does not verify page-slug coverage today. A document spec that needs a floor states it as `rules.minArtifactCount`; producing fewer than that surfaces an `INSUFFICIENT_ARTIFACTS` issue and a `fail` verdict. See [04 Validation](../04-validation.md).
 
 ---
 

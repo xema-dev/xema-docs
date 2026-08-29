@@ -54,7 +54,7 @@ jobs:
         prompt: Assemble the evidence and unresolved questions.
         caseId: ${{ inputs.caseId }}
     outputs:
-      brief: ${{ job.outputs.deliverable }}
+      brief: ${{ job.outputs.structuredOutput }}
 
   collaborate:
     needs: [prepare]
@@ -70,8 +70,7 @@ jobs:
       agentSession: true
     outputs:
       sessionId: ${{ job.outputs.sessionId }}
-      resolution: ${{ job.outputs.deliverable }}
-      artifacts: ${{ job.outputs.deliverables }}
+      resolution: ${{ job.outputs.structuredOutput }}
 
   apply:
     needs: [collaborate]

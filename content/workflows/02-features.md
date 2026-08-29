@@ -69,7 +69,7 @@ jobs:
       # review references it via `subject` + `redraft.step`. On reject,
       # the engine re-dispatches `draft-requirements` with the prior
       # reviewer feedback merged into `agentContext.review`.
-      subject: ${{ needs.draft-requirements.outputs.deliverables }}
+      subject: ${{ needs.draft-requirements.outputs.structuredOutput }}
       redraft: { step: draft-requirements }
       reviewers:
         # Mixed pool: a quality-checker agent (mandatory, demoted to

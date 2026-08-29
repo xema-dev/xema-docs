@@ -139,13 +139,17 @@ The current Agent action exposes:
 |---|---|
 | `allocationId` | Runtime allocation used for the job |
 | `outcome` | `succeeded`, `empty-response`, or `partial` |
-| `deliverables` | Versioned artifact references harvested from the Agent workspace |
-| `deliverable` | Structured deliverable payload, or `null` |
-| `renderedContextHash` | Hash of the rendered invocation context when available |
-| `resolvedAgentSnapshotHash` | Hash of the resolved Agent snapshot when available |
-| `mountDiagnostic` | Workspace mount diagnostic when available |
+| `structuredOutput` | The Agent's structured handoff, promoted to a `json_payload` artifact reference |
+| `agentResult` | The same handoff, unpromoted |
+| `response` | Declared as a `markdown_doc` promotion; always `null` today |
+| `deliverables` | Declared, but always empty — nothing harvests the Agent workspace |
 | `durationMs` | Execution duration |
-| `sessionId` | Workflow-linked Session id when `agentSession: true` |
+| `sessionId` | Workflow-linked Session id |
+| `workspaceId` | Durable Workspace a later Agent job may attach to |
+
+`structuredOutput` is the one artifact an Agent job produces. There is no
+singular `deliverable` output — `job.outputs.deliverable` does not resolve. See
+[the deliverables note](../deliverables/index.md).
 
 Declare job outputs from the fields the workflow needs:
 
@@ -159,8 +163,7 @@ jobs:
       agentContext:
         prompt: Assess the request.
     outputs:
-      assessment: ${{ job.outputs.deliverable }}
-      artifacts: ${{ job.outputs.deliverables }}
+      assessment: ${{ job.outputs.structuredOutput }}
 ```
 
 ---

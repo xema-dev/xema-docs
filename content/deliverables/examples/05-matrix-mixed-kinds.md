@@ -77,8 +77,7 @@ jobs:
     permissions:
       repos: write
     outputs:
-      deliverables: ${{ job.outputs.deliverables }}
-      deliverable: ${{ job.outputs.deliverable }}
+      handoff: ${{ job.outputs.structuredOutput }}
 
   publish-summary:
     needs: [build]

@@ -2,6 +2,38 @@
 
 > API Docs: https://deliverable-specs-api.xema.dev/api/docs
 
+## Current state — 2026-08-29
+
+Part of this framework is not connected today, and the pages below still
+describe some of it as if it were. Read this first.
+
+**What exists:** deliverable specs and their kinds, the `targetSlot` workspace
+contract, and the `xema/validate-deliverables` action (a real server-side
+verdict over artifact ids you supply).
+
+**What does not:** the automatic harvest of workspace files into artifacts. The
+harvester is not constructed by anything, so no file an agent writes into its
+workspace becomes an artifact. Consequently the `xema/agent` job output
+`deliverables` is always an empty array, and there is no singular `deliverable`
+output on the activity's result at all.
+
+**What a workflow agent job produces today** is its structured handoff —
+`structuredOutput`, the JSON the session posts to the handoff endpoint. It is
+promoted to a `json_payload` artifact carrying `artifactId`, `versionId`,
+`version`, `hash` and `type`. That is the one artifact the job emits. The
+`response` output is declared but is always `null`, because the handoff path
+produces no closing message.
+
+**There is no agent-job → KB-page path today.** `xema/publish-kb` resolves an
+`artifactId` by reading `payload.body` from the artifact version and refuses
+other shapes; a `json_payload` handoff artifact carries no `body`. Its inline
+`markdown` input still works for content the workflow supplies itself.
+
+Any YAML below that reads `outputs.deliverables` or `outputs.deliverable` is
+stale and will not resolve to what the surrounding prose claims.
+
+---
+
 A **deliverable spec** describes what an agent must produce on a given workflow step: a multi-page document, a JSON payload, a direct response, code emitted into a working repo, or anything else with a typed contract. The deliverables framework owns the contract surface that ties workflow YAML, agent runtime, and downstream consumers together — one envelope for every kind, one canonical access path, and one server-side validator every workflow can branch on.
 
 ## Quick Links

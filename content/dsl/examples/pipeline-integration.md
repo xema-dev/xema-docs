@@ -28,7 +28,7 @@ jobs:
         prompt: Prepare the request evidence and proposed options.
         requestId: ${{ inputs.requestId }}
     outputs:
-      brief: ${{ job.outputs.deliverable }}
+      brief: ${{ job.outputs.structuredOutput }}
 
   collaborate:
     needs: [prepare]
@@ -43,7 +43,7 @@ jobs:
       agentSession: true
     outputs:
       sessionId: ${{ job.outputs.sessionId }}
-      resolution: ${{ job.outputs.deliverable }}
+      resolution: ${{ job.outputs.structuredOutput }}
 
   apply:
     needs: [collaborate]
@@ -65,7 +65,7 @@ jobs:
       agentContext:
         prompt: Classify this request and determine whether human guidance is required.
     outputs:
-      classification: ${{ job.outputs.deliverable }}
+      classification: ${{ job.outputs.structuredOutput }}
 
   standard-path:
     needs: [classify]
@@ -106,7 +106,7 @@ jobs:
       agentContext:
         prompt: Prepare the proposed operation and its expected effects.
     outputs:
-      proposal: ${{ job.outputs.deliverable }}
+      proposal: ${{ job.outputs.structuredOutput }}
 
   approve:
     needs: [propose]

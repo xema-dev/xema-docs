@@ -72,7 +72,7 @@ jobs:
       agentSession: true
     outputs:
       sessionId: ${{ job.outputs.sessionId }}
-      resolution: ${{ job.outputs.deliverable }}
+      resolution: ${{ job.outputs.structuredOutput }}
 ```
 
 ## Conditional paths
@@ -87,7 +87,7 @@ jobs:
       agentContext:
         prompt: Assess the request.
     outputs:
-      assessment: ${{ job.outputs.deliverable }}
+      assessment: ${{ job.outputs.structuredOutput }}
 
   review-required:
     needs: [assess]

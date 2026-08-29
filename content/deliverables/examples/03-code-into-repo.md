@@ -1,6 +1,12 @@
 # Example: Code into a Repo
 
-Emit code files directly into a working repo (clone) using `targetSlot.kind: 'repos'`. The harvester writes artifacts under the repo namespace.
+Emit code files directly into a working repo (clone) using `targetSlot.kind: 'repos'`.
+
+> **Not runnable today.** This example depends on the workspace harvest, which
+> is not running: files the agent writes into the repo working copy do not
+> become artifacts, so `open-pr` has no artifact ids to build a PR from. The
+> spec and its `targetSlot` are still valid. See
+> [the note on the section index](../index.md).
 
 ---
 
@@ -57,19 +63,17 @@ jobs:
     permissions:
       repos: write
     outputs:
-      deliverables: ${{ job.outputs.deliverables }}
-      deliverable: ${{ job.outputs.deliverable }}
-
-  open-pr:
-    needs: [engineer]
-    uses: software-dev/scm-open-pr@1.0.0
-    with:
-      repoSlug: my-service
-      branch: ${{ format('xema/{0}', xema.run.id) }}
-      artifactIds: ${{ needs.engineer.outputs.deliverables }}
+      handoff: ${{ job.outputs.structuredOutput }}
 ```
 
+An `open-pr` job consuming `outputs.deliverables` used to follow here. It is
+removed rather than rewritten: that output is always empty, so the job would
+open a pull request over no files.
+
 ## Reading the result
+
+This is the envelope the harvest was designed to expose. **It is not produced
+today** — shown so the spec's intent is legible, not as something to consume:
 
 ```ts
 agentResult: {
@@ -95,29 +99,16 @@ agentResult: {
 }
 ```
 
-The downstream `scm-open-pr` action consumes the artifact ids to build a PR with all written files.
+A downstream `scm-open-pr` action would consume those artifact ids to build a PR with all written files.
 
 ## Validating the result
 
-Files written outside the declared slot are simply not harvested — the harvester only walks the paths the spec's output contract declares, so nothing outside `/workspace/repos/my-service/` becomes an artifact.
-
-That makes "the agent wrote nothing usable" visible as an artifact count, which is what `xema/validate-deliverables` checks. Add it as a job between `engineer` and `open-pr`, pass it the artifact ids the producing job emitted (up to 128), and gate the PR on the verdict:
-
-```yaml
-  validate:
-    needs: [engineer]
-    uses: xema/validate-deliverables@1.0.2
-    with:
-      deliverableSpecRef: engineering-standard
-      strictness: standard
-      artifactIds:
-        - ${{ needs.engineer.outputs.deliverables[0].artifactId }}
-    outputs:
-      verdict: ${{ job.outputs.verdict }}
-      issues: ${{ job.outputs.issues }}
-```
-
-With nothing harvested the verdict is `fail` with an `INSUFFICIENT_ARTIFACTS` issue, and `open-pr` — declaring `needs: [engineer, validate]` and `if: ${{ needs.validate.outputs.verdict == 'pass' }}` — never runs. See [04 Validation](../04-validation.md).
+`xema/validate-deliverables` is live and checks artifact counts, so it is what
+would make "the agent wrote nothing usable" visible. With the harvest not
+running there are no file artifacts to count, so a `custom` spec validated this
+way returns `fail` with `INSUFFICIENT_ARTIFACTS` on every run — not because the
+agent misbehaved, but because nothing collects what it wrote. See
+[04 Validation](../04-validation.md).
 
 ## Tighter contracts
 
@@ -134,7 +125,9 @@ Add a `files[]` block to require specific paths exist:
 ]
 ```
 
-`files[]` is what the harvester walks: it is the list of paths considered, in order, when looking for the deliverable. A declared path the agent never wrote is simply not found, and the harvester records the paths it tried in its warnings.
+`files[]` is the list of paths the harvest was to consider, in order, when
+looking for the deliverable. It is part of the spec contract and is still
+stored and served; nothing walks it today.
 
 ---
 

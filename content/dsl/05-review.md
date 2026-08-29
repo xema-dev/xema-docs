@@ -66,7 +66,7 @@ jobs:
     needs: [draft]
     uses: xema/review
     with:
-      subject: ${{ needs.draft.outputs.deliverables }}
+      subject: ${{ needs.draft.outputs.structuredOutput }}
       redraft: { step: draft }
       reviewers:
         - kind: agent
@@ -146,7 +146,7 @@ jobs:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `reviewId` | string | optional | Stable id used as the per-iteration inquiry id prefix. Auto-injected as `<runId>:<jobKey>:<matrixIndex>` when omitted. |
-| `subject` | string OR array of strings | optional | Artifact(s) under review. Each entry is an arbitrary expression (typically `${{ needs.<step>.outputs.deliverables }}`). Omit for an approval-to-proceed gate. |
+| `subject` | string OR array of strings | optional | Artifact(s) under review. Each entry is an arbitrary expression (typically `${{ needs.<step>.outputs.structuredOutput }}`, the producing Agent job's promoted handoff). Omit for an approval-to-proceed gate. |
 | `redraft` | object | optional | Producer step to re-dispatch on reject. Shape `{ step: <stepName> }`. Requires `subject` to be set. Omit for terminal reviews. |
 | `reviewers` | array (1+) | yes | Reviewer pool — humans, agents, endpoints, identity groups, sub-workflows. See **Reviewer kinds** below. |
 | `policy` | object | yes | Aggregation policy. See **Reply policies** below. |
@@ -156,11 +156,11 @@ jobs:
 
 ### `subject` shape
 
-The most common pattern is a single expression resolving to a producer
-step's deliverables:
+The most common pattern is a single expression resolving to the producing
+step's promoted output:
 
 ```yaml
-subject: ${{ needs.draft.outputs.deliverables }}
+subject: ${{ needs.draft.outputs.structuredOutput }}
 ```
 
 For multi-deliverable reviews (one decision spans several artifacts),
@@ -168,8 +168,8 @@ pass an array:
 
 ```yaml
 subject:
-  - ${{ needs.draft-spec.outputs.deliverables }}
-  - ${{ needs.draft-design.outputs.deliverables }}
+  - ${{ needs.draft-spec.outputs.structuredOutput }}
+  - ${{ needs.draft-design.outputs.structuredOutput }}
 ```
 
 ### `redraft.step` rules
@@ -282,13 +282,14 @@ runtime history bounded under runaway human-driven loops.
 | `subjects` | array | Resolved subjects mirrored from input. Empty for approval-to-proceed gates. |
 | `iterations` | integer | Number of iterations actually run (always ≥ 1). |
 | `summary` | string | Aggregated reviewer-side summary from the final iteration's verdicts (one line per reviewer with `verdict` + optional `reason`). Suitable for posting back to the source system (e.g. as an SCM review comment via `xema/scm-post-review`). |
-| `finalDraft` | object | The artifact reviewed in the final iteration. For iter-1 approval, it is the resolved subject (with a `deliverables` alias unwrapped from the standard `subject: ${{ ...outputs.deliverables }}` pattern). For iter-N approval, it is the redraft producer's output — same shape as `xema/agent`'s outputs. Absent on approval-to-proceed gates. |
+| `finalDraft` | object | The artifact reviewed in the final iteration. For iter-1 approval, it is the resolved subject. For iter-N approval, it is the redraft producer's output — same shape as `xema/agent`'s outputs. Absent on approval-to-proceed gates. |
 | `decisionTrail` | array | Per-iteration record `{ iteration, draft, reviewerVerdicts, demotedAgents }`. |
 
-Downstream consumers reading `finalDraft.deliverables` work on every
-approval iteration when authors follow the standard
-`subject: ${{ needs.<step>.outputs.deliverables }}` or
-`subject: ${{ needs.<step>.outputs }}` patterns.
+`finalDraft` mirrors whatever `subject` resolved to, so downstream consumers
+should read the same shape they passed in. Note that `finalDraft.deliverables`
+— the shape earlier revisions of this page recommended — is always empty: the
+`xema/agent` job output it came from is no longer populated. See
+[the deliverables note](../deliverables/index.md).
 
 ---
 
@@ -322,7 +323,7 @@ review:
   needs: [synthesize]
   uses: xema/review
   with:
-    subject: ${{ needs.synthesize.outputs.deliverables }}
+    subject: ${{ needs.synthesize.outputs.structuredOutput }}
     redraft: { step: synthesize }
     reviewers:
       - { kind: agent, target: { agentRef: gate-reviewer-architecture }, mandatory: true, agentMaxIterations: 3 }
@@ -344,8 +345,8 @@ review:
   uses: xema/review
   with:
     subject:
-      - ${{ needs.draft-spec.outputs.deliverables }}
-      - ${{ needs.draft-design.outputs.deliverables }}
+      - ${{ needs.draft-spec.outputs.structuredOutput }}
+      - ${{ needs.draft-design.outputs.structuredOutput }}
     # No redraft when multiple producers are involved — handle reject
     # by failing the workflow or branching downstream and re-running
     # the upstream producers as a separate dispatch.
