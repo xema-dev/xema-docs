@@ -67,8 +67,9 @@ jobs:
 ```
 
 An `open-pr` job consuming `outputs.deliverables` used to follow here. It is
-removed rather than rewritten: that output is always empty, so the job would
-open a pull request over no files.
+removed rather than rewritten: that output no longer exists, so the job would
+name a field the action does not declare and open a pull request over no
+files.
 
 ## Reading the result
 

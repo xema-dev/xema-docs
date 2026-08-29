@@ -287,8 +287,8 @@ runtime history bounded under runaway human-driven loops.
 
 `finalDraft` mirrors whatever `subject` resolved to, so downstream consumers
 should read the same shape they passed in. Note that `finalDraft.deliverables`
-— the shape earlier revisions of this page recommended — is always empty: the
-`xema/agent` job output it came from is no longer populated. See
+— the shape earlier revisions of this page recommended — is empty: the
+`xema/agent` job output it came from was removed on 2026-08-29. See
 [the deliverables note](../deliverables/index.md).
 
 ---

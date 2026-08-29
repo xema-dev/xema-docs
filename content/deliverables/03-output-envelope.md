@@ -15,7 +15,6 @@ Declared by `xema/agent@3.0.0`:
 | `structuredOutput` | `ArtifactRef` or `null` | The agent's structured handoff, promoted to a `json_payload` artifact |
 | `agentResult` | object or `null` | The same handoff, unpromoted |
 | `response` | `ArtifactRef` or `null` | Declared as a `markdown_doc` promotion. Always `null` today — see below |
-| `deliverables` | array | Declared, but always empty — see below |
 | `durationMs` | integer | Execution duration |
 | `sessionId` | string or `null` | Workflow-linked Session id |
 | `workspaceId` | string or `null` | Durable Workspace a later Agent job may attach to |
@@ -24,7 +23,7 @@ Declared by `xema/agent@3.0.0`:
 
 **`structuredOutput` is the one artifact a workflow agent job produces.** It is the JSON the session posts to its handoff endpoint, promoted to a `json_payload` artifact reference carrying `artifactId`, `versionId`, `version`, `hash` and `type`.
 
-**`deliverables` is always an empty array.** It was the harvest of files the agent wrote into its workspace. The harvester is not constructed by anything, so nothing populates it. There is no singular `deliverable` output — expressions reading `job.outputs.deliverable` do not resolve.
+**The `deliverables` output no longer exists.** It carried the harvest of files the agent wrote into its workspace; the harvester was deleted on 2026-08-29 and the output was removed with it. There is no singular `deliverable` output either. Expressions reading `job.outputs.deliverables` or `job.outputs.deliverable` name a field the action does not declare.
 
 **`response` is always `null`.** The handoff path produces no closing free-text message, so the `markdown_doc` promotion has nothing to promote.
 

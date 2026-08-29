@@ -12,10 +12,11 @@ contract, and the `xema/validate-deliverables` action (a real server-side
 verdict over artifact ids you supply).
 
 **What does not:** the automatic harvest of workspace files into artifacts. The
-harvester is not constructed by anything, so no file an agent writes into its
-workspace becomes an artifact. Consequently the `xema/agent` job output
-`deliverables` is always an empty array, and there is no singular `deliverable`
-output on the activity's result at all.
+harvester was deleted on 2026-08-29, so no file an agent writes into its
+workspace becomes an artifact. The `xema/agent` job output `deliverables` went
+with it — `xema/agent@3.0.0` no longer declares it, and there is no singular
+`deliverable` output either. An expression naming either one resolves against a
+field the action does not have.
 
 **What a workflow agent job produces today** is its structured handoff —
 `structuredOutput`, the JSON the session posts to the handoff endpoint. It is

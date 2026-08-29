@@ -142,13 +142,14 @@ The current Agent action exposes:
 | `structuredOutput` | The Agent's structured handoff, promoted to a `json_payload` artifact reference |
 | `agentResult` | The same handoff, unpromoted |
 | `response` | Declared as a `markdown_doc` promotion; always `null` today |
-| `deliverables` | Declared, but always empty — nothing harvests the Agent workspace |
 | `durationMs` | Execution duration |
 | `sessionId` | Workflow-linked Session id |
 | `workspaceId` | Durable Workspace a later Agent job may attach to |
 
-`structuredOutput` is the one artifact an Agent job produces. There is no
-singular `deliverable` output — `job.outputs.deliverable` does not resolve. See
+`structuredOutput` is the one artifact an Agent job produces. The former
+`deliverables` and `deliverable` outputs were removed on 2026-08-29 along with
+the workspace harvester, so neither `job.outputs.deliverables` nor
+`job.outputs.deliverable` names a declared field. See
 [the deliverables note](../deliverables/index.md).
 
 Declare job outputs from the fields the workflow needs:

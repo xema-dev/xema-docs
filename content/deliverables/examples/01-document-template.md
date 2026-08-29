@@ -97,9 +97,9 @@ agentResult: {
 }
 ```
 
-Neither `outputs.deliverable` nor `outputs.deliverables` resolves to this: the
-singular output does not exist on the action, and the plural is always empty.
-What the job does expose is `structuredOutput`, the agent's structured handoff.
+Neither `outputs.deliverable` nor `outputs.deliverables` resolves to this —
+both were removed from the action on 2026-08-29. What the job does expose is
+`structuredOutput`, the agent's structured handoff.
 
 ## Validating the result
 

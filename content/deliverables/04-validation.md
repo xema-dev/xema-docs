@@ -2,7 +2,7 @@
 
 **`xema/validate-deliverables`** asks *do these artifacts satisfy the spec*, and answers with a verdict the workflow branches on rather than an exception. You give it artifact ids; it resolves the spec server-side and returns a judgement.
 
-A second check is described below for completeness and is **not running today**: harvest-time discovery, inside the producing job, which asked *which file in the workspace is the deliverable*. The harvester is not constructed by anything, so no workspace file becomes an artifact. See [the note on the section index](./index.md).
+A second check is described below for completeness and **no longer exists**: harvest-time discovery, inside the producing job, which asked *which file in the workspace is the deliverable*. The harvester was deleted on 2026-08-29, so no workspace file becomes an artifact. See [the note on the section index](./index.md).
 
 ---
 
