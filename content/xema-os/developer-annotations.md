@@ -34,11 +34,11 @@ Long form when you need to be explicit:
 export class InvoiceController { /* ... */ }
 ```
 
-The resource name flows into every operationId, permission label, and capability ref derived under this controller.
+The resource name flows into every operationId and capability ref derived under this controller.
 
 ### `@XemaRoute(...)`
 
-Declares that a method is a Xema-managed route. Empty by default — the inference engine fills in the action, the operationId, and the permission label from the method name and the HTTP verb.
+Declares that a method is a Xema-managed route. Empty by default — the inference engine fills in the action and the operationId from the method name and the HTTP verb.
 
 ```ts
 @XemaResource('invoice')
@@ -57,14 +57,14 @@ export class InvoiceController {
   @XemaRoute()
   @Post()
   create(@Body() body: CreateInvoiceDto) { /* ... */ }
-  // → action = 'create', operationId = 'invoice.create', label = 'invoice.create'
+  // → action = 'create', operationId = 'invoice.create'
 }
 ```
 
 Override when the convention doesn't fit:
 
 ```ts
-@XemaRoute({ action: 'export', operationId: 'invoice.exportPdf', permission: 'invoice.export' })
+@XemaRoute({ action: 'export', operationId: 'invoice.exportPdf' })
 @Get(':id/pdf')
 exportPdf() { /* ... */ }
 ```
@@ -195,30 +195,29 @@ The dictionary is intentionally small and closed. It grows only through a kernel
 
 ---
 
-## OperationId and permission-label inference
+## OperationId inference
 
-By default, both the OpenAPI `operationId` and the route's **permission label** are `<resource>.<action>` — e.g. `invoice.read`. The `operationId` falls back to `<resource>.<methodName>` when action inference does not yield a verb.
+By default the OpenAPI `operationId` is `<resource>.<action>` — e.g. `invoice.read` — falling back to `<resource>.<methodName>` when action inference does not yield a verb.
 
-The two serve different purposes, and only the first is load-bearing:
+**`operationId` identifies the operation.** It names the method on the generated client, so it has to be unique and it is stable across regenerations. Treat it as part of your API contract.
 
-- **`operationId` identifies the operation.** It names the method on the generated client, so it has to be unique and it is stable across regenerations. Treat it as part of your API contract.
-- **`permission` is a descriptive label**, not an access check. It is a coarse grouping of related operations — deliberately non-unique, so that several endpoints doing the same conceptual thing carry the same label. It is emitted onto the generated specification as `x-xema-permission` and is useful for grouping and reporting.
-
-**A permission label authorizes nothing.** Nothing in the request path reads it, and two operations sharing a label are not thereby equivalent for access purposes. What decides whether a caller may proceed is a capability grant evaluated by the policy decision point — see [How access is actually decided](#how-access-is-actually-decided) below.
-
-Override the label when routes that share an action should group together:
+Override it when the inferred name is not the one you want on the client:
 
 ```ts
-@XemaRoute({ permission: 'invoice.export' })
+@XemaRoute({ operationId: 'invoice.exportPdf' })
 @Get(':id/pdf')
 exportPdf() {}
-
-@XemaRoute({ permission: 'invoice.export' })
-@Get(':id/csv')
-exportCsv() {}
 ```
 
-Both routes carry the label `invoice.export`; their operationIds stay distinct (`invoice.exportPdf` + `invoice.exportCsv`) because the inference engine uses method names there.
+### There is no longer a permission label
+
+Earlier versions of this decorator also derived a **permission label** (`<resource>.<action>`), emitted it onto the generated specification as `x-xema-permission`, and let you override it with `@XemaRoute({ permission })`.
+
+That is **removed as of `@xemahq/xema-decorators` 0.15.0**, and the reason is the one the old text admitted itself: the label authorized nothing. Nothing in the request path read it, and — measured across every Xema repository — nothing anywhere read it off a generated specification either. It was produced and never consumed, so an author writing `permission: 'invoice.export'` was writing a field that no code could observe.
+
+`@XemaRoute({ permission })` no longer exists. Remove it; the `action` and `operationId` options are unaffected.
+
+What decides whether a caller may proceed has not changed, and never involved this label: it is a capability grant evaluated by the policy decision point — see [How access is actually decided](#how-access-is-actually-decided) below.
 
 ---
 
@@ -257,7 +256,7 @@ The durable description of a service's routes is its **generated OpenAPI documen
 
 ## How access is actually decided
 
-Developers define **what exists**. Admins decide **who can do it** — and the unit they work with is the **[capability](./capabilities.md) ref**, not the permission label above.
+Developers define **what exists**. Admins decide **who can do it** — and the unit they work with is the **[capability](./capabilities.md) ref**.
 
 A capability ref (`billing:invoice.read@1`) names one specific action. Everything an admin does is expressed against those refs:
 
@@ -282,7 +281,7 @@ Before annotations, a service described itself in hand-maintained side files —
 After annotations:
 
 - The description is **derived from the code**, on every boot. There is no side file to update and none to forget.
-- A new endpoint is a one-line addition (`@XemaRoute() @Get(':id') read() {}`), and its action, operationId, permission label, and space resolver all follow from it.
+- A new endpoint is a one-line addition (`@XemaRoute() @Get(':id') read() {}`), and its action, operationId, and space resolver all follow from it.
 - An unclassified route is a startup error rather than a silent omission, so a surface cannot ship undescribed.
 - The single source of truth lives next to the code it describes.
 
