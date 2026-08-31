@@ -153,7 +153,7 @@ The Object Browser also exposes the registry: each service appears as a typed `X
 
 - [Runners](./runners.md) — runners register through the same surface.
 - [Capabilities](./capabilities.md) — a capability is hosted by one or more registered services.
-- [Developer annotations](./developer-annotations.md) — `@XemaResource` + `@XemaRoute` produce the manifest that registration consumes.
+- [Developer annotations](./developer-annotations.md) — `@XemaResource` + `@XemaRoute` classify the routes a registered service exposes.
 - [Apps](./apps.md) — apps resolve their backing biomes through the registry.
 
 ---

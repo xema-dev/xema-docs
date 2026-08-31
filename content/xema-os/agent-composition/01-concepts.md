@@ -20,14 +20,14 @@ interface Agent {
   skills: SkillRef[];
   tools: ToolSelectionEntry[];
   subagents: AgentNode[];
-  limits?: AgentLimits;
+  limits?: AgentLimits;   // declared; not enforced today — see Subagents
   workspace?: AgentWorkspaceConfig;
   workspaceSharing?: 'isolated' | 'shareable';
   capability?: CapabilityLayer;
 }
 ```
 
-Each subagent node references another published Agent and may add node-local Skills, Tools, instructions, a model override, permission narrowing, limits, and further children.
+Each subagent node references another published Agent and may add node-local Skills, Tools, instructions, a model override, permission narrowing, and further children.
 
 ---
 
@@ -48,7 +48,17 @@ Skills and tool configuration are resolved as part of the Agent's intrinsic laye
 
 Subagents are Agents referenced recursively. The parent delegates through its task capability; the child executes in its own bounded context and returns a result.
 
-The Agent can declare structural runtime limits such as maximum recursion depth, fan-out, and total spawns. These are runtime controls, not prompt suggestions.
+### What bounds a tree
+
+Two bounds apply, and it is worth being precise about which is which.
+
+**The platform caps the shape of the tree, at publish time.** A subagent tree may not exceed **6 levels of nesting** or **64 nodes in total**, and sibling nodes under one parent must carry distinct aliases. A tree that breaks any of those is rejected with a `400` when you save it — so an unbounded or ambiguous composition never reaches the runtime in the first place. Inheritance is bounded the same way: an `extends` chain that forms a cycle, or that runs deeper than 32 links, is refused.
+
+These are fixed platform bounds. They are not per-Agent settings, and you do not configure them.
+
+**Spend is capped against the organization's balance, not per run.** Model usage is metered as it happens; when the balance is exhausted, a request is refused before it reaches the model provider, and a response already streaming is cancelled mid-generation. That is a real ceiling and it is the one that stops runaway cost — but it is an account-level ceiling. It does not cap a single run, a single Agent, or a single subagent subtree.
+
+> **`limits` is a declared field, not yet an enforced one.** The `Agent` contract carries an optional `limits` object (`maxDepth`, `maxFanout`, `maxSpawns`, `tokenBudget`). Nothing in the runtime reads it today, so setting it changes no behaviour. Do not rely on it as a control; use the platform bounds above, and the balance ceiling, and size the tree deliberately. This page will say so plainly until that changes.
 
 ---
 
