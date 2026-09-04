@@ -49,7 +49,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `workflow-step` | `ContributionKind.WorkflowStep` | biome-host parser (`WorkflowStepParser`) | — |
 | `agent-skill` | `ContributionKind.AgentSkill` | biome-host parser (`AgentSkillParser`) | — |
 | `agent-kernel` | `ContributionKind.AgentKernel` | biome-host parser (`AgentKernelParser`) | — |
-| `model-resolution-dimension` | `ContributionKind.ModelResolutionDimension` | domain-service handler / self-registration (category 2) | Ingested by `llm-registry-api`'s `ModelStrategyBootstrapService` — a `BootstrapContributionsService` handler that loads the kernel-shipped `strategies/*.yaml` and upserts model-resolution strategies. |
+| `model-resolution-dimension` | `ContributionKind.ModelResolutionDimension` | **none today** | **Reserved. Nothing ingests this kind, so a contribution naming it is read by nothing.** This row previously named an ingesting service; that service no longer exists, and the claim survived here after it was removed. Do not contribute against this kind until the row says otherwise. |
 | `widget-kind` | `ContributionKind.WidgetKind` | biome-host parser (`WidgetKindParser`) | — |
 | `surface-kind` | `ContributionKind.SurfaceKind` | biome-host parser (`SurfaceKindParser`) | A VISTA SURFACE KIND contributed by a biome: the render kind a Vista preview tab can hold, declared as a bare biome-local slug plus a version, display name, summary, and an opaque JSON `payloadSchema`. |
 | `artifact-type` | `ContributionKind.ArtifactType` | biome-host parser (`ArtifactTypeParser`) | An artifact type contributed by a biome to the artifact-store schema-version registry (`ArtifactTypeRegistryService`). |
