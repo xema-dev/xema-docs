@@ -108,6 +108,7 @@ jobs:
     # [self-hosted, linux] label queues with no eligible runner until GitHub
     # expires it. The file header states the same constraint — keep both true.
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
     # A job-level `permissions:` block REPLACES the workflow-level one rather
     # than merging with it, so `id-token: write` MUST be repeated here.
     permissions:
