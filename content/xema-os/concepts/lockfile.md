@@ -26,7 +26,7 @@ boundaries: app deploy
 session creation (`agent-session-api`'s `SessionLockfileService`,
 served at `GET /sessions/:id/lockfile`), and workflow-run start
 (the Xema workflow worker service's `xemaEmitRunLockfileActivity`, written
-as a `REPLACE`-versioned artifact). The shared
-`@xemahq/lockfile-sources-nest` package provides the cross-service
-source layer. See the [Versioning page](../versioning.md#lockfile-shape)
+as a `REPLACE`-versioned artifact). Each writer composes the resolver
+over the same four sources — kernel, capability, biome and object
+registry. See the [Versioning page](../versioning.md#lockfile-shape)
 for the lockfile shape.

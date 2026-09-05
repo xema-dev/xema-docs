@@ -149,7 +149,7 @@ Lockfiles are produced by the resolver in `@xemahq/lockfile-resolver`. Concrete 
 - **Sessions.** `agent-session-api`'s session-creation flow mints + persists a lockfile via the internal `SessionLockfileService` and serves `GET /sessions/:id/lockfile`.
 - **Workflow runs.** The Xema workflow worker service emits a `xemaEmitRunLockfileActivity` as a Xema runtime activity that writes the lockfile as a `REPLACE`-versioned artifact (idempotent under retry).
 
-Lockfile sources are shared across services through `@xemahq/lockfile-sources-nest`.
+Every writer resolves over the same four sources — kernel, capability, biome and object registry — so two writers cannot pin one subject differently.
 
 ---
 
