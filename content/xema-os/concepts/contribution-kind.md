@@ -49,7 +49,7 @@ if you ship it as a contribution — use the delivery path named in its note ins
 | `workflow-step` | `ContributionKind.WorkflowStep` | biome-host parser (`WorkflowStepParser`) | — |
 | `agent-skill` | `ContributionKind.AgentSkill` | biome-host parser (`AgentSkillParser`) | — |
 | `agent-kernel` | `ContributionKind.AgentKernel` | biome-host parser (`AgentKernelParser`) | — |
-| `model-resolution-dimension` | `ContributionKind.ModelResolutionDimension` | **none today** | **Reserved. Nothing ingests this kind, so a contribution naming it is read by nothing.** This row previously named an ingesting service; that service no longer exists, and the claim survived here after it was removed. Do not contribute against this kind until the row says otherwise. |
+| `work-kind` | `ContributionKind.WorkKind` | `llm-registry-api` | One key in the OPEN work-kind vocabulary the Model Resolution Matrix routes on — `redline`, `line-edit`, `calculate` — declared by whoever does that kind of work. `axis: agent` selects the `modelClass` dimension; `axis: machine` selects `purpose`. `fallbackKind` says where an unbound kind routes, and every chain terminates at the platform's `generic`. This row read `model-resolution-dimension` and said *"nothing ingests this kind"*, which was true: its named ingester had been deleted and the claim outlived it here and in the kernel enum. The member was repurposed rather than left standing. |
 | `widget-kind` | `ContributionKind.WidgetKind` | biome-host parser (`WidgetKindParser`) | — |
 | `surface-kind` | `ContributionKind.SurfaceKind` | biome-host parser (`SurfaceKindParser`) | A VISTA SURFACE KIND contributed by a biome: the render kind a Vista preview tab can hold, declared as a bare biome-local slug plus a version, display name, summary, and an opaque JSON `payloadSchema`. |
 | `artifact-type` | `ContributionKind.ArtifactType` | biome-host parser (`ArtifactTypeParser`) | An artifact type contributed by a biome to the artifact-store schema-version registry (`ArtifactTypeRegistryService`). |
@@ -81,7 +81,6 @@ Do not ship a contribution of these kinds expecting it to be picked up by
 `biome-host-api`:
 
 - `mount-source` — domain-service handler / self-registration (category 2)
-- `model-resolution-dimension` — domain-service handler / self-registration (category 2)
 - `biome-install-schema` — RESERVED — no contribution ingestion (category 3)
 - `icon` — RESERVED — no contribution ingestion (category 3)
 - `provisioning-scaffold` — RESERVED — no contribution ingestion (category 3)
