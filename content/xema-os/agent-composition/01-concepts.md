@@ -58,7 +58,14 @@ These are fixed platform bounds. They are not per-Agent settings, and you do not
 
 **Spend is capped against the organization's balance, not per run.** Model usage is metered as it happens; when the balance is exhausted, a request is refused before it reaches the model provider, and a response already streaming is cancelled mid-generation. That is a real ceiling and it is the one that stops runaway cost — but it is an account-level ceiling. It does not cap a single run, a single Agent, or a single subagent subtree.
 
-> **`limits` is a declared field, not yet an enforced one.** The `Agent` contract carries an optional `limits` object (`maxDepth`, `maxFanout`, `maxSpawns`, `tokenBudget`). Nothing in the runtime reads it today, so setting it changes no behaviour. Do not rely on it as a control; use the platform bounds above, and the balance ceiling, and size the tree deliberately. This page will say so plainly until that changes.
+> **`limits` is a declared field, not an enforced one.** The `Agent` contract carries an optional `limits` object with three fields — `maxDepth`, `maxSpawns` and `tokenBudget`. Nothing reads it, so setting it changes no behaviour, and an unset value is not a disabled control: it simply bounds nothing.
+>
+> Two clarifications, because a reader is most likely to reach for this field precisely when they want a ceiling:
+>
+> - **`maxDepth` describes a real bound, but this field is not what sets it.** Nesting depth is capped by the Agent Runtime itself, per deployment, and it refuses a delegation past the ceiling before the child ever starts. Declaring a different `maxDepth` here does not move it.
+> - **`maxSpawns` and `tokenBudget` have no ceiling behind them at all.** For spend, the real control is the balance ceiling described above.
+>
+> This callout previously listed a fourth field, `maxFanout`. That field was removed from the contract on 2026-09-01 and a manifest declaring it is now rejected, so two example snippets elsewhere in these docs have been corrected too. Do not rely on `limits` as a control; use the platform bounds above, and the balance ceiling, and size the tree deliberately. This page will say so plainly until that changes.
 
 ---
 

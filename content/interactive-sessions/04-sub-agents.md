@@ -79,7 +79,6 @@ jobs:
       composition:
         limits:
           maxDepth: 3
-          maxFanout: 4
           maxSpawns: 12
 ```
 

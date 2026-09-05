@@ -98,7 +98,6 @@ with:
   composition:
     limits:
       maxDepth: 3
-      maxFanout: 4
       maxSpawns: 16
     allowedSubAgents: [policy-researcher, data-reviewer]
 ```
