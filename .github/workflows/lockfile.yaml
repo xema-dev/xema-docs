@@ -38,8 +38,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: lockfile-${{ github.ref }}
-  cancel-in-progress: true
+  # A push to `main` is a VERDICT on that commit, so it keys per SHA and is
+  # never cancelled: a per-ref group with `cancel-in-progress: true` kills
+  # the merged commit's own run the moment the next commit lands, and the
+  # commit then carries no verdict at all. Measured fleet-wide before this
+  # posture existed: 40% and 36% `cancelled` rates on main pushes, against
+  # 0% in the repositories that had adopted it. A PR still cancels, which is
+  # what the ref test below expresses.
+  group: lockfile-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'shared' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   lockfile:
