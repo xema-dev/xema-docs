@@ -30,6 +30,7 @@ This section is the public reference for Xema OS — for org admins choosing wha
 | [Agent Composition](./agent-composition/) | Recursive agent tree, agent lifecycle, Model Resolution Matrix |
 | [Shell](./shell.md) | The unified command surface, WebSocket protocol, sandbox terminal |
 | [Store](./store.md) | The five Store capabilities, listing lifecycle, install + submission flow |
+| [Editions](./editions.md) | The three installation classes, what each edition can and cannot do, and how to choose one |
 | [Versioning](./versioning.md) | Draft vs published, rollback as a pointer flip, lockfile shape, capability auto-bump |
 | [Apps](./apps.md) | App model, delegated sessions and the signing key ring, audience policies, ingress caps, embed snippet |
 | [SDK / Getting Started](./sdk/getting-started.md) | Author your first biome with the `xema` CLI |
