@@ -110,10 +110,11 @@ Command names carry no `xema` prefix — that prefix belongs to the [CLI](./cli.
 | `db query` | `xema-shell:db.query@1` | yes | Run a read-only SQL query through the database explorer |
 | `db migrate` | `xema-shell:db.migrate@1` | **no** | Trigger a migrations run for a database |
 | `run <ref>` | `xema-shell:run-object@1` | **no** | Invoke the capability bound to an XVFS object |
-| `grant <subject> <capability> …` | `xema-shell:grant@1` | **no** | Create a capability grant through `authorization-api` |
 | `biome install <ref>` | `xema-shell:biome.install@1` | **no** | Install a biome into the current environment |
 | `biome publish <path>` | `xema-shell:biome.publish@1` | **no** | Publish a biome to the [Store](./store.md) |
 | `db attach` / `db detach` | `xema-shell:db.attach@1` / `.detach@1` | **no** | Attach or detach a database from a project |
+
+There is no `grant` command. The Shell creates no capability grants: conferring authority is done by an organisation administrator through the org-admin Grants screen, so that the grant is written under that administrator's own authority rather than under a service account's.
 
 `run`, `biome install`, `biome publish`, `db attach` and `db detach` are declared and reachable but not yet backed by their downstream service call — each returns a typed pending status and a non-zero exit rather than doing anything. `memory recall` is the same: it makes no `memory-api` call, so agents use the `memory:recall@1` capability instead (see [Memory](./memory.md)). `capabilities explain` parses the ref and returns its parts, but its `binding` field is always `null` while the router's resolver is a stub — it tells you the ref is well-formed, not that the capability exists. The descriptors are live and the shape is stable; the behaviour behind those is not.
 
