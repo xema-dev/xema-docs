@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # 22, not 20: `astro` declares `engines.node: >=22.12.0`, as do
           # `@astrojs/compiler-rs` and `@astrojs/prism`. Node 20 is excluded
