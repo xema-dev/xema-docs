@@ -1,13 +1,23 @@
 # Capability refs this site publishes that NO producer in the platform publishes.
 #
-# Enforced by `tooling/boundaries/check-docs-capability-refs.mjs` in the
-# xema-monorepo aggregator (`pnpm run check:docs-capability-refs`). That check
-# reads every `<domain>:<name>@<major>` printed under `content/` and `src/` and
-# requires each one to be produced somewhere in code — an authorization-api seed,
-# `INITIAL_CAPABILITY_SEED`, a `*.capability.contribution.json`, a
-# `@XemaCapability` decorator or ref table, a manifest's `exposesCapabilities`,
-# a Shell built-in, or a public HTTP route annotated so the ref is DERIVED at
-# boot. Anything else must be declared here, or the gate fails.
+# NOTHING ENFORCES THIS LEDGER. Measured 2026-09-06, and said here rather than
+# discovered: the aggregator check this header used to name in the present tense
+# — check-docs-capability-refs.mjs, written without backticks because a
+# backticked repo path is a claim that the file exists — was added 2026-08-11
+# (f5246ffa0) and DELETED 2026-08-24 by 91b481ad1, "retire seven doc-policing
+# checks — prose drift is not a deploy failure". It is wired to no npm script in
+# the aggregator today. Controls, same query shape: an ADD/DELETE probe on
+# check-stack-confidentiality.mjs returns its add, and a fabricated gate name
+# returns nothing.
+#
+# So the rule below is a CONVENTION whose only reader is a person, and it is
+# kept for the reason it was written: every `<domain>:<name>@<major>` printed
+# under `content/` and `src/` should be produced somewhere in code — an
+# authorization-api seed, `INITIAL_CAPABILITY_SEED`, a
+# `*.capability.contribution.json`, a `@XemaCapability` decorator or ref table,
+# a manifest's `exposesCapabilities`, a Shell built-in, or a public HTTP route
+# annotated so the ref is DERIVED at boot. Anything else belongs here. Resolve a
+# claim yourself before trusting it; no run will tell you.
 #
 # WHY A SIDECAR AND NOT AN INLINE MARKER
 # --------------------------------------
@@ -25,13 +35,14 @@
 #   unpublished:  named as a REAL capability — by this site and usually by the
 #                 platform's own contracts and API descriptions too — and
 #                 produced by nothing. That is a debt, so each entry must say
-#                 what is `owed:`, and the gate prints the whole list on every
-#                 successful run.
+#                 what is `owed:`. The deleted gate printed the whole list on
+#                 every successful run; nothing prints it now.
 #
 # Both are scoped by `files:`. The same string on a page that did not invent it
 # is a different claim and may well be a typo for a real ref, so a declaration
-# never silences a ref site-wide. Entries go STALE and fail when the ref gains a
-# producer, disappears from the docs, or leaves one of its listed files.
+# never silences a ref site-wide. An entry goes STALE when the ref gains a
+# producer, disappears from the docs, or leaves one of its listed files — and
+# staleness is now silent, so re-derive an entry before relying on it.
 
 illustrative:
   hello:greet@1:
@@ -98,8 +109,11 @@ illustrative:
     reason: >-
       The site's standing fictional HIGH-RISK capability, used on two pages to make execution-context
       scoping and the capability-vs-MCP-tool distinction concrete. Every use is prefixed "Example:" /
-      "Worked example:". Xema ships no banking connector, and the only occurrence in code is a policy
-      TEST fixture (authorization-api `policies/xema_test.rego`).
+      "Worked example:". Xema ships no banking connector, and no producer publishes this ref or ever
+      will. This entry used to cite the one code occurrence as a policy TEST fixture in a `.rego`
+      file; that citation is dropped rather than repointed, because the OPA / policy-distributor
+      plane it belonged to is retired (owner ruling R-4) and the fixture goes with it. The claim that
+      matters — a fictional capability with no producer — never depended on it.
     files:
       - content/xema-os/execution-contexts.md
       - content/xema-os/mcp-and-capabilities.md

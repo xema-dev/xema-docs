@@ -11,7 +11,7 @@ A policy decision is data, not a stack trace. The contract lives in `@xemahq/ker
 ```ts
 interface PolicyDecision {
   kind:                          PolicyDecisionKind;
-  reason?:                       string;                  // stable wire code from the OPA bundle
+  reason?:                       string;                  // stable wire code from the authorization plane
   obligations?:                  readonly PolicyObligation[];
   routeHints?:                   RouteHint;
   credentialBindingId?:          string;                  // allow-only; opaque, never a secret
@@ -148,7 +148,7 @@ authorization-api.policyCheck(context)
     ├─ Layer 1: ReBAC — is the subject in a relation that grants this?
     │             (membership, ownership, role assignment, install grant)
     │
-    ├─ Layer 2: ABAC — does the policy bundle for the active environment allow it?
+    ├─ Layer 2: ABAC — do the attribute rules for the active environment allow it?
     │             (Space classification, environment reach ceiling, risk tier)
     │
     └─ Layer 3: Obligations + RouteHints — what must the caller honour?
@@ -174,7 +174,7 @@ Every denial carries a stable `reason` code. The Shell's `why-denied <auditId>` 
 }
 ```
 
-Reason codes are stable wire strings owned by the OPA bundle: the frontend renders human-readable copy from the code, and an agent matches structurally against the code to self-correct.
+Reason codes are stable wire strings owned by the authorization plane, drawn from a closed set rather than composed as prose: the frontend renders human-readable copy from the code, and an agent matches structurally against the code to self-correct.
 
 ---
 
