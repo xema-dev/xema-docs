@@ -126,12 +126,14 @@ The agent-facing entry point is `xema-shell:run@1`, which always returns structu
 
 ## `safeForAgents` and the Shell-vs-capability rule
 
-Not every command should be reachable by every agent. `safeForAgents` is a per-command flag in the `ShellCommandDescriptor`, enforced by `xema-capability-router`:
+Not every command should be reachable by every agent. `safeForAgents` is declared on the command and carried onto its **capability**, where the platform enforces it at the two boundaries an agent crosses: the session launch resolver refuses to arm a vetoed capability, and the capability router refuses an agent invocation of one. Neither a grant, a role, an org baseline nor a privileged human's authority overrides it, and a human may still run the command.
 
 - `safeForAgents=true` — discovery, inspection, help, concept lookup, `why-denied`, `doctor`, read-only `ls` / `cat` / `inspect`, and read-only database introspection.
 - `safeForAgents=false` — destructive admin actions, lifecycle transitions like `biome publish`, migrations, anything that mutates a Store listing, anything that grants capabilities.
 
-Agents needing a `safeForAgents=false` action still go through the gateway with the underlying capability directly. The Shell is the discovery surface for them, not a bulk-action surface.
+An agent needing a `safeForAgents=false` action reaches for the underlying capability directly — a separate ref with its own declaration and its own authority — rather than the Shell command that wraps it. The Shell is the discovery surface, not a bulk-action surface.
+
+`run` is the sharpest case and the reason this is a fence rather than a label: it dispatches an arbitrary target capability, so an agent holding it would carry a per-capability limit and a general way around it at the same time.
 
 ---
 
