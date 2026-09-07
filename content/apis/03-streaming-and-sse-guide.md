@@ -248,6 +248,7 @@ This section is auto-generated from every backend service's event descriptor reg
 | `project.bootstrap.requested` | Project | PROJECT | project-registry-api | Bootstrap was requested for the project. |
 | `project.integration.updated` | Project | PROJECT | project-registry-api | A project integration was updated. |
 | `project.manifest.updated` | Project | PROJECT | project-registry-api | The project manifest was updated. |
+| `project.member.removed` | Project | PROJECT | project-registry-api | A user was removed from a project. |
 | `project.project.created` | Project | PROJECT | connector-gateway-api | Project created — auto-provision Gitea repository. |
 | `project.project.created` | Project | PROJECT | project-registry-api | A project was created. |
 | `project.project.deleted` | Project | PROJECT | connector-gateway-api | Project deleted — cascade delete repositories. |

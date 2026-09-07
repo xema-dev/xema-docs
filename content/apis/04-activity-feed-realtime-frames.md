@@ -175,6 +175,7 @@ Every event a subscriber may receive over the unified realtime stream. Materiali
 | `project.bootstrap.requested` | PROJECT | project-registry-api | Bootstrap was requested for the project. |
 | `project.integration.updated` | PROJECT | project-registry-api | A project integration was updated. |
 | `project.manifest.updated` | PROJECT | project-registry-api | The project manifest was updated. |
+| `project.member.removed` | PROJECT | project-registry-api | A user was removed from a project. |
 | `project.project.created` | PROJECT | connector-gateway-api | Project created — auto-provision Gitea repository. |
 | `project.project.created` | PROJECT | project-registry-api | A project was created. |
 | `project.project.deleted` | PROJECT | connector-gateway-api | Project deleted — cascade delete repositories. |
