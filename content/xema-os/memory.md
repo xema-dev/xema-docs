@@ -4,7 +4,7 @@
 
 **Memory** is the structured, scoped, recall-able knowledge plane of Xema OS. It is how agents accumulate durable context across sessions and workflows without having to re-upload that context on every prompt. Memory is owned by `memory-api`; every memory document is typed, anchored to a [Space](./spaces.md), and carries provenance.
 
-Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, a scope, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:store@1`) — never through raw blob reads.
+Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, an owner Space, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:store@1`) — never through raw blob reads.
 
 ---
 
@@ -18,17 +18,21 @@ The same digest is used for the cheap re-summarize gate during writes: when `sum
 
 ---
 
-## The scope hierarchy
+## The ownership hierarchy
 
-`MemoryScope` is a closed enum. A memory is anchored to exactly one scope; the request context binds the matching tenant IDs (no agent ever supplies them directly).
+Memory declares no ownership vocabulary of its own. Ownership is the platform's one Space vocabulary, `SpaceKind`, narrowed to the three tiers memory owns:
 
-| Scope | Owner | Typical use |
+| Tier | Owner | Typical use |
 |---|---|---|
-| `ORG` | One organization | Org-wide doctrine, naming conventions, shared lessons |
-| `PROJECT` | One project inside an org | Project-specific patterns, recurring corrections, in-flight decisions |
-| `USER` | One end user | Personal preferences, drafts, individual lessons |
+| `org` | One organization | Org-wide doctrine, naming conventions, shared lessons |
+| `project` | One project inside an org | Project-specific patterns, recurring corrections, in-flight decisions |
+| `user` | One end user | Personal preferences, drafts, individual lessons |
 
-Precedence on recall is most-specific-wins, mirroring the [Space hierarchy](./spaces.md). A user-scoped memory shadows a project-scoped memory of the same kind and slug; a project-scoped memory shadows an org-scoped one.
+A memory is anchored to exactly one of them and records its owner as a canonical Space URI — `xema://orgs/<orgId>`, `xema://orgs/<orgId>/projects/<projectId>`, or `xema://users/<userId>`. The server resolves that address from the request context; no agent ever supplies it. A tier memory does not own is refused by name at the door rather than stored.
+
+Ownership is a different fact from tenancy. A user-owned memory still lives inside exactly one organization, and that organization is what every query is bound to.
+
+Precedence on recall is most-specific-wins, following the [Space hierarchy](./spaces.md). A user-owned memory shadows a project-owned memory of the same kind and slug; a project-owned memory shadows an org-owned one.
 
 ---
 
@@ -57,7 +61,9 @@ The path is computed and stored as a denormalized cache:
 /memories/{scopeSegment}/{kindSegment}/{slug}.md
 ```
 
-Identity is `(organizationId, projectId, userId, scope, kind, slug)` canonicalised by the server. Slugs are lowercase kebab-case, max 64 characters.
+The scope segment is the owner's Space tier — `org`, `project` or `user` — so the path spells the same vocabulary the owner Space URI does.
+
+Identity is `(organizationId, ownerSpaceUri, kind, slug)` canonicalised by the server. Slugs are lowercase kebab-case, max 64 characters.
 
 ---
 
@@ -87,7 +93,7 @@ Reads and writes route to the correct shard via `CommitmentCacheService`, mirror
 
 ## Related concepts
 
-- [Spaces](./spaces.md) — the broader hierarchy memory scopes mirror.
+- [Spaces](./spaces.md) — the ownership hierarchy memory's owner tiers are drawn from.
 - [Skills](./skills/) — durable how-to knowledge owned by `skill-registry-api`, complementary to memory.
 - [Capabilities](./capabilities.md) — `memory:recall@1` and `memory:store@1` are the only documented entry points.
 - [Policy](./policy.md) — every recall and write is policy-decided like any other capability call.
