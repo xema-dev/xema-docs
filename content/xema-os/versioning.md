@@ -198,5 +198,5 @@ There is no auto-migration. The user (or an org policy) holds the upgrade decisi
 
 ---
 
-**Previous**: [← Store](./store.md)
+**Previous**: [← Editions](./editions.md)
 **Next**: [Apps →](./apps.md)

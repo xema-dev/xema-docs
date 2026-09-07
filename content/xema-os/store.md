@@ -90,4 +90,4 @@ The Store does not own the biome lifecycle — `biome-host-api` does. The Store 
 ---
 
 **Previous**: [← Shell](./shell.md)
-**Next**: [Versioning →](./versioning.md)
+**Next**: [Editions →](./editions.md)
