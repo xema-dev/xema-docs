@@ -16,7 +16,6 @@ contributions/
 ├── workflow.escalation.contribution.json
 ├── skill.documentation.contribution.json
 ├── connector.github.contribution.json
-├── mount-source.cve-feed.contribution.json
 └── document-template.invoice.contribution.json
 ```
 
@@ -65,7 +64,6 @@ The contribution kinds that benefit from a directory:
 - **agent-skill** — the canonical example. Skills are folder bundles with `SKILL.md`, `reference/`, `scripts/`, `assets/`, and recursive sub-skills.
 - **agent-definition** — when the agent ships templated prompts, intrinsic-tool fixtures, or per-language variants.
 - **workflow-definition** — when the workflow ships YAML plus support scripts or test fixtures.
-- **mount-source** — when the source ships a runtime module plus declarative config.
 - **document-template** — when the template ships theme assets and snippets.
 
 ```jsonc
@@ -129,7 +127,6 @@ A short, illustrative slice. The authoritative list is the `ContributionKind` en
 | `deliverable-spec` | inline | typed manifest |
 | `document-template` | directory | template assets |
 | `document-theme` | directory | theme assets |
-| `mount-source` | directory | module + config |
 | `artifact-type` | inline | typed manifest |
 | `connector-binding` | inline | provider + auth ref |
 | `capability` | inline | ref + schemas |
@@ -164,7 +161,6 @@ Lint failures are typed and structural — the failure message names the file, t
 Older biomes used per-kind top-level directories (`agents/`, `workflows/`, `skills/`, …) and the `xema.content.*` / `xema.modules.*` manifest blocks. Both shapes lift cleanly into `contributions/`:
 
 - Every former `xema.content.agents` entry becomes one `agent-definition` contribution.
-- Every former `xema.modules.mount-sources` entry becomes one `mount-source` contribution.
 - The top-level directories may stay where they are — the contribution files just point at them via `directory`.
 
 The migration is mechanical and idempotent. The codemod `tooling/codegen/biome-content-to-contributions.mjs` (shipped with the AWP collapse phase) walks every biome and produces the `contributions/` directory in place.

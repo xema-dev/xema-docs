@@ -50,6 +50,8 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `signedBy` | string | no | — |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
+| `requiresCapabilitiesForAgents` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
+| `requiresCapabilitiesForService` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `audience` | enum | no | one of: `org`, `operator` |
@@ -76,6 +78,8 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `protocol` | object (discriminated on `kind`) — see **xema.components[].protocol (kind: "none")**, **xema.components[].protocol (kind: "web")**, **xema.components[].protocol (kind: "adapter")**, **xema.components[].protocol (kind: "http")**, **xema.components[].protocol (kind: "worker")**, **xema.components[].protocol (kind: "job")** | yes | — |
 | `hostAbi` | object — see **xema.components[].hostAbi** | no | — |
 | `scheduler` | enum | no | one of: `platform`, `runtime` |
+| `installationClass` | enum | no | one of: `core`, `agentic`, `optional` |
+| `compositionTrustClass` | enum | no | one of: `custody`, `platform`, `untrusted` |
 | `executionModes` | enum[] | yes | entries one of: `materialized`, `web-hosted`, `shared-host`, `composed`, `isolated`, `runner` |
 | `requirements` | object — see **xema.components[].requirements** | yes | — |
 
@@ -122,6 +126,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 |---|---|---|---|
 | `kind` | literal "tarball" | yes | — |
 | `uploadId` | string | yes | — |
+| `expectedSha256` | string | no | pattern `/^[a-f0-9]{64}$/` |
 
 ### `xema.bundleSource (kind: "oci")`
 
@@ -254,7 +259,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `kind` | enum | yes | one of: `mount-source`, `workflow-step`, `agent-skill`, `agent-kernel`, `work-kind`, `widget-kind`, `surface-kind`, `artifact-type`, `template-kind`, `design-system-kind`, `template`, `design-system`, `inquiry-kind`, `role-capability`, `biome-install-schema`, `icon`, `project-kit`, `provisioning-scaffold`, `connector-adapter`, `inbound-endpoint`, `workflow-config`, `deliverable-spec`, `workspace-manifest`, `tool-profile`, `mcp-catalog`, `capability`, `resource-ownership`, `resource-definition`, `stage-machine`, `search-type`, `credential-strategy`, `canonical-object-type`, `ingestion-source` |
+| `kind` | string | yes | — |
 | `id` | string | yes | pattern `/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/` |
 | `manifest` | unknown (free-form JSON) | yes | — |
 
@@ -441,6 +446,8 @@ A web biome is a static frontend bundle the host shell loads; it contributes pag
 | `signedBy` | string | no | — |
 | `contributions` | object — see **xema.contributions** | no | — |
 | `requiresCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
+| `requiresCapabilitiesForAgents` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
+| `requiresCapabilitiesForService` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `exposesCapabilities` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*@\d+$/` |
 | `ownsCapabilityDomains` | string[] | no | entries: pattern `/^[a-z][a-z0-9-]*$/` |
 | `audience` | enum | no | one of: `org`, `operator` |

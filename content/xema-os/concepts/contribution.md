@@ -10,7 +10,7 @@ stability: stable
 
 A contribution is one row in a biome's [manifest](./manifest.md). The
 `ContributionKind` enum is closed (capability, shell-command, agent,
-skill, tool, workflow, document-template, mount-source, …) and each
+skill, tool, workflow, document-template, connector-adapter, …) and each
 kind has a strict payload schema. At install time, the kernel writes
 each contribution as a `contribution-entry` [object](./object.md) so
 the platform always knows who declared what. Contributions are

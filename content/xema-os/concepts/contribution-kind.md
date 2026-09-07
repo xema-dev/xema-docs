@@ -45,7 +45,6 @@ if you ship it as a contribution — use the delivery path named in its note ins
 
 | `kind` | Enum member | Ingestion | Note |
 |---|---|---|---|
-| `mount-source` | `ContributionKind.MountSource` | domain-service handler / self-registration (category 2) | Ingested by `@xemahq/biome-sdk`'s `MountSourceKindRegistry`, which each owning service self-registers its mount-source kinds into and which the workspace mount-resolver reads. |
 | `workflow-step` | `ContributionKind.WorkflowStep` | biome-host parser (`WorkflowStepParser`) | — |
 | `agent-skill` | `ContributionKind.AgentSkill` | biome-host parser (`AgentSkillParser`) | — |
 | `agent-kernel` | `ContributionKind.AgentKernel` | biome-host parser (`AgentKernelParser`) | — |
@@ -80,7 +79,6 @@ if you ship it as a contribution — use the delivery path named in its note ins
 Do not ship a contribution of these kinds expecting it to be picked up by
 `biome-host-api`:
 
-- `mount-source` — domain-service handler / self-registration (category 2)
 - `biome-install-schema` — RESERVED — no contribution ingestion (category 3)
 - `icon` — RESERVED — no contribution ingestion (category 3)
 - `provisioning-scaffold` — RESERVED — no contribution ingestion (category 3)
