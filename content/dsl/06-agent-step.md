@@ -61,7 +61,25 @@ Override the Agent's normal model resolution for this job. Prefer a strategy whe
 with:
   model:
     kind: strategy
-    modelClass: review # coding | review | creative | planning | utility
+    modelLane: general-purpose
+    temperature: 0.2
+```
+
+`modelLane` names a **model lane** — the kind of work this invocation is, which the
+organisation binds to a concrete model centrally. Lanes are an open vocabulary: none
+is built into the platform, and each one is declared by a `model-lane` contribution,
+so the lanes you may name are the ones the biomes you have installed declare. A
+standard install gets four from the agent runtime — `general-purpose`, `coder`,
+`planner` and `light`. Naming a lane the organisation has not declared is refused
+when the Workflow is authored, not silently at run time.
+
+`modelLane` is optional. Omit it to route through the strategy and let the
+organisation's declared default binding answer:
+
+```yaml
+with:
+  model:
+    kind: strategy
     temperature: 0.2
 ```
 
@@ -88,7 +106,7 @@ with:
       alias: evidence-reviewer
       modelOverride:
         kind: strategy
-        modelClass: review
+        modelLane: light
 ```
 
 For recursive composition limits, use `composition.limits`; `composition.allowedSubAgents` can narrow which delegates the coordinator may invoke.

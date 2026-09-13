@@ -75,7 +75,7 @@ jobs:
         - slug: policy-researcher
           modelOverride:
             kind: strategy
-            modelClass: utility
+            modelLane: light
       composition:
         limits:
           maxDepth: 3
