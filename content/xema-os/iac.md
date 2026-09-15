@@ -66,8 +66,8 @@ resources:
     id: default-rule
     spec:
       selector: {}          # empty selector = the org default rule
-      targetKind: model_class
-      targetModelClass: balanced
+      targetKind: strategy
+      targetModelLane: general-purpose
       priority: 0
       isDefault: true
 
@@ -194,11 +194,25 @@ The `--stack` flag defaults to the manifest's `stack` field, then to `default`.
 
 The Xema Terraform provider lives at **`github.com/xema-dev/xema-terraform-provider`** and is built on the Terraform Plugin Framework. Unlike the `xema.yaml` path, Terraform does not use a Stack — **Terraform Core owns its own state**, so drift is Terraform-exact and managed entirely through `terraform plan` / `terraform apply`.
 
-Each `XemaResourceKind` is exposed as `xema_<kind_with_underscores>` (so `model-resolution-rule` becomes `xema_model_resolution_rule`). The three wired kinds map to three resources:
+Each `XemaResourceKind` is exposed as `xema_<kind_with_underscores>` (so `model-resolution-rule` becomes `xema_model_resolution_rule`). Fifteen kinds are wired:
 
+- `xema_agent`
+- `xema_biome_install`
+- `xema_deliverable_spec`
+- `xema_environment`
+- `xema_grant`
+- `xema_model`
+- `xema_model_resolution_rule`
+- `xema_org`
+- `xema_portal`
 - `xema_project`
 - `xema_provider`
-- `xema_model_resolution_rule`
+- `xema_role`
+- `xema_skill`
+- `xema_space`
+- `xema_team`
+
+Each has a matching `data` source, plus one read-only `xema_distribution_lock`.
 
 A minimal `main.tf`:
 
@@ -238,7 +252,9 @@ resource "xema_model_resolution_rule" "default" {
 }
 ```
 
-The provider's configuration block reads `endpoint`, `org`, and `token`, each with a matching `XEMA_*` environment-variable fallback. Resources for the twelve not-yet-wired kinds are not exposed; they arrive as their owning capabilities are wired.
+The provider's configuration block reads `endpoint`, `org`, and `token`, each with a matching `XEMA_*` environment-variable fallback.
+
+HCL attributes are the snake_case spelling of the `spec` field a `xema.yaml` resource declares, so the two surfaces stay readable against each other. For a model-resolution rule that means `selector.model_lane` and `target_model_lane` — the model lane the rule matches on and the lane it routes through, matching `modelLane` and `targetModelLane` in the YAML above.
 
 ---
 

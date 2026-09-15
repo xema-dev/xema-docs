@@ -80,7 +80,7 @@ spec:
       - slug: architecture-doc-writer
         defaultModel:
           kind: strategy
-          modelClass: creative
+          modelLane: planner
 ```
 
 The primary agent's intrinsic delegates (declared in its source frontmatter `permission.task`) form the floor — they cannot be removed by the manifest. Manifest-declared sub-agents are layered on top. A session or workflow step may further refine model overrides per-slug, but never remove a manifest-declared delegate.
