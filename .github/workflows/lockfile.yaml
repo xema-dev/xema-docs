@@ -30,7 +30,12 @@ name: Lockfile
 
 on:
   push:
-    branches: [main]
+    # `develop` is the active integration branch of the three-rung model, and
+    # until this line a push to it created NO RUN AT ALL in this repository.
+    # This is the only VERIFICATION workflow here — build-image.yaml,
+    # deploy-pages.yaml and release-arm64.yaml publish or deploy the docs site
+    # and are deliberately left on main alone.
+    branches: [main, develop]
   pull_request:
   workflow_dispatch:
 
