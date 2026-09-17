@@ -212,7 +212,7 @@ A server biome ships backend contributions — agents, skills, workflows, option
 | `exposesCapabilities` | string[] | no | — |
 | `capabilities` | array of objects — see **xema.components[].protocol.capabilities[]** | no | — |
 | `databaseKey` | string | no | pattern `/^[a-z][a-z0-9-]*$/` |
-| `databaseExtensions` | enum[] | no | entries one of: `vector`, `pg_trgm`, `pgcrypto` |
+| `databaseExtensions` | string[] | no | entries: max 63 chars; entries: pattern `/^[a-z_][a-z0-9_-]*$/` |
 
 ### `xema.components[].protocol (kind: "worker")`
 
