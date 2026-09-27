@@ -84,6 +84,23 @@ jobs:
       - name: Every tracked source file is readable by search
         run: node tooling/boundaries/lib/source-readability.mjs
 
+      # The arm64 supplement probe decides whether `release-arm64.yaml`
+      # REBUILDS and RE-MERGES `:<contentHash>`. A wrong answer is expensive in
+      # both directions and NEITHER shows up as a failure — wrongly `true`
+      # republishes the coordinate under a new digest and moves any seal that
+      # names it; wrongly `false` strands it amd64-only forever, because the
+      # amd64 matrix is content-addressed and never re-selects a coordinate
+      # that already exists. So the probe is graded here, in the repository's
+      # one verification workflow, rather than only in the release lane that
+      # cannot fail safely.
+      #
+      # `npm run` rather than a second `node --test` spelling: package.json
+      # holds the one declaration of the command, so this step and a developer
+      # running it by hand cannot diverge. The test itself imports only node
+      # builtins, so it needs nothing the install provides.
+      - name: The arm64 supplement probe answers both directions
+        run: npm run check:arm64-supplement-probe
+
       # AFTER the install, unlike the gate above, because this one parses YAML
       # and `js-yaml` is a declared devDependency rather than a node builtin.
       #

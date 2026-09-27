@@ -162,9 +162,63 @@ jobs:
             echo "amd64_source=${IMAGE}:${COMMIT}"
           } >> "$GITHUB_OUTPUT"
 
+      # IS THE SUPPLEMENT STILL OWED? This lane rebuilt and re-merged
+      # UNCONDITIONALLY, and the `imagetools create -t :<contentHash>` below
+      # republishes the canonical coordinate BY DESIGN — so a run that
+      # supplements an already-complete index does no useful work and MOVES A
+      # TAG somebody may already have sealed. `docs-api` is a subject in the
+      # appliance locks (see the file header), so a moved digest here is a
+      # refused re-seal, not an untidiness.
+      #
+      # Measured in xema-cultivars, on `app-forge-api:723843b157…`: arm64 run
+      # 35538586977 published index sha256:432daa9a… on 2026-09-20;
+      # xema-distributions SEALED that digest into five editions on 2026-09-21
+      # 10:17; a RE-RUN of a sibling run armed off the SAME build run, at the
+      # SAME commit, whose attempt 1 had one service CANCELLED, rebuilt arm64 at
+      # 14:01 and re-merged to sha256:6321fd70…. From 18:10 `seal-image-digests`
+      # refused — correctly — and five of nine editions could not be re-sealed.
+      #
+      # THIS LANE IS NOT A COPY of that one. The arm64 lanes in this fleet are
+      # owned per repository and differ by hundreds of lines; what they share is
+      # the unconditional merge, so each is ported separately. The PROBE, by
+      # contrast, is vendored BYTE-IDENTICAL from the copy `xema-deploy` and
+      # `xema-host-web` carry — the self-contained variant, because this
+      # repository has no `compute-service-build-matrix.mjs` to import the
+      # credential helper from. Keeping the three files byte-identical is what
+      # makes their drift detectable by `diff` alone; do not edit this copy in
+      # isolation.
+      #
+      # The rebuild cannot help but move the digest: no `SOURCE_DATE_EPOCH` is
+      # set anywhere in this repository, so the image config's `created` and
+      # `history[].created` are wall-clock and the manifest digest changes even
+      # when every layer byte is identical. amd64 does not move only because it
+      # is never rebuilt here — the merge REFERENCES `:${COMMIT}`.
+      #
+      # It is a PROOF, not a read: the arm64 child is resolved by digest and its
+      # architecture taken from the image CONFIG. A descriptor-only check would
+      # skip a mislabelled index forever, and this lane is the only thing that
+      # can repair one. Anything other than 200/404 THROWS — a 403 on a package
+      # this repo cannot read is indistinguishable from an image that was never
+      # pushed, and a guess either moves a sealed tag or strands a coordinate
+      # amd64-only. A red arm64 run costs nothing on the prod path: this lane is
+      # `workflow_run`, off the release graph.
+      #
+      # Credentials are the SAME pair the registry login below uses, for the
+      # same reason: the `docs-api` GHCR package is linked to another
+      # repository, so `github.token` cannot read it either.
+      - name: Is an arm64 supplement still owed for this coordinate?
+        id: supplement
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: node tooling/release/arm64-supplement-needed.mjs
+
       # QEMU is needed for EMULATED arm64 on an amd64 runner. Remove once this
       # job runs on native arm64 runners.
       - name: Set up QEMU (emulated arm64)
+        if: steps.supplement.outputs.needed == 'true'
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Set up Docker Buildx
@@ -189,6 +243,7 @@ jobs:
       # single-arch image, never a half-merged index.
       - name: Build & push arm64 image (per-arch tag)
         id: arm_build
+        if: steps.supplement.outputs.needed == 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -219,7 +274,18 @@ jobs:
         with:
           cosign-release: v2.6.3
 
+      # Gated on the SAME probe as the build above, and that pairing is the
+      # invariant: this is the only step that republishes `:<contentHash>`, so
+      # it must never run without a freshly built arm64 image to merge.
+      #
+      # Everything BELOW stays ungated on purpose. On the skip path the index
+      # already carries both platforms, so resolving its digest, signing it and
+      # attesting it all still run — which is also what repairs a coordinate
+      # whose earlier run merged and then died before signing. None of those
+      # steps republishes the tag: a cosign signature is a separate object, so
+      # the digest they act on is the one the merge left.
       - name: Merge arm64 into the content-addressed multi-arch index
+        if: steps.supplement.outputs.needed == 'true'
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
