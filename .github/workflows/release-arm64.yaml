@@ -213,7 +213,7 @@ jobs:
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-        run: node tooling/release/arm64-supplement-needed.mjs
+        run: node tooling/ci/generated/arm64-supplement-needed.mjs
 
       # QEMU is needed for EMULATED arm64 on an amd64 runner. Remove once this
       # job runs on native arm64 runners.
