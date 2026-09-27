@@ -14,6 +14,7 @@
   "bugs": "https://github.com/xema-dev/xema-docs/issues",
   "scripts": {
     "build": "astro build",
+    "check:arm64-supplement-probe": "node --test tooling/release/arm64-supplement-needed.test.mjs",
     "check:concept-frontmatter": "node tooling/boundaries/check-concept-frontmatter.mjs --self-test && node tooling/boundaries/check-concept-frontmatter.mjs",
     "check:source-readability": "node tooling/boundaries/lib/source-readability.mjs",
     "dev": "astro dev",
