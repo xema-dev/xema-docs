@@ -101,6 +101,12 @@ jobs:
       - name: The arm64 supplement probe answers both directions
         run: npm run check:arm64-supplement-probe
 
+      # docs-api writes its own KernelState registry key (no Xema SDK), so it
+      # must apply XEMA_KERNEL_STATE_KEYSPACE_PREFIX exactly as the SDK does —
+      # a shared etcd fences each deployment to its own range. Node builtins only.
+      - name: docs-api registers under the deployment keyspace
+        run: npm run check:service-registry-keyspace
+
       # AFTER the install, unlike the gate above, because this one parses YAML
       # and `js-yaml` is a declared devDependency rather than a node builtin.
       #

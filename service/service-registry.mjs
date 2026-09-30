@@ -22,7 +22,16 @@
 //
 // CONTRACT — mirrored from the SDK, not invented
 // ----------------------------------------------
-// Key    : /xema/services/<name>/<instanceId>/spec
+// Key    : <keyspace>/xema/services/<name>/<instanceId>/spec
+//          where <keyspace> is XEMA_KERNEL_STATE_KEYSPACE_PREFIX (e.g.
+//          `/deployments/presenca-dev`), or empty when it is unset. The SDK
+//          applies the same prefix as an etcd namespace at the connection
+//          (kernel-state-runtime >= 0.6.2), validated by the same shape and
+//          REFUSED rather than repaired when malformed. A deployment that
+//          shares one etcd is fenced by an etcd user granted exactly that
+//          range, so a writer that ignored the prefix would be refused
+//          PERMISSION_DENIED — or, on an unfenced etcd, would write into the
+//          root keyspace another deployment reads.
 // Value  : { descriptor, leaseId, registeredAt, leaseExpiresAt }   <- NOT a bare
 //          descriptor; consumers read the wrapper.
 // Lease  : TTL 30s, renewed every 15s. Three consecutive renew failures exit the
@@ -41,12 +50,34 @@ const LEASE_TTL_SECONDS = 30;
 const RENEW_INTERVAL_MS = 15_000;
 const MAX_CONSECUTIVE_RENEW_FAILURES = 3;
 const KEY_PREFIX = '/xema/services';
+const KEYSPACE_PREFIX_ENV = 'XEMA_KERNEL_STATE_KEYSPACE_PREFIX';
+// Byte-identical to kernel-state-runtime's KEYSPACE_PREFIX_SHAPE.
+const KEYSPACE_PREFIX_SHAPE = /^\/[^\s/]+(?:\/[^\s/]+)*$/;
 
 const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
 
 function env(key) {
   const v = process.env[key]?.trim();
   return v === undefined || v === '' ? undefined : v;
+}
+
+/**
+ * The deployment keyspace every key is written under, or '' when none is
+ * declared. Mirrors kernel-state-runtime's `resolveKeyspacePrefixFromEnv`:
+ * a malformed value THROWS — it must match an etcd role range verbatim, so a
+ * repaired guess would only be refused later, or land somewhere else.
+ */
+export function resolveKeyspacePrefix() {
+  const value = env(KEYSPACE_PREFIX_ENV);
+  if (value === undefined) return '';
+  if (!KEYSPACE_PREFIX_SHAPE.test(value)) {
+    throw new Error(
+      `[service-registry] ${KEYSPACE_PREFIX_ENV}=${JSON.stringify(process.env[KEYSPACE_PREFIX_ENV])} ` +
+        `is not a keyspace prefix. Expected "/<segment>[/<segment>...]" — a leading "/", ` +
+        `no trailing "/", no whitespace (e.g. "/deployments/presenca-dev").`,
+    );
+  }
+  return value;
 }
 
 /**
@@ -193,7 +224,7 @@ export async function registerSelf({ semver }) {
 
   const url = buildSelfUrl();
   const instanceId = `${SERVICE_NAME}-${randomUUID()}`;
-  const key = `${KEY_PREFIX}/${SERVICE_NAME}/${instanceId}/spec`;
+  const key = `${resolveKeyspacePrefix()}${KEY_PREFIX}/${SERVICE_NAME}/${instanceId}/spec`;
 
   const client = new EtcdClient(
     endpoints,
