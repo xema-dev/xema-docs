@@ -40,8 +40,9 @@
 #
 # WHAT THIS DOES: builds, attests, and hands the coordinate to xema-deploy.
 #
-#   `docs-api` is now a full `xema.deploy-service/v3` producer, so a push to
-#   main builds the image, signs it, attests it, and dispatches a deploy. Before
+#   `docs-api` carries everything `xema.deploy-service/v3` verifies, so a push
+#   to main builds the image, signs it, attests it, and ANNOUNCES it to
+#   xema-deploy, which routes it to whichever deployments accept it. Before
 #   that last part the image was built and pushed and then nothing carried it
 #   anywhere — the deployed revision moved only when an operator or a reconcile
 #   happened to re-apply it, so main and the cluster diverged silently.
@@ -128,12 +129,12 @@ env:
   SOURCE_BINDING_PREDICATE_TYPE: https://xema.dev/attestations/deploy-source/v1
   ATTESTATION_OIDC_ISSUER: https://token.actions.githubusercontent.com
 
-  # Deploy hand-off. Value-identical to xema-base's, because xema-deploy
-  # compares these against its own constants and a drift is refused, not
-  # tolerated.
+  # Deploy hand-off. This build ANNOUNCES what it built; xema-deploy decides
+  # which deployments take it, from its own reviewed producer contracts. No
+  # deployment is named here: this file named `xema-prod` after that deployment
+  # was retired, and every dispatch was refused.
   DEPLOY_REPO: xema-dev/xema-deploy
-  DEPLOY_TARGET: xema-prod
-  DEPLOY_SERVICE_PAYLOAD_VERSION: xema.deploy-service/v3
+  IMAGE_SET_ANNOUNCEMENT_PAYLOAD_VERSION: xema.image-set-built/v1
 
 jobs:
   build:
@@ -535,27 +536,38 @@ jobs:
           set -euo pipefail
           if [ -z "${DISPATCH_TOKEN:-}" ]; then
             echo "::error::XEMA_DEPLOY_DISPATCH_TOKEN is not configured on this repository."
-            echo "::error::docs-api is a registered xema.deploy-service/v3 producer, so this build must hand its coordinate to ${DEPLOY_REPO}; without the token it cannot."
+            echo "::error::docs-api announces every built image to ${DEPLOY_REPO}; without the token it cannot."
             echo "::error::Fix: add a PAT with repository-dispatch rights on ${DEPLOY_REPO} as the secret XEMA_DEPLOY_DISPATCH_TOKEN (gh secret set XEMA_DEPLOY_DISPATCH_TOKEN --repo ${GITHUB_REPOSITORY})."
             echo "::error::The image and its tags are already pushed; only the deploy hand-off is missing."
             exit 1
           fi
 
-      - name: Dispatch deploy to xema-deploy
+      # `xema.image-set-built/v1` is a closed set with NO deployment field; the
+      # receiver routes it to every deployment whose producer contract lists
+      # this repository (today none: every deployment running docs-api takes it
+      # from its sealed distribution edition).
+      - name: Announce the built image to xema-deploy
         uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
         with:
           token: ${{ secrets.XEMA_DEPLOY_DISPATCH_TOKEN }}
           repository: ${{ env.DEPLOY_REPO }}
-          event-type: deploy-service
+          event-type: image-set-built
           client-payload: |
             {
-              "payloadVersion": "${{ env.DEPLOY_SERVICE_PAYLOAD_VERSION }}",
-              "deployment": "${{ env.DEPLOY_TARGET }}",
-              "service": "${{ env.SERVICE }}",
-              "sourceRepository": "${{ github.repository }}",
-              "sourceSha": "${{ github.sha }}",
+              "payloadVersion": "${{ env.IMAGE_SET_ANNOUNCEMENT_PAYLOAD_VERSION }}",
               "deployServicesManifestSha256": "${{ steps.predicates.outputs.manifest_sha256 }}",
-              "imageDigest": "${{ steps.bind.outputs.image_digest }}",
-              "sourceRunUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "source": {
+                "repository": "${{ github.repository }}",
+                "ref": "${{ github.ref }}",
+                "sha": "${{ github.sha }}",
+                "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              },
+              "images": [
+                {
+                  "service": "${{ env.SERVICE }}",
+                  "imageDigest": "${{ steps.bind.outputs.image_digest }}",
+                  "runtimeImage": false
+                }
+              ]
             }
 

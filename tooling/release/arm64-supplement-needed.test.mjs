@@ -1,4 +1,6 @@
-// Cases for `tooling/release/arm64-supplement-needed.mjs`.
+// Cases for `tooling/ci/generated/arm64-supplement-needed.mjs` — the copy this
+// repository RUNS, emitted from the aggregator's canonical source. This file is
+// hand-maintained and stays here; only the implementation moved.
 //
 // The probe decides whether the arm64 lane REBUILDS and RE-MERGES. A wrong
 // answer is expensive in both directions and neither shows up as a failure:
@@ -22,7 +24,7 @@ import test from 'node:test';
 import {
   arm64SupplementNeeded,
   declaredArm64Children,
-} from './arm64-supplement-needed.mjs';
+} from '../ci/generated/arm64-supplement-needed.mjs';
 
 const HASH = 'a'.repeat(64);
 const ARM_CHILD = `sha256:${'1'.repeat(64)}`;

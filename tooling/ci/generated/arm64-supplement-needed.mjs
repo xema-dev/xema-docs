@@ -1,84 +1,61 @@
 #!/usr/bin/env node
+// GENERATED from tooling/ci/arm64-supplement-needed.mjs
+// source-sha256: 0f8ef067a4864714f7b8f18db0c1781d024d540f472cbd7ea2ac07fe0824b23a
+// Edit the canonical source, never this copy.
 // ═══════════════════════════════════════════════════════════════════════════
 // DOES THIS COORDINATE STILL NEED AN arm64 SUPPLEMENT?
 //
-// The arm64 lane rebuilt and re-merged UNCONDITIONALLY. `imagetools create -t
-// :<contentHash>` republishes the canonical coordinate by design, so a run that
-// supplements an ALREADY-COMPLETE index does no useful work and MOVES A TAG
-// somebody may already have sealed.
+// An arm64 supplement lane that rebuilds and re-merges UNCONDITIONALLY does
+// more than waste a run. `imagetools create -t :<contentHash>` republishes the
+// canonical coordinate by design, so supplementing an ALREADY-COMPLETE index
+// MOVES A TAG somebody may already have sealed.
 //
-// ── THE MEASURED FAILURE ────────────────────────────────────────────────────
+// ── WHY A RE-RUN MOVES THE DIGEST AT ALL ────────────────────────────────────
 //
-// Measured in xema-cultivars, on `app-forge-api`. THIS LANE IS NOT A COPY of
-// that one — the six arm64 lanes in this fleet differ by hundreds of lines and
-// are owned per repository — but it carries the same unconditional
-// `imagetools create`, so the same re-run moves the same kind of sealed digest
-// here. The port is a port, not a sync.
+// Two builds of the SAME source do not produce the same arm64 manifest unless
+// the build is reproducible. Absent a `SOURCE_DATE_EPOCH`, the image config's
+// `created` and `history[].created` are WALL-CLOCK, so a rebuild changes the
+// config digest and therefore the manifest digest even when every layer byte is
+// identical. The amd64 side does not move only because it is never rebuilt by a
+// supplement lane — the merge REFERENCES its existing per-commit tag.
 //
-// `ghcr.io/xema-dev/app-forge-api:723843b157…` (source commit bc1a7e2c43):
-//
-//   2026-09-20 21:24  arm64 run 35538586977 attempt 1 — built arm64
-//                     sha256:031eb533…, merged -> index sha256:432daa9a…
-//   2026-09-21 10:17  xema-distributions commit 67d5602 SEALED sha256:432daa9a…
-//                     into appliance-base, cloud, editorial, oss, xema-internal
-//   2026-09-21 14:01  arm64 run 35540929618 ATTEMPT 2 — a re-run of a run that
-//                     armed off the SAME build run 35537948806, at the SAME
-//                     commit, whose attempt 1 had this one service CANCELLED.
-//                     It rebuilt arm64 sha256:3b37a722…, re-merged -> index
-//                     sha256:6321fd70…
-//   2026-09-21 18:10  `seal-image-digests` begins refusing, correctly:
-//                     "already sealed at 432daa9a… but … now resolves to
-//                      6321fd70…. The tag MOVED … not drift to reconcile"
-//
-// Both arm64 builds were of the SAME source. The amd64 child is BYTE-IDENTICAL
-// across the two indexes (sha256:c032f154… both times) — because amd64 is never
-// rebuilt here, only REFERENCED from `:${COMMIT}`. Only arm64 moved, because
-// only arm64 is rebuilt, and no `SOURCE_DATE_EPOCH` is set anywhere in this
-// repository: the image config's `created` and `history[].created` are
-// wall-clock, so a rebuild changes the config digest and therefore the manifest
-// digest even when every layer byte is identical.
-//
-// Making the arm64 build reproducible is a separate, larger decision — it would
-// move every coordinate's digest on the next build, fleet-wide. This script
+// Making the arm64 build reproducible is a separate and much larger decision:
+// it would move every coordinate's digest on the next build. This probe instead
 // makes the question MOOT for a coordinate that is already final, which is the
 // cheap half and the one that stops a sealed tag moving under a release.
 //
 // ── WHY A PROOF AND NOT A READ ──────────────────────────────────────────────
 //
-// An index descriptor DECLARES a child's platform. `imagetools create` is
-// exactly where a mislabelled arm64 would enter, so trusting the declaration
-// would let one bad index become permanent: this lane is the only thing that
-// can repair it, and a descriptor-only check would skip the repair forever.
+// An index descriptor DECLARES a child's platform. The merge is exactly where a
+// mislabelled arm64 child would enter, so trusting the declaration would let one
+// bad index become permanent: the supplement lane is the only thing that can
+// repair it, and a descriptor-only check would skip the repair forever.
 //
-// So a skip is earned by resolving the child manifest BY DIGEST and reading the
-// architecture out of its image CONFIG — the same "prove, do not read" posture
-// `verify-image-platforms.mjs` takes at delivery. A mislabelled index reads as
-// NOT SUPPLEMENTED and is rebuilt.
+// So a skip is EARNED — by resolving the child manifest BY DIGEST and reading
+// the architecture out of its image CONFIG. A mislabelled index reads as NOT
+// SUPPLEMENTED and is rebuilt.
 //
 // ── FAIL LOUD, NEVER GUESS ──────────────────────────────────────────────────
 //
 // Only 200 and 404 are answers. A 401/403 on a private package is
 // indistinguishable from an image that was never pushed, so anything else
-// throws. That direction is deliberate: a red arm64 run costs nothing on the
-// prod path (this lane is `workflow_run`, off the deploy graph) whereas a
-// guessed answer either moves a sealed tag or silently leaves a coordinate
-// amd64-only.
+// throws. That direction is deliberate: a supplement lane is off the deploy
+// graph, so a red run there costs nothing, whereas a guessed answer either
+// moves a sealed tag or silently leaves a coordinate single-platform.
 //
-// THE CREDENTIAL HELPER IS INLINED HERE, and that is a deviation worth stating.
-// In the five service repositories this is imported from that repository's own
-// `compute-service-build-matrix.mjs`, so the amd64 and arm64 lanes cannot answer
-// differently about how a GHCR pull token is obtained. THIS repository has no
-// such script — there is no second lane to disagree with — so the helper is
-// inlined rather than a sixth copy being vendored from somewhere else. The part
-// that carries the security property is kept verbatim: the token endpoint is
-// FIXED to the configured host, so a challenge-provided realm can never
-// redirect the long-lived credential elsewhere.
+// The same posture governs the ENTRYPOINT GUARD at the foot of this file. It
+// resolves both sides with `realpathSync` before comparing, because the
+// alternative fails in the dangerous direction: a guard that does not match
+// runs no `main()`, writes no `needed=` output, and a workflow gating its merge
+// on `needed == 'true'` then SKIPS a supplement that was genuinely owed —
+// silently, and with a green tick.
 //
 // No dependency beyond node builtins: this runs from a bare checkout with no
-// install.
+// install, which is what every consuming lane provides and all it provides.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 const SHA256_HEX = /^[a-f0-9]{64}$/u;
 const DIGEST = /^sha256:[a-f0-9]{64}$/u;
@@ -107,7 +84,7 @@ function assertNonEmpty(value, label) {
  * The endpoint is deliberately FIXED to the configured host. Following a
  * challenge-provided realm while carrying the long-lived credential would let a
  * misconfigured or untrusted registry redirect that credential elsewhere.
- * Value-identical in behaviour to the service repositories' shared helper.
+ * Fixed-host by design; see the note above.
  */
 export async function acquireGhcrPullToken({
   registry,
@@ -366,7 +343,15 @@ async function main() {
   if (out) appendFileSync(out, `needed=${needed ? 'true' : 'false'}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// `realpathSync` on both sides deliberately: `process.argv[1]` is whatever path
+// the caller typed, and a guard comparing them unresolved silently runs NOTHING
+// — which here means no `needed=` output and a merge that skips a supplement it
+// owed. `pathToFileURL` additionally encodes a path a template literal would
+// corrupt.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
+) {
   main().catch((error) => {
     console.error(
       `::error title=arm64 supplement probe failed::${error.message}`,
