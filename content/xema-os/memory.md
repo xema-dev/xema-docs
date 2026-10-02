@@ -95,7 +95,7 @@ Reads and writes route to the correct shard via `CommitmentCacheService`, mirror
 
 - [Spaces](./spaces.md) — the ownership hierarchy memory's owner tiers are drawn from.
 - [Skills](./skills/) — durable how-to knowledge owned by `skill-registry-api`, complementary to memory.
-- [Capabilities](./capabilities.md) — `memory:recall@1` and `memory:store@1` are the only documented entry points.
+- [Capabilities](./capabilities.md) — `memory:recall@1`, `memory:store@1` and `memory:relate@1` are the documented entry points.
 - [Policy](./policy.md) — every recall and write is policy-decided like any other capability call.
 
 ---

@@ -123,9 +123,9 @@ A workflow that opens a pull request looks like this:
 
 1. The workflow step declares `connector:scm.create-pull-request@1` as a required capability.
 2. The biome manifest exposes (or requires) the same ref.
-3. At runtime the workflow runner asks the gateway: "open a PR against repo `xema://orgs/acme/projects/main/connector-binding/github-main`, branch `feature/x`, title `…`, body `…`."
+3. At runtime the workflow runner asks the gateway: "open a PR from branch `feature/x` into `main`, title `…`, description `…`." The request names no repository: it is the one bound to the project the workflow runs in.
 4. The gateway checks the `BiomeInstallGrant` for the workflow's subject, finds the connector binding allowed for the `project` environment, and calls the GitHub connector with the org's stored credentials.
-5. The agent never sees the GitHub token. The response is a typed artifact ref pointing at the new pull request.
+5. The agent never sees the GitHub token. The response is the change-request record: its id, the two branches, the title and its status.
 
 The same workflow YAML works against GitLab or Gitea if the org's connector binding for that resource points there — the workflow names no provider.
 
@@ -189,8 +189,8 @@ Worked example — an agent discovers and calls a capability:
 xema_capabilities_search({ domain: "connector" })
 // → {
 //     "capabilities": [
-//       { "ref": "connector:scm.create-pull-request@1", "biome": "xema.software-dev", ... },
-//       { "ref": "connector:chat.send-message@1", "biome": "xema.slack-connector", ... }
+//       { "ref": "connector:scm.create-pull-request@1", "biome": "software-dev", ... },
+//       { "ref": "connector:chat.send-message@1", "biome": "connector-slack", ... }
 //     ],
 //     "anchor": { "resourceType": null, "source": "none" },
 //     "consideredCount": 2
@@ -200,12 +200,23 @@ xema_capabilities_search({ domain: "connector" })
 xema_capabilities_describe({ refs: ["connector:scm.create-pull-request@1"] })
 // → [{ "ref": "...", "inputSchema": { ... }, "examples": [ ... ] }]
 
-// 3. Invoke — input must match the declared schema exactly
+// 3. Invoke — input must match the declared schema exactly.
+//    `sourceBranch`, `targetBranch` and `title` are required; `description` is optional.
+//    The repository is not an input: it is the one bound to the calling session's project.
+//    This capability requires approval, so it runs only once that approval is given.
 xema_capabilities_invoke({
   ref: "connector:scm.create-pull-request@1",
-  input: { repoRef: "xema://orgs/acme/.../github-main", branch: "feature/x", title: "..." }
+  input: { sourceBranch: "feature/x", targetBranch: "main", title: "Add user authentication" }
 })
-// → { "output": { "url": "https://github.com/...", "number": 42 }, "auditId": "inv_abc" }
+// → {
+//     "output": {
+//       "id": "cr-1", "externalId": "42",
+//       "sourceBranch": "feature/x", "targetBranch": "main",
+//       "title": "Add user authentication", "status": "open",
+//       "createdAt": "2026-01-15T10:00:00Z", "updatedAt": "2026-01-15T10:00:00Z"
+//     },
+//     "auditId": "inv_abc"
+//   }
 ```
 
 Adding a new biome or MCP server expands the `search` result without changing the agent's tool surface. Agents adopt new capabilities at runtime; no prompt rebuild required.

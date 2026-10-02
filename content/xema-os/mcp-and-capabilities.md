@@ -38,11 +38,11 @@ There is no full-catalogue listing. Page through results with `cursor`.
   "capabilities": [
     {
       "ref":      "connector:scm.create-pull-request@1",
-      "biome":    { "id": "xema.software-dev", "version": "1.4.0" },
+      "biome":    { "id": "software-dev", "version": "1.4.0" },
       "title":    "Open a pull request",
       "summary":  "Creates a PR on the project's bound SCM provider.",
-      "riskTier": "medium",
-      "requiresApproval": false,
+      "riskTier": "high",
+      "requiresApproval": true,
       "mutation": "mutating",
       "relation": "acts_on",
       "distance": 0
@@ -74,8 +74,8 @@ Returns full schemas, examples, side-effect labels, and approval requirements:
       "outputSchema":   { /* JSON Schema */ },
       "examples":       [ { "input": {...}, "output": {...} } ],
       "sideEffects":    ["writes-external-system"],
-      "requiresApproval": false,
-      "biome":          { "id": "xema.software-dev", "version": "2.4.1" }
+      "requiresApproval": true,
+      "biome":          { "id": "software-dev", "version": "2.4.1" }
     }
   ]
 }
@@ -88,12 +88,21 @@ Describe accepts arrays so an agent fetching context can batch-resolve every cap
 Generic invocation:
 
 ```jsonc
-// Input
-{ "ref": "connector:scm.create-pull-request@1", "input": { "repo": "...", "branch": "...", "title": "..." } }
-
-// Output
+// Input — `sourceBranch`, `targetBranch` and `title` are required, `description` is optional.
+// The repository is the one bound to the calling session's project; it is not an input.
 {
-  "output":      { "url": "https://github.com/acme/web/pull/123" },
+  "ref": "connector:scm.create-pull-request@1",
+  "input": { "sourceBranch": "feature/x", "targetBranch": "main", "title": "Add user authentication" }
+}
+
+// Output — the change-request record
+{
+  "output": {
+    "id": "cr-1", "externalId": "123",
+    "sourceBranch": "feature/x", "targetBranch": "main",
+    "title": "Add user authentication", "status": "open",
+    "createdAt": "2026-01-15T10:00:00Z", "updatedAt": "2026-01-15T10:00:00Z"
+  },
   "auditId":     "inv_abc",
   "obligations": [],
   "decision":    "allow"
