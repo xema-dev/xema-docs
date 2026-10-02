@@ -1,7 +1,5 @@
 # Memory
 
-> API Docs: https://memory-api.xema.dev/api/docs
-
 **Memory** is the structured, scoped, recall-able knowledge plane of Xema OS. It is how agents accumulate durable context across sessions and workflows without having to re-upload that context on every prompt. Memory is a platform capability provided by the memory biome; every memory document is typed, anchored to a [Space](./spaces.md), and carries provenance.
 
 Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, an owner Space, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:store@1`) — never through raw blob reads.
