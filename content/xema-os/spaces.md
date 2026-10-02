@@ -60,7 +60,7 @@ Examples:
 xema://system
 xema://orgs/acme
 xema://orgs/acme/projects/billing
-xema://biomes/xema.document-buddy
+xema://biomes/document-buddy
 xema://sessions/sess_abc123
 xema://users/u_42
 ```

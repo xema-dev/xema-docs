@@ -135,7 +135,7 @@ At invocation boundaries (workflow run start, interactive session start, sub-age
 {
   "kernel": "1.0.0",
   "capabilities": { "kb:page.read": "1", "workflow:run.start": "1" },
-  "biomes":       { "xema.document-buddy": "1.4.2", "xema.software-dev": "1.5.0" },
+  "biomes":       { "document-buddy": "1.4.2", "software-dev": "1.5.0" },
   "agents":       { "code-reviewer": "3.0.0", "presenter-coach": "1.2.0" },
   "workflows":    { "product-development": "7.0.0" },
   "deliverableSpecs": { "architecture-doc": "2.1.0" },
@@ -145,8 +145,8 @@ At invocation boundaries (workflow run start, interactive session start, sub-age
 
 Lockfiles are produced by the resolver in `@xemahq/lockfile-resolver`. Concrete write paths:
 
-- **Apps.** `POST /apps/:id/lockfile/refresh` on `app-platform-api` resolves and persists a full pinned lockfile.
-- **Sessions.** `agent-session-api`'s session-creation flow mints + persists a lockfile via the internal `SessionLockfileService` and serves `GET /sessions/:id/lockfile`.
+- **Apps.** `POST /apps/:id/lockfile/refresh` on the app platform API resolves and persists a full pinned lockfile.
+- **Sessions.** Creating a session mints and persists a lockfile, which is served at `GET /sessions/:id/lockfile`.
 - **Workflow runs.** The Xema workflow worker service emits a `xemaEmitRunLockfileActivity` as a Xema runtime activity that writes the lockfile as a `REPLACE`-versioned artifact (idempotent under retry).
 
 Every writer resolves over the same four sources — kernel, capability, biome and object registry — so two writers cannot pin one subject differently.

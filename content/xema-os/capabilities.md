@@ -48,14 +48,14 @@ Every invocation goes through one live mediation funnel:
 
 ```
 caller
-  → xema-capability-router
-    → authorization-api      (subject + environment + capability + resource → decision)
+  → capability router
+    → authorization          (subject + environment + capability + resource → decision)
     → resolver               (environment + binding state → which contribution serves this ref?)
     → implementation         (the bound contribution or kernel handler)
     → audit-log              (every invocation, structurally)
 ```
 
-Every call carries `{ ref, subject, environment, input }`. Every decision lands in `audit-log-api`. Agents never hold raw credentials — the gateway resolves the binding for the active environment and calls the provider itself. The agent sees the capability ref and the input; nothing else.
+Every call carries `{ ref, subject, environment, input }`. Every decision lands in the audit log. Agents never hold raw credentials — the gateway resolves the binding for the active environment and calls the provider itself. The agent sees the capability ref and the input; nothing else.
 
 ---
 
@@ -71,7 +71,7 @@ The biome manifest declares:
 - `permissionHints[]` — a human-readable reason per capability.
 - `defaultProfile` — the built-in permission profile that fits.
 
-The Xema Store computes a `PermissionDigest`: capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version. An org admin approves the digest, optionally applying a built-in profile (e.g. `read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`) or customizing per-capability resource globs, environments, and rate limits. The result is a `BiomeInstallGrant` row in `authorization-api`.
+The Xema Store computes a `PermissionDigest`: capabilities grouped by domain, a risk tier, a data-access summary, and a diff against the previously installed version. An org admin approves the digest, optionally applying a built-in profile (e.g. `read-only-assistant`, `support-chatbot`, `internal-agent`, `connector-bridge`, `unrestricted`) or customizing per-capability resource globs, environments, and rate limits. The result is a recorded `BiomeInstallGrant`.
 
 ### Stage 2 — runtime
 
@@ -133,9 +133,7 @@ The same workflow YAML works against GitLab or Gitea if the org's connector bind
 
 ## Service-to-service auth — Keycloak-issued tokens
 
-Every cross-service call in the Xema OS layer (`xema-capability-router`,
-`authorization-api`, `audit-log-api`, `biome-host-api`, `object-registry-api`,
-`xema-shell-api`, `llm-registry-api`, etc.) authenticates with a
+Every cross-service call in the Xema OS layer authenticates with a
 **Keycloak service-account access token**, not a static shared secret.
 
 The model is uniform:
@@ -229,10 +227,10 @@ Adding a new biome or MCP server expands the `search` result without changing th
 
 ## External MCP servers as capability providers
 
-Xema OS does not show an agent the union of every MCP server's `tools/list`. Instead, external MCP servers are registered through `mcp-gateway-api` as **capability providers**:
+Xema OS does not show an agent the union of every MCP server's `tools/list`. Instead, external MCP servers are registered through the MCP gateway as **capability providers**:
 
 1. Admin registers an external server (e.g. an organisation's Slack MCP, a Jira MCP, a Notion MCP).
-2. At registration time, `mcp-gateway-api` calls the external server's MCP `tools/list`.
+2. At registration time, the MCP gateway calls the external server's MCP `tools/list`.
 3. Each external tool is translated to a capability ref: `<provider-id>:<tool-name>@1`.
 4. The capability is inserted into the Service Registry with runner kind `mcp-external`.
 5. `xema_capabilities_search` surfaces the provider's capabilities under the same policy + grant model as any first-party capability — and only when the Agent is armed and its subject is authorized to invoke them.

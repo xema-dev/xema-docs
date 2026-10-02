@@ -13,11 +13,19 @@
 # So the rule below is a CONVENTION whose only reader is a person, and it is
 # kept for the reason it was written: every `<domain>:<name>@<major>` printed
 # under `content/` and `src/` should be produced somewhere in code — an
-# authorization-api seed, `INITIAL_CAPABILITY_SEED`, a
-# `*.capability.contribution.json`, a `@XemaCapability` decorator or ref table,
-# a manifest's `exposesCapabilities`, a Shell built-in, or a public HTTP route
-# annotated so the ref is DERIVED at boot. Anything else belongs here. Resolve a
-# claim yourself before trusting it; no run will tell you.
+# authorization-api seed, a `*.capability.contribution.json`, a
+# `@XemaCapability` decorator or ref table, a manifest's `exposesCapabilities`,
+# a Shell built-in, or a public HTTP route annotated so the ref is DERIVED at
+# boot. Anything else belongs here. Resolve a claim yourself before trusting it;
+# no run will tell you.
+#
+# The capability registry's boot seed is NOT a producer any more. Every ref it
+# carried is declared by its owner: `memory:recall@1`, `memory:store@1`,
+# `memory:relate@1` and `memory:maintenance.*@1` by the memory biome
+# (contribution files); `connector:scm.create-pull-request@1` by the
+# software-dev biome (contribution file); `search:query@1` by the search biome
+# (decorator); `media:transcribe@1` by the artifact store, which the
+# agent-runtime biome ships (decorator).
 #
 # WHY A SIDECAR AND NOT AN INLINE MARKER
 # --------------------------------------
@@ -126,7 +134,7 @@ unpublished:
       on every XVFS upsert, and a denial is what produces the documented `XVFS_WRITE_DENIED` (403).
       The same name is printed in that route's OpenAPI description and in the generated client. So the
       sentence is true about the platform's behaviour — but no producer publishes the ref: the `xema:`
-      domain has no seed row, no `INITIAL_CAPABILITY_SEED` entry, no contribution, no
+      domain has no seed row, no contribution, no
       `@XemaCapability` decorator (`xvfs.service.ts` carries none), and the route's own DERIVED ref is
       `xema-shell:xvf.write.create@1`, which is a different name for a different thing — the ref that
       admits the HTTP call, not the ref the handler then checks against the object being written.

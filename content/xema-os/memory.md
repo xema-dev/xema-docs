@@ -2,7 +2,7 @@
 
 > API Docs: https://memory-api.xema.dev/api/docs
 
-**Memory** is the structured, scoped, recall-able knowledge plane of Xema OS. It is how agents accumulate durable context across sessions and workflows without having to re-upload that context on every prompt. Memory is owned by `memory-api`; every memory document is typed, anchored to a [Space](./spaces.md), and carries provenance.
+**Memory** is the structured, scoped, recall-able knowledge plane of Xema OS. It is how agents accumulate durable context across sessions and workflows without having to re-upload that context on every prompt. Memory is a platform capability provided by the memory biome; every memory document is typed, anchored to a [Space](./spaces.md), and carries provenance.
 
 Memory is not free-form notes. Each memory is a structured Markdown ledger with a closed `MemoryKind`, an owner Space, a slug, and a content digest. Agents read and write memory through capabilities (`memory:recall@1`, `memory:store@1`) — never through raw blob reads.
 
@@ -87,14 +87,14 @@ This is the digest-gating invariant made operational: maintenance is allowed to 
 
 Embeddings live out of band in per-dimension shard tables (`memory_embeddings_d{1024,1536,3072,…}`), created by migration. The dimension is per-org, driven by `OrgEmbeddingCommitment`, not platform-wide — pgvector's HNSW index caps dimensions, so a fixed-dim column on `Memory` would lock multi-tenancy.
 
-Reads and writes route to the correct shard via `CommitmentCacheService`, mirroring the pattern in `search-api`. Embedding refresh is itself digest-gated.
+Reads and writes route to the correct shard via `CommitmentCacheService`, the same way search routes its own. Embedding refresh is itself digest-gated.
 
 ---
 
 ## Related concepts
 
 - [Spaces](./spaces.md) — the ownership hierarchy memory's owner tiers are drawn from.
-- [Skills](./skills/) — durable how-to knowledge owned by `skill-registry-api`, complementary to memory.
+- [Skills](./skills/) — durable how-to knowledge owned by the skill registry, complementary to memory.
 - [Capabilities](./capabilities.md) — `memory:recall@1`, `memory:store@1` and `memory:relate@1` are the documented entry points.
 - [Policy](./policy.md) — every recall and write is policy-decided like any other capability call.
 

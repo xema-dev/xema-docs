@@ -125,7 +125,7 @@ When an org admin registers an external MCP server (a GitHub MCP, a Slack MCP, a
 From that point forward, the external tool is **indistinguishable** from a native Xema capability:
 
 - Every invocation routes through the capability router.
-- Every call is authorized by `authorization-api` against the org's grants.
+- Every call is authorized against the org's grants by the same policy decision every capability call gets.
 - Every input/output is validated against the schema the external server published.
 - Every result lands in the audit log with the full ExecutionContext.
 

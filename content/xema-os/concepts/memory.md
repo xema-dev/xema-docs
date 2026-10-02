@@ -1,7 +1,7 @@
 ---
 slug: memory
 title: Memory
-summary: The structured, scoped, recall-able knowledge plane. Memory is owned by `memory-api`; nodes and edges are written through typed write paths and recalled by agents through capabilities. Memory is NOT free-form notes — every node has a kind, scope, and provenance.
+summary: The structured, scoped, recall-able knowledge plane. Memory is a platform capability provided by the memory biome; nodes and edges are written through typed write paths and recalled by agents through capabilities. Memory is NOT free-form notes — every node has a kind, scope, and provenance.
 relatedCommands: ["xema run xema-shell:memory.recall@1"]
 relatedCapabilities: ["memory:recall@1", "memory:store@1"]
 relatedZones: ["org"]
