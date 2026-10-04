@@ -189,7 +189,6 @@ Every action in a session is recorded as an immutable event:
 | Tools | `tool_call_started`, `tool_call_completed` |
 | Files | `file_created`, `file_edited`, `file_deleted` |
 | Git | `git_branch_created`, `git_committed`, `git_pushed`, `pr_created` |
-| Knowledge | `kb_page_pushed` |
 | Lifecycle | `status_changed`, `session_paused`, `session_resumed` |
 | Attachments | `attachment_added`, `skill_attached`, `skill_detached` |
 | Human | `question_asked`, `question_answered`, `permission_asked`, `permission_replied` |
