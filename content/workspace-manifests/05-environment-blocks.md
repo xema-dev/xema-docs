@@ -123,18 +123,13 @@ spec:
     - kind: provider
       providerKind: catalog
       resourceId: default-dev-tools
-    # A single tool from a biome workflow. resourceId is the biome
-    # installation id — a plain string; parameterize with ${input.<name>}
+    # A single tool from an org database explorer. resourceId is the
+    # databaseId — a plain string; parameterize with ${input.<name>}
     # if it varies per dispatch.
     - kind: tool
-      providerKind: biome_workflow_tools
-      resourceId: "imap-fetcher-installation-id"
-      toolName: search-archive
-    # A single tool shipped as biome handler code
-    - kind: tool
-      providerKind: biome_code_tools
-      resourceId: "stripe-tools-installation-id"
-      toolName: customer-lookup
+      providerKind: org_database_explorer
+      resourceId: "analytics-db-id"
+      toolName: run-query
 ```
 
 Closed-set `providerKind` values:
@@ -142,9 +137,8 @@ Closed-set `providerKind` values:
 | Value | Source of tools |
 |---|---|
 | `mcp_server` | An org-registered (or system-shipped) MCP server. |
-| `catalog` | A named, reusable selection of tools curated at the org. |
-| `biome_workflow_tools` | A biome manifest declaring `xema.mcpWorkflowTools[]`. |
-| `biome_code_tools` | A biome shipping typed handler functions as tools. |
+| `catalog` | A curated, named bundle of tools spanning multiple providers. |
+| `org_database_explorer` | An org-managed SQL database explorer: introspect schemas, run queries and mutations, trigger and poll schema migrations. |
 
 Sessions may override this list per-instance via `PATCH /sessions/:id/tools`.
 At boot, every entry resolves through the platform's tool resolver into

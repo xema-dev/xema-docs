@@ -321,8 +321,7 @@ PATCH /sessions/{id}/tools
   "selection": [
     { "kind": "provider", "providerKind": "mcp_server",            "resourceId": "<uuid>" },
     { "kind": "provider", "providerKind": "catalog",               "resourceId": "default-dev-tools" },
-    { "kind": "tool",     "providerKind": "biome_workflow_tools", "resourceId": "<installation-id>", "toolName": "search-archive" },
-    { "kind": "tool",     "providerKind": "biome_code_tools",     "resourceId": "<installation-id>", "toolName": "customer-lookup" }
+    { "kind": "tool",     "providerKind": "org_database_explorer", "resourceId": "<database-id>", "toolName": "run-query" }
   ]
 }
 ```

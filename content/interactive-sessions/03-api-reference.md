@@ -556,14 +556,14 @@ Each `ToolSelectionEntry` is one of:
 // A single tool from a provider
 {
   "kind": "tool",
-  "providerKind": "biome_workflow_tools",
-  "resourceId": "<installation-id>",
-  "toolName": "search-archive"
+  "providerKind": "org_database_explorer",
+  "resourceId": "<database-id>",
+  "toolName": "run-query"
 }
 ```
 
 Closed-set `providerKind` values: `mcp_server`, `catalog`,
-`biome_workflow_tools`, `biome_code_tools`.
+`org_database_explorer`.
 
 Each entry's `resourceId` is validated against the session's
 `(orgId, projectId)` scope at PATCH time. Cross-org references are
