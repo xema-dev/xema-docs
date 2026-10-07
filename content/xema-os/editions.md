@@ -25,7 +25,7 @@ Adding a biome pulls **its own declared requirements** with it. Install a connec
 
 ### Two names that are not choices
 
-- **`core` is not a shippable edition.** It is the substrate catalogue every other edition composes from — the kernel, system and base tiers plus the platform substrate. No deployment installs it. You will see the name in lockfiles and in the manifests of the editions that extend it.
+- **`core` is not a shippable edition.** It is the substrate catalogue every other edition composes from — the core-class components (those whose installationClass is `core`); optional families are added by each edition's selection. No deployment installs it. You will see the name in lockfiles and in the manifests of the editions that extend it.
 - **`xema-internal` is the Xema team's own operator installation.** It is not available for customer installation, and it is named here only so it is not a silent gap when you meet it.
 
 ---
