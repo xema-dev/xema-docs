@@ -103,7 +103,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  REGISTRY_ORG: xema-dev
+  REGISTRY_ORG: ${{ github.repository_owner }}
   SERVICE: docs-api
 
   # ─────────────────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ env:
   # which deployments take it, from its own reviewed producer contracts. No
   # deployment is named here: this file named `xema-prod` after that deployment
   # was retired, and every dispatch was refused.
-  DEPLOY_REPO: xema-dev/xema-deploy
+  DEPLOY_REPO: ${{ github.repository_owner }}/xema-deploy
   IMAGE_SET_ANNOUNCEMENT_PAYLOAD_VERSION: xema.image-set-built/v1
 
 jobs:
@@ -498,7 +498,7 @@ jobs:
         id: bind
         run: |
           set -euo pipefail
-          if [[ ! "${IMAGE}" =~ ^ghcr\.io/xema-dev/[a-z0-9][a-z0-9._-]*$ ]]; then
+          if [[ ! "${IMAGE}" =~ ^ghcr\.io/${GITHUB_REPOSITORY_OWNER,,}/[a-z0-9][a-z0-9._-]*$ ]]; then
             echo "::error::invalid image repository '${IMAGE}'"; exit 1
           fi
           if [[ ! "${DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then

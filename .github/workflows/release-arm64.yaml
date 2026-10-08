@@ -62,7 +62,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  REGISTRY_ORG: xema-dev
+  REGISTRY_ORG: ${{ github.repository_owner }}
   SERVICE: docs-api
 
   # Must stay value-identical to `build-image.yaml`'s attestation contract: the
@@ -348,7 +348,7 @@ jobs:
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
-          CERTIFICATE_IDENTITY: https://github.com/xema-dev/xema-docs/.github/workflows/release-arm64.yaml@refs/heads/main
+          CERTIFICATE_IDENTITY: ${{ github.server_url }}/${{ github.repository }}/.github/workflows/release-arm64.yaml@refs/heads/main
           OIDC_ISSUER: https://token.actions.githubusercontent.com
         run: |
           set -euo pipefail
@@ -447,7 +447,7 @@ jobs:
           SUBJECT: ${{ steps.sign_index.outputs.subject }}
           PROVENANCE: ${{ steps.index_predicates.outputs.provenance }}
           SBOM: ${{ steps.index_predicates.outputs.sbom }}
-          CERTIFICATE_IDENTITY: https://github.com/xema-dev/xema-docs/.github/workflows/release-arm64.yaml@refs/heads/main
+          CERTIFICATE_IDENTITY: ${{ github.server_url }}/${{ github.repository }}/.github/workflows/release-arm64.yaml@refs/heads/main
           OIDC_ISSUER: ${{ env.ATTESTATION_OIDC_ISSUER }}
         run: |
           set -euo pipefail
