@@ -2,8 +2,8 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
-The source of truth for the public [Xema](https://xema.dev) documentation. This
-repo owns the docs content *and* a small service that serves it:
+The source of the public [Xema](https://xema.dev) documentation: the content
+and the small service that serves it.
 
 - **`content/`** — every public doc, as plain Markdown. This is the one place
   public docs are authored.
@@ -16,21 +16,14 @@ repo owns the docs content *and* a small service that serves it:
 
 ## Authoring content
 
-Pages live under `content/`. Drop a `.md` file in the right folder and it
-appears automatically — the tree is derived from the directory layout:
+Add a `.md` file under `content/`; the doc tree is derived from the directory layout.
 
-- A folder becomes a collapsible section; its `index.md` is the section landing
-  page (labelled "Overview").
-- A file's slug is its path under `content/` without the `.md` extension
-  (e.g. `content/databases/01-concepts.md` → `databases/01-concepts`), served at
-  `xema.dev/docs/databases/01-concepts`.
-- A `NN-` numeric prefix only controls ordering; it is stripped from the display
-  label.
-- `README.md` files are treated as authoring meta and are **not** published.
-
-Some docs carry YAML frontmatter (e.g. `content/xema-os/concepts/*.md` require
-`slug`, `title`, `summary`, `stability`) because downstream consumers parse it.
-Keep that frontmatter valid.
+- A folder is a section; its `index.md` is the section landing page.
+- A file's slug is its path under `content/` without `.md`
+  (`content/databases/01-concepts.md` is served at `xema.dev/docs/databases/01-concepts`).
+- A `NN-` prefix only sets ordering and is stripped from the label.
+- `README.md` files are authoring notes and are not published.
+- Pages under `content/xema-os/concepts/` require YAML frontmatter (`slug`, `title`, `summary`, `stability`); `npm run check:concept-frontmatter` validates it.
 
 ## Running docs-api locally
 
@@ -62,11 +55,8 @@ npm run build                   # -> dist/
 
 ## Contributing
 
-Contributions land via pull request. All commits must be signed off under the
-[Developer Certificate of Origin](https://developercertificate.org/) (DCO) —
-add a `Signed-off-by` line with `git commit -s`. Please open an issue before
-starting substantial work so we can align on scope, and follow the
-[Code of Conduct](./CODE_OF_CONDUCT.md). See [CONTRIBUTING.md](./CONTRIBUTING.md).
+Pull requests are welcome; sign off commits (`git commit -s`, DCO). See
+[CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## License
 
