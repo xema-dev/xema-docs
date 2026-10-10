@@ -238,41 +238,15 @@ unpublished:
       which it was: not re-exported from the `connector` barrel, referenced nowhere in `src`, and
       unresolvable through the `"./*": "./dist/*/index.js"` wildcard. Unreachable to a COMPILER and
       load-bearing for these docs, which is how the deletion left the claim standing with nothing
-      behind it. Three of the six pilot refs shipped real producers; this is one of the three that
+      behind it. Four of the six pilot refs have real producers; this is one of the two that
       did not.
     owed: >-
       Build the docs connector and publish the ref, or drop it from the pilot set in
-      `capabilities.md` and `connectors.md`. It moves with `connector:chat.send-message@1` and
-      `connector:llm.invoke@1` — the same table declared all three and the same paragraph advertises
-      them.
+      `capabilities.md` and `connectors.md`. It moves with `connector:llm.invoke@1` — the same
+      table declared both and the same paragraph advertises them.
     files:
       - content/xema-os/xema-os-capabilities.md
       - content/xema-os/connectors.md
-
-  connector:chat.send-message@1:
-    reason: >-
-      Same 1B pilot set and the same deleted contracts table as `connector:docs.publish-page@1`. It
-      additionally appears in the SDK testing guide as the subject of a handler unit test, asserting
-      `callCapability` was called with it — there the ref is the example's subject rather than a
-      claim that Xema ships it, but it is the same name and the same debt, so it is declared once
-      here rather than split across two categories.
-    owed: >-
-      "Build the chat connector and publish this ref" is NOT one of the available remedies here, and
-      that is measured rather than assumed: `connector-slack` already ships the outbound send
-      action, and its adapter module records why the ref that action projects is
-      `connector:slack.send@1` and not this name. Two structural reasons, both in the platform's own
-      connector ref grammar (`<provider>.<verb>`): the native executor derives the ACTION SLUG from
-      the ref's VERB, so `send-message` resolves to an action that does not exist — a 404 at first
-      use; and `ConnectorRegistryService.findOperationByCapabilityRef` is keyed by the ref ALONE, so
-      a `chat.*` ref shared by every conversation connector would make two installed chat connectors
-      shadow each other. So the remedy is either a registry change that can disambiguate a
-      provider-neutral ref, or rewriting the pilot set (and the testing example) around the
-      provider-scoped refs that exist. It still moves with the other two — one table declared all
-      three — but its first remedy is not the same one.
-    files:
-      - content/xema-os/xema-os-capabilities.md
-      - content/xema-os/connectors.md
-      - content/xema-os/sdk/testing.md
 
   connector:llm.invoke@1:
     reason: >-
@@ -281,7 +255,7 @@ unpublished:
       `connector:`-domain ref. Nothing in the fleet produces this name.
     owed: >-
       Build the connector and publish the ref, or drop it from the pilot set. Moves with the other
-      two.
+      one (`connector:docs.publish-page@1`).
     files:
       - content/xema-os/xema-os-capabilities.md
       - content/xema-os/connectors.md

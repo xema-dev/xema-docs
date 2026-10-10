@@ -79,7 +79,7 @@ describe('on-run-completed', () => {
 
     expect(callCapability).toHaveBeenCalledTimes(1);
     expect(callCapability).toHaveBeenCalledWith(
-      'connector:chat.send-message@1',
+      'connector:channel.send-message@1',
       expect.objectContaining({ channel: 'team-engineering' }),
     );
   });
@@ -120,7 +120,7 @@ it('every capability the handler calls is in requiresCapabilities[]', () => {
 
   // calls is the set asserted in your handler unit tests
   const calls = new Set([
-    'connector:chat.send-message@1',
+    'connector:channel.send-message@1',
     'biome-storage:collection.write@1',
   ]);
 

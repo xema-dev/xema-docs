@@ -33,7 +33,7 @@ connector:scm.create-pull-request@1
 connector:scm.merge@1
 connector:tracker.issue.create@1
 connector:docs.publish-page@1
-connector:chat.send-message@1
+connector:channel.send-message@1
 connector:llm.invoke@1
 mcp-tool:invoke@1
 ```
@@ -188,7 +188,7 @@ xema_capabilities_search({ domain: "connector" })
 // → {
 //     "capabilities": [
 //       { "ref": "connector:scm.create-pull-request@1", "biome": "software-dev", ... },
-//       { "ref": "connector:chat.send-message@1", "biome": "connector-slack", ... }
+//       { "ref": "connector:channel.send-message@1", "biome": "conversation-channels", ... }
 //     ],
 //     "anchor": { "resourceType": null, "source": "none" },
 //     "consideredCount": 2

@@ -49,7 +49,7 @@ connector:scm.create-pull-request@1
 connector:scm.merge@1
 connector:tracker.issue.create@1
 connector:docs.publish-page@1
-connector:chat.send-message@1
+connector:channel.send-message@1
 connector:llm.invoke@1
 ```
 
