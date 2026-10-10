@@ -130,11 +130,11 @@ Every event a subscriber may receive over the unified realtime stream. Materiali
 | `llm.embedding.migration.rolled_back` | PROJECT | llm-registry-api | Operator rolled back an in-progress migration. |
 | `llm.embedding.migration.started` | PROJECT | llm-registry-api | Dimension-change embedding migration started, or stalled-walker wakeup replay. |
 | `llm.model-strategy.bound` | PROJECT | llm-registry-api | A model strategy was bound to a project. |
-| `llm.model-strategy.created` | PROJECT | llm-registry-api | A model strategy was created or adopted from a system strategy. |
+| `llm.model-strategy.created` | PROJECT | llm-registry-api | A model strategy was created. |
 | `llm.model-strategy.deleted` | PROJECT | llm-registry-api | A model strategy was deleted. |
-| `llm.model-strategy.entries.updated` | PROJECT | llm-registry-api | Strategy entries were replaced. |
+| `llm.model-strategy.rules.updated` | PROJECT | llm-registry-api | Strategy rules were replaced (payload `ruleCount`). |
 | `llm.model-strategy.unbound` | PROJECT | llm-registry-api | A model strategy binding was removed from a project. |
-| `llm.model-strategy.updated` | PROJECT | llm-registry-api | A model strategy row was updated (excluding entries). |
+| `llm.model-strategy.updated` | PROJECT | llm-registry-api | A model strategy row was updated (excluding rules). |
 | `llm.model.synced` | PROJECT | llm-registry-api | Provider /models endpoint sync completed. |
 | `llm.provider.created` | PROJECT | llm-registry-api | A LLM provider row was created for an org. |
 | `llm.provider.deleted` | PROJECT | llm-registry-api | A LLM provider row was deleted. |

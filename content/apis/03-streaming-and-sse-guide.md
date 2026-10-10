@@ -203,11 +203,11 @@ This section is auto-generated from every backend service's event descriptor reg
 | `llm.embedding.migration.rolled_back` | Llm | PROJECT | llm-registry-api | Operator rolled back an in-progress migration. |
 | `llm.embedding.migration.started` | Llm | PROJECT | llm-registry-api | Dimension-change embedding migration started, or stalled-walker wakeup replay. |
 | `llm.model-strategy.bound` | Llm | PROJECT | llm-registry-api | A model strategy was bound to a project. |
-| `llm.model-strategy.created` | Llm | PROJECT | llm-registry-api | A model strategy was created or adopted from a system strategy. |
+| `llm.model-strategy.created` | Llm | PROJECT | llm-registry-api | A model strategy was created. |
 | `llm.model-strategy.deleted` | Llm | PROJECT | llm-registry-api | A model strategy was deleted. |
-| `llm.model-strategy.entries.updated` | Llm | PROJECT | llm-registry-api | Strategy entries were replaced. |
+| `llm.model-strategy.rules.updated` | Llm | PROJECT | llm-registry-api | Strategy rules were replaced (payload `ruleCount`). |
 | `llm.model-strategy.unbound` | Llm | PROJECT | llm-registry-api | A model strategy binding was removed from a project. |
-| `llm.model-strategy.updated` | Llm | PROJECT | llm-registry-api | A model strategy row was updated (excluding entries). |
+| `llm.model-strategy.updated` | Llm | PROJECT | llm-registry-api | A model strategy row was updated (excluding rules). |
 | `llm.model.synced` | Llm | PROJECT | llm-registry-api | Provider /models endpoint sync completed. |
 | `llm.provider.created` | Llm | PROJECT | llm-registry-api | A LLM provider row was created for an org. |
 | `llm.provider.deleted` | Llm | PROJECT | llm-registry-api | A LLM provider row was deleted. |
