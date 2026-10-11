@@ -1,7 +1,7 @@
 ---
 slug: controller
 title: Controller
-summary: An OS-level reconciliation loop that owns one or more XemaObject kinds. Controllers watch projections, drive lifecycle transitions, and emit follow-up events. Most platform services expose at least one controller; biomes may ship their own through manifest declarations.
+summary: A platform-level reconciliation loop that owns one or more XemaObject kinds. Controllers watch projections, drive lifecycle transitions, and emit follow-up events. Most platform services expose at least one controller; biomes may ship their own through manifest declarations.
 relatedCommands: []
 relatedCapabilities: []
 relatedZones: ["system", "org"]

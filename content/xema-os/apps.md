@@ -2,7 +2,7 @@
 
 > API Docs: https://app-platform-api.xema.dev/api/docs
 
-An **App** is the product-layer surface in Xema OS. It composes one or more biomes, adds optional product-specific UI and branding, and exposes itself to an [audience](./concepts/audience.md) — internal Xema users, external (non-Xema) subjects, or anonymous visitors. The same biome can live inside many apps; each app picks its own audience, environment, and capability policy.
+An **App** is the product-layer surface in Xema. It composes one or more biomes, adds optional product-specific UI and branding, and exposes itself to an [audience](./concepts/audience.md) — internal Xema users, external (non-Xema) subjects, or anonymous visitors. The same biome can live inside many apps; each app picks its own audience, environment, and capability policy.
 
 The owning platform service is **`app-platform-api`**. It owns App definitions, App clients, audience policies, external subjects, and delegated-session minting.
 

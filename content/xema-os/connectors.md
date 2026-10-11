@@ -2,7 +2,7 @@
 
 > API Docs: https://connector-gateway-api.xema.dev/api/docs
 
-A **Connector** is a typed integration point with an external system — GitHub, GitLab, Gitea, Jira, Confluence, Slack, S3, an email provider, an LLM provider, anything an org needs to reach. Connectors are how Xema OS calls outward without giving agents (or workflows) raw credentials. The connector is the *type*; a **ConnectorBinding** is the per-org installation of that type with concrete credentials, scopes, and a target resource.
+A **Connector** is a typed integration point with an external system — GitHub, GitLab, Gitea, Jira, Confluence, Slack, S3, an email provider, an LLM provider, anything an org needs to reach. Connectors are how Xema calls outward without giving agents (or workflows) raw credentials. The connector is the *type*; a **ConnectorBinding** is the per-org installation of that type with concrete credentials, scopes, and a target resource.
 
 All inbound webhooks from external systems enter through one gateway. All outbound calls go through the same gateway with policy-mediated credential mint. There is no "just use the SDK directly" escape hatch — every external interaction is a capability call.
 

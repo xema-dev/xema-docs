@@ -120,7 +120,7 @@ illustrative:
       "Worked example:". Xema ships no banking connector, and no producer publishes this ref or ever
       will. This entry used to cite the one code occurrence as a policy TEST fixture in a `.rego`
       file; that citation is dropped rather than repointed, because the OPA / policy-distributor
-      plane it belonged to is retired (owner ruling R-4) and the fixture goes with it. The claim that
+      plane it belonged to is retired and the fixture goes with it. The claim that
       matters — a fictional capability with no producer — never depended on it.
     files:
       - content/xema-os/execution-contexts.md

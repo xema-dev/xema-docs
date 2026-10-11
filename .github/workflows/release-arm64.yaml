@@ -170,7 +170,7 @@ jobs:
       # appliance locks (see the file header), so a moved digest here is a
       # refused re-seal, not an untidiness.
       #
-      # Measured in xema-cultivars, on `app-forge-api:723843b157…`: arm64 run
+      # Measured in xema-cultivars, on `app-example-api:723843b157…`: arm64 run
       # 35538586977 published index sha256:432daa9a… on 2026-09-20;
       # xema-distributions SEALED that digest into five editions on 2026-09-21
       # 10:17; a RE-RUN of a sibling run armed off the SAME build run, at the

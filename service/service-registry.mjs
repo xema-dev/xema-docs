@@ -24,7 +24,7 @@
 // ----------------------------------------------
 // Key    : <keyspace>/xema/services/<name>/<instanceId>/spec
 //          where <keyspace> is XEMA_KERNEL_STATE_KEYSPACE_PREFIX (e.g.
-//          `/deployments/presenca-dev`), or empty when it is unset. The SDK
+//          `/deployments/acme-dev`), or empty when it is unset. The SDK
 //          applies the same prefix as an etcd namespace at the connection
 //          (kernel-state-runtime >= 0.6.2), validated by the same shape and
 //          REFUSED rather than repaired when malformed. A deployment that
@@ -74,7 +74,7 @@ export function resolveKeyspacePrefix() {
     throw new Error(
       `[service-registry] ${KEYSPACE_PREFIX_ENV}=${JSON.stringify(process.env[KEYSPACE_PREFIX_ENV])} ` +
         `is not a keyspace prefix. Expected "/<segment>[/<segment>...]" — a leading "/", ` +
-        `no trailing "/", no whitespace (e.g. "/deployments/presenca-dev").`,
+        `no trailing "/", no whitespace (e.g. "/deployments/acme-dev").`,
     );
   }
   return value;

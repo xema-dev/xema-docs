@@ -1,6 +1,6 @@
 # CLI
 
-The **`xema` CLI** is the single, multi-platform command-line entry point to Xema OS. It boots a local platform, scaffolds and validates biomes, installs them, invokes capabilities, drops you into the Shell, and runs diagnostics. The same binary works against a locally-booted platform, a self-hosted single-VM deployment, and a multi-node cluster.
+The **`xema` CLI** is the single, multi-platform command-line entry point to Xema. It boots a local platform, scaffolds and validates biomes, installs them, invokes capabilities, drops you into the Shell, and runs diagnostics. The same binary works against a locally-booted platform, a self-hosted single-VM deployment, and a multi-node cluster.
 
 ---
 
@@ -162,7 +162,7 @@ xema biome lint --strict
 Invoke a capability through the platform's capability router (`POST /capabilities/invoke`).
 
 ```bash
-xema run hello:greet@1 --input '{"name":"Eduardo"}'
+xema run hello:greet@1 --input '{"name":"Ada"}'
 xema run kb:page.read@1 --input @page.json
 xema run xema-shell:concepts.list@1
 ```

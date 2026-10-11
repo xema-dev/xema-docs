@@ -1,14 +1,14 @@
-# Xema OS
+# Platform reference
 
-**Xema OS** is the system layer that turns Xema into an AI-native operating system for organizations. It defines the typed objects, the capability-mediated invocation plane, the execution environments, and the installable software bundles (biomes) that humans, agents, workflows, and external apps all share.
+The **platform reference** describes the system layer of Xema. It defines the typed objects, the capability-mediated invocation plane, the execution environments, and the installable software bundles (biomes) that humans, agents, workflows, and external apps all share.
 
-This section is the public reference for Xema OS — for org admins choosing what to install, for biome authors building extensions, and for integrators embedding Xema into their own products.
+This section is the public reference for the Xema platform — for org admins choosing what to install, for biome authors building extensions, and for integrators embedding Xema into their own products.
 
 ## Quick Links
 
 | Page | What it covers |
 |---|---|
-| [Overview](./overview.md) | What Xema OS is, the conceptual architecture layers, and the four Agent primitives |
+| [Overview](./overview.md) | What Xema is, the conceptual architecture layers, and the four Agent primitives |
 | [Objects](./objects.md) | `XemaObject`, the typed universe, XVFS read path |
 | [Capabilities](./capabilities.md) | Capability refs, the gateway, two-stage permission model |
 | [Connectors](./connectors.md) | Typed integration points, named multi-account connections, wallet credentials, OAuth flow |

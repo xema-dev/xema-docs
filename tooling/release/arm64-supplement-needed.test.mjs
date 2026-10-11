@@ -8,7 +8,7 @@
 //   wrongly `true`  -> the lane republishes `:<contentHash>` under a NEW digest
 //                      and MOVES a seal that names it. `seal-image-digests`
 //                      then refuses every edition carrying that coordinate —
-//                      which is exactly what happened to app-forge-api on
+//                      which is exactly what happened to app-example-api on
 //                      2026-09-21 and blocked five of nine editions.
 //   wrongly `false` -> the coordinate stays amd64-only, forever: the amd64
 //                      matrix is content-addressed and never re-selects an
@@ -92,7 +92,7 @@ function registry({
 const probe = (options) =>
   arm64SupplementNeeded({
     registry: 'ghcr.io',
-    repository: 'xema-dev/app-forge-api',
+    repository: 'xema-dev/app-example-api',
     contentHash: HASH,
     user: 'x',
     token: 'y',
@@ -182,7 +182,7 @@ test('a non-sha256 content hash THROWS before any request', async () => {
   await assert.rejects(
     arm64SupplementNeeded({
       registry: 'ghcr.io',
-      repository: 'xema-dev/app-forge-api',
+      repository: 'xema-dev/app-example-api',
       contentHash: 'not-a-hash',
       user: 'x',
       token: 'y',
@@ -196,7 +196,7 @@ test('credentials never leave the configured registry host', async () => {
   await assert.rejects(
     arm64SupplementNeeded({
       registry: 'evil.example.com',
-      repository: 'xema-dev/app-forge-api',
+      repository: 'xema-dev/app-example-api',
       contentHash: HASH,
       user: 'x',
       token: 'y',

@@ -1,6 +1,6 @@
 # Developer Annotations
 
-Xema OS replaces handwritten route and capability manifests with **decorators that are the source of truth**. A developer writes a controller; convention inference classifies every route and derives its capability surface at boot, so the description of what a service exposes lives next to the code that exposes it.
+Xema replaces handwritten route and capability manifests with **decorators that are the source of truth**. A developer writes a controller; convention inference classifies every route and derives its capability surface at boot, so the description of what a service exposes lives next to the code that exposes it.
 
 Annotations describe **what exists**. They are not the access check — access is decided by capability grants and the policy decision point, documented on [Permissions & Access](./permissions.md). Keep that distinction in mind while reading: a decorator classifies a route, a guard fences it, and a grant authorizes the caller.
 
@@ -191,7 +191,7 @@ If none match, startup fails with a clear diagnostic:
     • Mark as ignored: @XemaIgnoreRoute({ reason: '...' })
 ```
 
-The dictionary is intentionally small and closed. It grows only through a kernel PR — never by org or biome opt-in — so the meaning of a verb stays uniform across the entire OS.
+The dictionary is intentionally small and closed. It grows only through a kernel PR — never by org or biome opt-in — so the meaning of a verb stays uniform across the entire platform.
 
 ---
 

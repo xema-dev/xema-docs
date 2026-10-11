@@ -1,6 +1,6 @@
 # Spaces
 
-A **Space** is the answer to "where does this *thing* live?" in Xema OS — who owns it, who can reach it, and what data-classification floor applies. Every typed object (a knowledge-base page, an artifact, a session, a biome installation, a stored memory) is anchored to exactly one Space. A Space is unambiguous and explicit about hierarchy.
+A **Space** is the answer to "where does this *thing* live?" in Xema — who owns it, who can reach it, and what data-classification floor applies. Every typed object (a knowledge-base page, an artifact, a session, a biome installation, a stored memory) is anchored to exactly one Space. A Space is unambiguous and explicit about hierarchy.
 
 ---
 

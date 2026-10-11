@@ -1,10 +1,10 @@
 # Overview
 
-**Xema OS** is the system layer that lets humans, agents, workflows, and external apps share one substrate of typed objects, capability-mediated invocations, and installable software bundles called **biomes**. It is the operating-system framing of the existing Xema platform — same primitives, made explicit and addressable.
+The **Xema system layer** lets humans, agents, workflows, and external apps share one substrate of typed objects, capability-mediated invocations, and installable software bundles called **biomes**.
 
 ---
 
-## Who Xema OS is for
+## Who Xema is for
 
 - **Org admins** deciding which biomes to install, what each one is allowed to do, and how external audiences reach the org.
 - **Biome authors** packaging domain capabilities — agents, skills, workflows, connectors, document templates, UI surfaces — without reaching into other biomes or platform internals.
@@ -24,13 +24,13 @@ Agent capability in Xema is built from exactly four primitives:
 
 **Agent Composition** wires them together: an agent armed with skills and tools whose sub-agents are themselves fully-armed composition nodes. The same composition is usable as both an interactive-session agent and a workflow step.
 
-Xema OS does not add a fifth primitive. The Object Model, Capability Protocol, and the biome package format are the substrate over which the four primitives compose.
+Xema does not add a fifth primitive. The Object Model, Capability Protocol, and the biome package format are the substrate over which the four primitives compose.
 
 ---
 
 ## The four-concept runtime model
 
-Every capability call in Xema OS is described by exactly four concepts working together:
+Every capability call in Xema is described by exactly four concepts working together:
 
 - **[Space](./spaces.md)** — *where* the data lives and *who* owns it (a hierarchical URI from `System` down to `User`, with a data-classification floor).
 - **[Execution Environment](./environments.md)** — *which trust profile* applies to this call (`system`, `org`, `project`, `app`, `session`, `sandbox`, `public`, `store-review`, `trusted-dev`).
@@ -47,7 +47,7 @@ These are a product-explanation model, from infrastructure to experience. They a
 
 | Layer | Owns |
 |---|---|
-| **6 — Experience / Surface** | Xema Web, embedded widgets, customer portals, the Shell UI, the OS Console |
+| **6 — Experience / Surface** | Xema Web, embedded widgets, customer portals, the Shell UI, the Console |
 | **5 — Audience** | App Clients, External Subjects, Delegated Sessions — the boundary between Xema users and "customers of a customer" |
 | **4 — Apps** | An App = one or more installed biomes configured for an audience with branding, capability policy, and a version lockfile |
 | **3 — Biomes** | Installable software bundles: agents, skills, workflows, connectors, document templates, FE/BE contributions, optional services |
@@ -62,7 +62,7 @@ These are a product-explanation model, from infrastructure to experience. They a
 XSI is the stable external interface every biome, app, agent, workflow, and external surface speaks. One protocol, five planes:
 
 1. **[Object Model](./objects.md)** — the typed universe of things Xema knows about (`XemaObject`, `XemaObjectKind`), each anchored to a [Space](./spaces.md).
-2. **[Contribution Protocol](./sdk/contributions.md)** — how new objects and behaviors enter the OS (kernel-typed envelope, closed `ContributionKind` enum, backend slot registry).
+2. **[Contribution Protocol](./sdk/contributions.md)** — how new objects and behaviors enter the platform (kernel-typed envelope, closed `ContributionKind` enum, backend slot registry).
 3. **[Capability Protocol](./capabilities.md)** — how those objects are invoked. Every call carries an [Execution Context](./execution-contexts.md) and routes through the capability router.
 4. **[Execution Environment Protocol](./environments.md)** — which trust profile applies to a call. Nine built-in environments: `system`, `org`, `project`, `app`, `session`, `sandbox`, `public`, `store-review`, `trusted-dev`.
 5. **Manifest / Wire** — how all of the above are declared in the biome manifest through `requires`, `contributions`, `requiresCapabilities[]`, `exposesCapabilities[]`.
@@ -88,7 +88,7 @@ Plus the per-invocation envelope that wires them together: **[Execution Context]
 
 ## Deployment profiles
 
-Xema OS deploys in four profiles from the same codebase. There is no separate product model between development and production.
+Xema deploys in four profiles from the same codebase. There is no separate product model between development and production.
 
 | Profile | Use case | Topology |
 |---|---|---|

@@ -1,6 +1,6 @@
 # Versioning
 
-Versioning in Xema OS is **user-controlled and lockfile-protected**. Every save creates an internal draft revision; only a deliberate publish freezes a draft into an immutable version. Installs pin exact versions in a lockfile. Capability refs are the one exception — they auto-version like syscalls.
+Versioning in Xema is **user-controlled and lockfile-protected**. Every save creates an internal draft revision; only a deliberate publish freezes a draft into an immutable version. Installs pin exact versions in a lockfile. Capability refs are the one exception — they auto-version like syscalls.
 
 This page covers the moving pieces: draft revisions, published versions, how a rollback works, the lockfile, and the breaking-change rule.
 
@@ -157,7 +157,7 @@ Every writer resolves over the same four sources — kernel, capability, biome a
 
 Capability refs version like syscalls, not like packages: `@1` and `@2` coexist indefinitely. A minor / patch change to an implementation never bumps the ref; a major bump is a deliberate, additive event that keeps `@1` alive until callers migrate.
 
-This is the **only** place auto-versioning happens in Xema OS. Every other primitive respects the user-controlled draft-vs-published model.
+This is the **only** place auto-versioning happens in Xema. Every other primitive respects the user-controlled draft-vs-published model.
 
 When a capability ref changes major version:
 

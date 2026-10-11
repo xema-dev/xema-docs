@@ -2,15 +2,15 @@
 
 > API Docs: https://docs-api.xema.dev/api/docs
 
-**Xema is an operating system for organizations that run on AI.**
+**Xema is a platform for governed AI work.**
 
-Not a framework, not a chat wrapper. An operating system in the specific sense that matters: it owns the things every application on top of it would otherwise have to build for itself, and it owns them once, so a team building on Xema can ignore them and still be correct.
+Not a framework, not a chat wrapper. A platform that owns the things every application on top of it would otherwise have to build for itself, and owns them once, so a team building on Xema can ignore them and still be correct.
 
 [xema.dev](https://xema.dev)
 
 ---
 
-## What an operating system owes its applications
+## What a platform owes its applications
 
 Five duties. If a platform makes you re-implement any of them, you are integrating with it, not building on it.
 
@@ -95,7 +95,7 @@ A concept that only works in one of them is not platform-grade, so none of them 
 
 ## Where to start
 
-**If you want to understand the system layer** — read [Xema OS](./xema-os/) in order: [Overview](./xema-os/overview.md), [Objects](./xema-os/objects.md), [Spaces](./xema-os/xema-os-spaces.md), [Environments](./xema-os/xema-os-environments.md), [Policy](./xema-os/xema-os-policy.md), [Capabilities](./xema-os/xema-os-capabilities.md).
+**If you want to understand the system layer** — read the [platform reference](./xema-os/) in order: [Overview](./xema-os/overview.md), [Objects](./xema-os/objects.md), [Spaces](./xema-os/xema-os-spaces.md), [Environments](./xema-os/xema-os-environments.md), [Policy](./xema-os/xema-os-policy.md), [Capabilities](./xema-os/xema-os-capabilities.md).
 
 **If you want to automate something today** — start with [Workflows](./workflows/) and the [Use Cases](./use-cases/).
 
@@ -109,7 +109,7 @@ A concept that only works in one of them is not platform-grade, so none of them 
 
 | Section | What it covers |
 |---|---|
-| [Xema OS](./xema-os/) | The system layer: objects, capabilities, spaces, environments, policy, runners, the SDK |
+| [Platform reference](./xema-os/) | The system layer: objects, capabilities, spaces, environments, policy, runners, the SDK |
 | [Biomes](./biomes/) | Packaging domain capabilities as installable bundles |
 | [Workflows](./workflows/) & [DSL](./dsl/) | Declarative pipelines and the language that describes them |
 | [Interactive Sessions](./interactive-sessions/) | Live agent sessions for exploration, review, and hands-on work |

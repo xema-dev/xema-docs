@@ -1,6 +1,6 @@
 # SDK — Getting Started
 
-This page walks you through authoring your first **biome** — Xema OS's name for an installable software bundle. You will install the `xema` CLI, scaffold a biome, install it into a local Xema instance, and invoke its first capability — end-to-end, in under five minutes, with no monorepo and no package manager.
+This page walks you through authoring your first **biome** — Xema's name for an installable software bundle. You will install the `xema` CLI, scaffold a biome, install it into a local Xema instance, and invoke its first capability — end-to-end, in under five minutes, with no monorepo and no package manager.
 
 ---
 
@@ -97,13 +97,13 @@ Sandbox is the default environment for a freshly scaffolded biome. You can move 
 ## 5. Invoke the capability
 
 ```bash
-xema run hello:greet@1 --name Eduardo
+xema run hello:greet@1 --name Ada
 ```
 
 Expected output:
 
 ```jsonc
-{ "message": "Hello Eduardo from my first Xema biome" }
+{ "message": "Hello Ada from my first Xema biome" }
 ```
 
 That is the end-to-end loop: scaffold, install, invoke. The same loop works against a single-VM self-host (`xema serve --profile=single-instance`) and against a multi-node cluster (`helm install xema-community`) without code changes.
@@ -118,7 +118,7 @@ Edit `agents/greeter.agent.yaml`, edit the contribution manifest, add new contri
 xema biome validate        # pre-boot checks: manifest, agents, contributions, skills, workflows
 xema biome lint            # boundary + manifest + capability-call audit
 xema biome install ./      # reinstall over the previous version
-xema run hello:greet@1 --name Eduardo
+xema run hello:greet@1 --name Ada
 ```
 
 Two checks run on every install:

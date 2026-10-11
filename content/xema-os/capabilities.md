@@ -1,6 +1,6 @@
 # Capabilities
 
-A **capability** is a typed invocation surface. Every meaningful action in Xema OS — read a knowledge-base page, create a pull request, start a workflow run, install a biome, send a Slack message — is named by a capability reference, mediated by one gateway, and authorized against one grant table. Agents, workflows, UI buttons, the Shell, and external apps all use the same surface.
+A **capability** is a typed invocation surface. Every meaningful action in Xema — read a knowledge-base page, create a pull request, start a workflow run, install a biome, send a Slack message — is named by a capability reference, mediated by one gateway, and authorized against one grant table. Agents, workflows, UI buttons, the Shell, and external apps all use the same surface.
 
 ---
 
@@ -61,7 +61,7 @@ Every call carries `{ ref, subject, environment, input }`. Every decision lands 
 
 ## The two-stage permission model
 
-Xema OS pairs install-time consent (App Store / Google Play) with runtime brokered access (Flatpak / XDG portals). Both stages are mandatory in production environments.
+Xema pairs install-time consent (App Store / Google Play) with runtime brokered access (Flatpak / XDG portals). Both stages are mandatory in production environments.
 
 ### Stage 1 — install time
 
@@ -133,7 +133,7 @@ The same workflow YAML works against GitLab or Gitea if the org's connector bind
 
 ## Service-to-service auth — Keycloak-issued tokens
 
-Every cross-service call in the Xema OS layer authenticates with a
+Every cross-service call in the Xema layer authenticates with a
 **Keycloak service-account access token**, not a static shared secret.
 
 The model is uniform:
@@ -227,7 +227,7 @@ Adding a new biome or MCP server expands the `search` result without changing th
 
 ## External MCP servers as capability providers
 
-Xema OS does not show an agent the union of every MCP server's `tools/list`. Instead, external MCP servers are registered through the MCP gateway as **capability providers**:
+Xema does not show an agent the union of every MCP server's `tools/list`. Instead, external MCP servers are registered through the MCP gateway as **capability providers**:
 
 1. Admin registers an external server (e.g. an organisation's Slack MCP, a Jira MCP, a Notion MCP).
 2. At registration time, the MCP gateway calls the external server's MCP `tools/list`.

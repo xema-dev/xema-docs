@@ -17,7 +17,7 @@ a [lockfile](./lockfile.md). Publishing freezes the draft into an
 immutable version; from that moment, every consumer that resolves the
 ref by `slug` gets that exact version. To change behaviour you publish
 *another* version. There is no un-publish — that would silently change
-live behaviour. The one exception across Xema OS is
+live behaviour. The one exception across Xema is
 [capability](./capability.md) refs, which auto-version like syscalls
 (`@1`, `@2` coexist indefinitely); see the
 [Versioning page](../versioning.md) for the full rule. See also

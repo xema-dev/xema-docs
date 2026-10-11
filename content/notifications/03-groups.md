@@ -45,7 +45,7 @@ When the inquiry is created, Xema resolves the group recursively to its current 
 
 ## Snapshot semantics, again
 
-It bears repeating: group resolution is **snapshot-at-create**. If you add Eduardo to `security-champions` *after* an inquiry is raised, that inquiry will not start asking Eduardo. New inquiries will see the new membership; existing ones won't be retroactively re-targeted.
+It bears repeating: group resolution is **snapshot-at-create**. If you add Ada to `security-champions` *after* an inquiry is raised, that inquiry will not start asking Ada. New inquiries will see the new membership; existing ones won't be retroactively re-targeted.
 
 This is by design — workflows are deterministic, audits are stable, and "who has the approval?" never has a moving answer.
 

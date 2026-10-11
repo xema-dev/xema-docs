@@ -1,6 +1,6 @@
 # Runners
 
-A **runner** is the process that actually executes a capability. The Xema OS control plane (router, authorization, audit) is uniform across deployments; the runner layer is where *physical execution* happens — on a cloud node, on a GPU node, on a customer-edge VM, in a sandbox, or bridged out to an external MCP server. The choice is data-driven, not hard-coded.
+A **runner** is the process that actually executes a capability. The Xema control plane (router, authorization, audit) is uniform across deployments; the runner layer is where *physical execution* happens — on a cloud node, on a GPU node, on a customer-edge VM, in a sandbox, or bridged out to an external MCP server. The choice is data-driven, not hard-coded.
 
 The runner abstraction makes it possible to deploy the same biome to a developer's laptop, a small org's single VM, and a regulated multi-region cluster without changing a line of biome code.
 

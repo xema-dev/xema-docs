@@ -1,6 +1,6 @@
 # Service Registry
 
-The **Service Registry** is how every part of Xema OS discovers every other part. Platform services, biome-shipped backends, runners, and the CLI all register themselves at boot and resolve their dependencies through the same uniform surface. There is no `*_API_URL` environment variable, no hand-rolled service-discovery shim, no static topology baked into deploy manifests.
+The **Service Registry** is how every part of Xema discovers every other part. Platform services, biome-shipped backends, runners, and the CLI all register themselves at boot and resolve their dependencies through the same uniform surface. There is no `*_API_URL` environment variable, no hand-rolled service-discovery shim, no static topology baked into deploy manifests.
 
 The registry is part of the kernel control plane and is consumed by every service via a typed service SDK.
 

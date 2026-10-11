@@ -49,8 +49,8 @@ async function putKey(prefix) {
 }
 
 test('a declared keyspace prefixes the registered key', async () => {
-  const key = await putKey('/deployments/owl-xema-prod');
-  assert.match(key, /^\/deployments\/owl-xema-prod\/xema\/services\/docs-api\/docs-api-[0-9a-f-]+\/spec$/);
+  const key = await putKey('/deployments/acme-prod');
+  assert.match(key, /^\/deployments\/acme-prod\/xema\/services\/docs-api\/docs-api-[0-9a-f-]+\/spec$/);
 });
 
 test('no keyspace keeps the root key grammar (single-deployment etcd)', async () => {

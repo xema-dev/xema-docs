@@ -2,7 +2,7 @@
 
 > API Docs: https://workflow-engine-api.xema.dev/api/docs
 
-A **Controller** is a reconciliation loop that owns one or more [object kinds](./objects.md) in Xema OS. Controllers are the platform's answer to "how does state stay consistent under concurrent writes, partial failures, and out-of-order events?". They are the same pattern Kubernetes uses: read the *desired* state, observe the *current* state, drive the gap to zero, emit follow-up events. The platform does not fire-and-forget — it reconciles.
+A **Controller** is a reconciliation loop that owns one or more [object kinds](./objects.md) in Xema. Controllers are the platform's answer to "how does state stay consistent under concurrent writes, partial failures, and out-of-order events?". They are the same pattern Kubernetes uses: read the *desired* state, observe the *current* state, drive the gap to zero, emit follow-up events. The platform does not fire-and-forget — it reconciles.
 
 A controller is not a daemon you write ad-hoc. It is a typed, registered, observable component of the kernel control plane.
 
@@ -10,7 +10,7 @@ A controller is not a daemon you write ad-hoc. It is a typed, registered, observ
 
 ## The reconciliation loop
 
-Every controller in Xema OS follows the same shape:
+Every controller in Xema follows the same shape:
 
 ```
             ┌─────────────────────────────────────┐

@@ -1,6 +1,6 @@
 # Policy
 
-A **Policy** is the protocol that turns an [ExecutionContext](./execution-contexts.md) into a decision. Every capability call in Xema OS is mediated by exactly one policy decision; that decision is the only thing the router trusts. Policies cover authorization, environment fit, data-classification matching, runner selection, and step-up requirements in one uniform shape.
+A **Policy** is the protocol that turns an [ExecutionContext](./execution-contexts.md) into a decision. Every capability call in Xema is mediated by exactly one policy decision; that decision is the only thing the router trusts. Policies cover authorization, environment fit, data-classification matching, runner selection, and step-up requirements in one uniform shape.
 
 ---
 

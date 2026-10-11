@@ -1,6 +1,6 @@
 # Execution Environments
 
-An **execution environment** is a named runtime profile that describes *where* a capability is permitted to run. Every capability call in Xema OS is bound to exactly one environment. Environments encode trust boundaries, a data-classification ceiling, and how far outside itself a capability may reach from within them.
+An **execution environment** is a named runtime profile that describes *where* a capability is permitted to run. Every capability call in Xema is bound to exactly one environment. Environments encode trust boundaries, a data-classification ceiling, and how far outside itself a capability may reach from within them.
 
 An execution environment is the canonical, unambiguous term for the trust profile that gates every capability invocation. It is intentionally distinct from cloud availability regions, DNS terms, and Kubernetes node-grouping labels.
 

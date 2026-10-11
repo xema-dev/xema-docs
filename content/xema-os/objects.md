@@ -1,6 +1,6 @@
 # Objects
 
-Every addressable thing in Xema — an agent, a workflow, an artifact, a connector binding, a skill, an execution environment, even a capability grant — is a typed **`XemaObject`**. Objects are the universal noun of Xema OS: the Shell lists them, the Capability Gateway authorizes against them, and biomes compose by emitting and consuming them without needing to know about each other.
+Every addressable thing in Xema — an agent, a workflow, an artifact, a connector binding, a skill, an execution environment, even a capability grant — is a typed **`XemaObject`**. Objects are the universal noun of Xema: the Shell lists them, the Capability Gateway authorizes against them, and biomes compose by emitting and consuming them without needing to know about each other.
 
 ---
 
@@ -91,7 +91,7 @@ Every object carries a semver `version`. Published versions are immutable; draft
 
 ## XVFS — the virtual filesystem
 
-Xema OS projects the Object Model into a path-addressable namespace called **XVFS** (Xema Virtual Filesystem). Nothing lives on disk — paths resolve to `XemaObjectRef`.
+Xema projects the Object Model into a path-addressable namespace called **XVFS** (Xema Virtual Filesystem). Nothing lives on disk — paths resolve to `XemaObjectRef`.
 
 The path segment after the scope is the **singular, kebab-case
 `XemaObjectKind`** — `agent`, `skill`, `workflow`, `concept`,

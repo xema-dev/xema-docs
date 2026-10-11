@@ -1,6 +1,6 @@
 # Permissions & Access
 
-**Permissions** in Xema OS answer one question for every action a person, an agent, a workflow, or an app takes: *may this subject do this, here, now?* There is one model and one decision point — no second permission system to keep in sync. The default is effortless (an agent can do what its owner can do, nothing more); the ceiling is yours to raise, capability by capability, when governance calls for it.
+**Permissions** in Xema answer one question for every action a person, an agent, a workflow, or an app takes: *may this subject do this, here, now?* There is one model and one decision point — no second permission system to keep in sync. The default is effortless (an agent can do what its owner can do, nothing more); the ceiling is yours to raise, capability by capability, when governance calls for it.
 
 This page is the map. It ties together the pieces documented in depth elsewhere — [Capabilities](./capabilities.md), [Policy](./policy.md), [Environments](./environments.md), [Profiles](./profiles.md), [Spaces](./spaces.md) — and adds the agent **reach-tier** model that sits on top of them.
 

@@ -1,6 +1,6 @@
 # Shell
 
-The **Xema Shell** is the unified, deterministic command surface of the OS. Humans (web terminal), agents (via `xema-shell:run@1`), and CI tools (HTTP) issue the same verb-noun commands through the same dispatcher. Every command is a thin wrapper over one capability; nothing in the Shell short-circuits the gateway.
+The **Xema Shell** is the unified, deterministic command surface of the platform. Humans (web terminal), agents (via `xema-shell:run@1`), and CI tools (HTTP) issue the same verb-noun commands through the same dispatcher. Every command is a thin wrapper over one capability; nothing in the Shell short-circuits the gateway.
 
 The Shell is not bash. It has no string-eval, no pipes, no fork. `argv` is structural; the parser tokenises strings into argv arrays using a fixed, side-effect-free grammar. Three surfaces share one dispatcher.
 

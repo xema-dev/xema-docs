@@ -1,6 +1,6 @@
 # SDK — Contributions
 
-A **contribution** is anything a biome adds to Xema OS: an agent definition, a workflow, a skill bundle, a mount source, a connector binding, a UI route, a document template. The unified surface for every contribution is the **`contributions/`** directory at the biome root, with one `*.contribution.json` file per contribution.
+A **contribution** is anything a biome adds to Xema: an agent definition, a workflow, a skill bundle, a mount source, a connector binding, a UI route, a document template. The unified surface for every contribution is the **`contributions/`** directory at the biome root, with one `*.contribution.json` file per contribution.
 
 This page is the authoring guide for those files.
 
