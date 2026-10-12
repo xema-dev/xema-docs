@@ -164,7 +164,7 @@ Invoke a capability through the platform's capability router (`POST /capabilitie
 ```bash
 xema run hello:greet@1 --input '{"name":"Ada"}'
 xema run kb:page.read@1 --input @page.json
-xema run xema-shell:concepts.list@1
+xema run shell:concepts.list@1
 ```
 
 The acting subject is always the token's `sub` claim — it cannot be overridden. The environment defaults to `environment:project` and is set with `--environment`. The full result (allow / denial / audit id) prints as JSON, and a denied invocation exits non-zero so scripts can branch.
@@ -175,8 +175,8 @@ An interactive REPL over the same router. Each line is `<capabilityRef> [inputJs
 
 ```bash
 xema shell
-> xema-shell:ls@1 {"path":"/orgs/acme/projects/billing"}
-> xema-shell:explain@1 {"ref":"xema://biomes/acme-code-review"}
+> shell:ls@1 {"path":"/orgs/acme/projects/billing"}
+> shell:explain@1 {"ref":"xema://biomes/acme-code-review"}
 ```
 
 Built-ins are `help` and `exit` / `quit`; Ctrl-D exits. Only an unreachable router at startup is fail-fast — an invocation error prints and the loop continues.

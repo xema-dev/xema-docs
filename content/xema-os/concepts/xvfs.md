@@ -2,8 +2,8 @@
 slug: xvfs
 title: XVFS (Xema Virtual File System)
 summary: A read-mostly hierarchical namespace that exposes every addressable Xema entity as a path. Concepts live at `/system/concept/<slug>`, capabilities at `/system/capability/<owner>/<verb>`, objects at scope-prefixed paths. XVFS makes the platform browsable, scriptable, and reflectable.
-relatedCommands: ["xema run xema-shell:explain@1", "xema run xema-shell:inspect@1"]
-relatedCapabilities: ["xema-shell:explain@1", "xema-shell:inspect@1"]
+relatedCommands: ["xema run shell:explain@1", "xema run shell:inspect@1"]
+relatedCapabilities: ["shell:explain@1", "shell:inspect@1"]
 relatedZones: []
 stability: stable
 ---
@@ -15,7 +15,7 @@ deterministic path. The scope prefix mirrors the
 [space](./space.md) that owns the object: `/system/...` for kernel-shipped
 entities, `/orgs/<id>/...` for tenant-scoped, `/users/<id>/...` for
 user-scoped. The [xema-shell](./xema-shell.md) capabilities
-`xema-shell:explain@1`, `xema-shell:inspect@1`, `xema-shell:ls@1` and
-`xema-shell:cat@1` all walk XVFS. Resolution is delegated to the Object
+`shell:explain@1`, `shell:inspect@1`, `shell:ls@1` and
+`shell:cat@1` all walk XVFS. Resolution is delegated to the Object
 Registry — XVFS does not store anything itself; it is a typed view over
 the registry plus the kernel's built-in object kinds.

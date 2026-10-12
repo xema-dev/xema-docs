@@ -2,8 +2,8 @@
 slug: environment-grant
 title: Environment Grant
 summary: An explicit authorization that a subject (or audience, or profile) may execute capabilities in a specific execution environment. Environment grants are the other half of the capability authorization model — without one, a capability call cannot leave its required environment.
-relatedCommands: ["xema run xema-shell:environment.explain@1"]
-relatedCapabilities: ["xema-shell:environment.explain@1"]
+relatedCommands: ["xema run shell:environment.explain@1"]
+relatedCapabilities: ["shell:environment.explain@1"]
 relatedZones: ["system", "org", "sandbox", "store-review"]
 stability: stable
 ---

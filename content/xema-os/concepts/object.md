@@ -2,8 +2,8 @@
 slug: object
 title: XemaObject
 summary: The canonical addressable thing in Xema. Every object carries a stable `XemaObjectRef`, a `kind`, a `scope`, an `owner`, a `version`, a `lifecycle`, and a kind-specific `payload`. Producers project their slice into the Object Registry; consumers resolve refs through it.
-relatedCommands: ["xema run xema-shell:explain@1", "xema run xema-shell:inspect@1"]
-relatedCapabilities: ["xema-shell:explain@1", "xema-shell:inspect@1"]
+relatedCommands: ["xema run shell:explain@1", "xema run shell:inspect@1"]
+relatedCapabilities: ["shell:explain@1", "shell:inspect@1"]
 relatedZones: []
 stability: stable
 ---

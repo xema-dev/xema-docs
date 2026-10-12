@@ -136,7 +136,7 @@ unpublished:
       sentence is true about the platform's behaviour — but no producer publishes the ref: the `xema:`
       domain has no seed row, no contribution, no
       `@XemaCapability` decorator (`xvfs.service.ts` carries none), and the route's own DERIVED ref is
-      `xema-shell:xvf.write.create@1`, which is a different name for a different thing — the ref that
+      `shell:xvf.write.create@1`, which is a different name for a different thing — the ref that
       admits the HTTP call, not the ref the handler then checks against the object being written.
     owed: >-
       Publish `xema:object.write@1` from whichever service owns the XemaObject write plane — the
@@ -150,16 +150,16 @@ unpublished:
     files:
       - content/xema-os/objects.md
 
-  xema-shell:run@1:
+  shell:run@1:
     reason: >-
       The agent-facing Shell dispatch surface. This is NOT a docs typo — the platform names the same
       ref in its own contracts and wire descriptions (`kernel-contracts` shell-command-descriptor,
       `xema-shell-api` shell-run.dto.ts, its `openapi.public.json`, and both generated clients) — but
       every one of those is prose. No producer publishes it: the Shell's built-in verbs are registered
       as `shellCap('<verb>')` and there is no `run` verb, and the `POST /shell/run` route derives
-      `xema-shell:shell.run.run@1` instead.
+      `shell:shell.run.run@1` instead.
     owed: >-
-      Publish `xema-shell:run@1` from xema-shell-api (a `@XemaCapability` on the dispatch handler, which
+      Publish `shell:run@1` from xema-shell-api (a `@XemaCapability` on the dispatch handler, which
       also wins over the derived ref), or rename every mention across the kernel contract, the DTO, the
       OpenAPI description and these docs to the ref that is actually published. Renaming the docs alone
       would make them disagree with the platform's own contracts, which is why this is recorded rather

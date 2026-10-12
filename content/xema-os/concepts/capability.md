@@ -2,8 +2,8 @@
 slug: capability
 title: Capability
 summary: A named, versioned, callable unit of platform behaviour. Every action in Xema — built-in or biome-contributed — is invoked through a capability ref of the shape `<owner>:<verb>@<version>`. Capabilities carry input/output schemas, a declared reach, default grants, and audit-trail policy.
-relatedCommands: ["xema run xema-shell:capability.explain@1"]
-relatedCapabilities: ["xema-shell:capability.explain@1"]
+relatedCommands: ["xema run shell:capability.explain@1"]
+relatedCapabilities: ["shell:capability.explain@1"]
 relatedZones: []
 stability: stable
 ---

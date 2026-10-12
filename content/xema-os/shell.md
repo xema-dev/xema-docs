@@ -1,6 +1,6 @@
 # Shell
 
-The **Xema Shell** is the unified, deterministic command surface of the platform. Humans (web terminal), agents (via `xema-shell:run@1`), and CI tools (HTTP) issue the same verb-noun commands through the same dispatcher. Every command is a thin wrapper over one capability; nothing in the Shell short-circuits the gateway.
+The **Xema Shell** is the unified, deterministic command surface of the platform. Humans (web terminal), agents (via `shell:run@1`), and CI tools (HTTP) issue the same verb-noun commands through the same dispatcher. Every command is a thin wrapper over one capability; nothing in the Shell short-circuits the gateway.
 
 The Shell is not bash. It has no string-eval, no pipes, no fork. `argv` is structural; the parser tokenises strings into argv arrays using a fixed, side-effect-free grammar. Three surfaces share one dispatcher.
 
@@ -12,7 +12,7 @@ The Shell is not bash. It has no string-eval, no pipes, no fork. `argv` is struc
 | --- | --- | --- | --- |
 | `xterm.js` terminal at `/shell` in the host UI | Humans | WebSocket → `xema-shell-api` `/shell/ws` | Human-formatted |
 | `POST /shell/run` on `xema-shell-api` | CI, integrations, scripts | HTTP | `--json` |
-| `xema-shell:run@1` capability | Agents | Capability Gateway | `--json` forced |
+| `shell:run@1` capability | Agents | Capability Gateway | `--json` forced |
 
 The agent surface is not a back door — it is the gateway invoking the dispatcher under the calling agent's subject, environment, and grants. If a human cannot run a command, the agent cannot either.
 
@@ -93,26 +93,26 @@ Command names carry no `xema` prefix — that prefix belongs to the [CLI](./cli.
 
 | Command | Capability | `safeForAgents` | Purpose |
 | --- | --- | --- | --- |
-| `help` / `help <cmd>` | `xema-shell:help@1` | yes | Command discovery + per-command metadata |
-| `concepts` | `xema-shell:concepts.list@1` | yes | List every `Concept` object |
-| `concept <slug>` | `xema-shell:concept.read@1` | yes | Resolve a single concept |
-| `explain <path-or-ref>` | `xema-shell:explain@1` | yes | Human-friendly description of any object |
-| `inspect <path-or-ref>` | `xema-shell:inspect@1` | yes | Structured dump of an object |
-| `ls <xvfs-scope>` | `xema-shell:ls@1` | yes | List objects under an XVFS scope prefix |
-| `cat <ref>` | `xema-shell:cat@1` | yes | Resolve a ref and return the object payload |
-| `capabilities explain <ref>` | `xema-shell:capability.explain@1` | yes | Parse a capability ref against the kernel grammar |
-| `environments explain <env>` | `xema-shell:environment.explain@1` | yes | Fetch a built-in execution-environment row |
-| `why-denied <auditId>` | `xema-shell:audit.read@1` | yes | Explain a capability-router denial by audit id |
-| `doctor` | `xema-shell:doctor@1` | yes | Kernel health checks against the current platform |
-| `memory recall <query>` | `xema-shell:memory.recall@1` | yes | Recall memory entries for a subject |
-| `db list` | `xema-shell:db.list@1` | yes | List org-managed databases |
-| `db describe` | `xema-shell:db.describe@1` | yes | Schema tree of a database (schemas + tables) |
-| `db query` | `xema-shell:db.query@1` | yes | Run a read-only SQL query through the database explorer |
-| `db migrate` | `xema-shell:db.migrate@1` | **no** | Trigger a migrations run for a database |
-| `run <ref>` | `xema-shell:run-object@1` | **no** | Invoke the capability bound to an XVFS object |
-| `biome install <ref>` | `xema-shell:biome.install@1` | **no** | Install a biome into the current environment |
-| `biome publish <path>` | `xema-shell:biome.publish@1` | **no** | Publish a biome to the [Store](./store.md) |
-| `db attach` / `db detach` | `xema-shell:db.attach@1` / `.detach@1` | **no** | Attach or detach a database from a project |
+| `help` / `help <cmd>` | `shell:help@1` | yes | Command discovery + per-command metadata |
+| `concepts` | `shell:concepts.list@1` | yes | List every `Concept` object |
+| `concept <slug>` | `shell:concept.read@1` | yes | Resolve a single concept |
+| `explain <path-or-ref>` | `shell:explain@1` | yes | Human-friendly description of any object |
+| `inspect <path-or-ref>` | `shell:inspect@1` | yes | Structured dump of an object |
+| `ls <xvfs-scope>` | `shell:ls@1` | yes | List objects under an XVFS scope prefix |
+| `cat <ref>` | `shell:cat@1` | yes | Resolve a ref and return the object payload |
+| `capabilities explain <ref>` | `shell:capability.explain@1` | yes | Parse a capability ref against the kernel grammar |
+| `environments explain <env>` | `shell:environment.explain@1` | yes | Fetch a built-in execution-environment row |
+| `why-denied <auditId>` | `shell:audit.read@1` | yes | Explain a capability-router denial by audit id |
+| `doctor` | `shell:doctor@1` | yes | Kernel health checks against the current platform |
+| `memory recall <query>` | `shell:memory.recall@1` | yes | Recall memory entries for a subject |
+| `db list` | `shell:db.list@1` | yes | List org-managed databases |
+| `db describe` | `shell:db.describe@1` | yes | Schema tree of a database (schemas + tables) |
+| `db query` | `shell:db.query@1` | yes | Run a read-only SQL query through the database explorer |
+| `db migrate` | `shell:db.migrate@1` | **no** | Trigger a migrations run for a database |
+| `run <ref>` | `shell:run-object@1` | **no** | Invoke the capability bound to an XVFS object |
+| `biome install <ref>` | `shell:biome.install@1` | **no** | Install a biome into the current environment |
+| `biome publish <path>` | `shell:biome.publish@1` | **no** | Publish a biome to the [Store](./store.md) |
+| `db attach` / `db detach` | `shell:db.attach@1` / `.detach@1` | **no** | Attach or detach a database from a project |
 
 There is no `grant` command. The Shell creates no capability grants: conferring authority is done by an organisation administrator through the org-admin Grants screen, so that the grant is written under that administrator's own authority rather than under a service account's.
 
@@ -120,7 +120,7 @@ There is no `grant` command. The Shell creates no capability grants: conferring 
 
 `cat`, `explain` and `inspect` currently resolve a canonical `xema://…` ref only. An XVFS path is refused with `SHELL_NOT_IMPLEMENTED` — walk a scope with `ls` first and resolve a ref from that listing.
 
-The agent-facing entry point is `xema-shell:run@1`, which always returns structured JSON.
+The agent-facing entry point is `shell:run@1`, which always returns structured JSON.
 
 ---
 
