@@ -18,3 +18,29 @@ emitted artifacts — but they are not a config-resolution dimension on
 their own. Workflows
 are first-class [objects](./object.md) (`XemaObjectKind.Workflow`) and
 biomes ship them through [contributions](./contribution.md).
+
+## Calling constrained capabilities
+
+A step that calls a capability marked `callerConstraint: "workflow-step"` runs as one
+of the biome's own components. A biome that declares components and contributes
+workflows names that component in `workflowConfig.runAs`:
+
+```json
+{
+  "xema": {
+    "workflowConfig": { "runAs": "mailops-api" }
+  }
+}
+```
+
+`runAs` is a component key (a service or worker the biome declares). A content-only
+biome declares no components, omits `runAs`, and its constrained calls are refused with
+`CAPABILITY_CALLER_CONSTRAINT_UNMET`. Workflows contributed by store biomes are not
+admitted.
+
+Each constrained call carries a per-call **step credential** minted for the target's
+receiver audience (see [capability](./capability.md)).
+
+A run started under an org delegation asserts the delegate (`delegation.actor`) as the
+caller. `authorizedBy` is provenance only and never grants authority. Every call is
+capped by the delegation's `lend`.
