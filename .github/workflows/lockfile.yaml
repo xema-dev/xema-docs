@@ -102,6 +102,10 @@ jobs:
       - name: The arm64 supplement probe answers both directions
         run: npm run check:arm64-supplement-probe
 
+      # The shipped server must boot and serve a document (it is the whole image).
+      - name: docs-api starts and serves a document
+        run: npm run check:docs-server
+
       # The develop image lane's coordinate and adopt rules (T62 C1).
       - name: The develop image lane rules hold
         run: npm run check:develop-images
