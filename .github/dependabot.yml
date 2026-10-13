@@ -13,7 +13,7 @@
 #
 # ── WHY MAJORS ARE SPLIT OUT, AND ARE NOT GROUPED ──
 #
-# The first version of this file grouped EVERY update into one weekly pull
+# The first version of this file grouped EVERY update into one monthly pull
 # request. Dependabot's first run proposed twelve bumps in a single PR, and
 # three of them were major versions that change build BEHAVIOUR this repository
 # now depends on:
@@ -32,7 +32,7 @@
 # Any of those can pass CI and still break signing or delivery later, and rolled
 # into a twelve-item PR none of them would get read. So:
 #
-#   * minor/patch — GROUPED into one weekly PR. Safe by semver, boring to review,
+#   * minor/patch — GROUPED into one monthly PR. Safe by semver, boring to review,
 #     and the whole point of the automation.
 #   * major — one PR per action, ungrouped, on purpose. A major here is a
 #     contract change and deserves to be looked at alone.
@@ -45,11 +45,14 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       github-actions:
         patterns: ['*']
         update-types: ['minor', 'patch']
+      github-actions-major:
+        patterns: ['*']
+        update-types: ['major']
     open-pull-requests-limit: 10
     commit-message:
       prefix: 'chore(actions)'
