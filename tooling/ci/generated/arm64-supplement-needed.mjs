@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // GENERATED from tooling/ci/arm64-supplement-needed.mjs
-// source-sha256: 0f8ef067a4864714f7b8f18db0c1781d024d540f472cbd7ea2ac07fe0824b23a
+// source-sha256: 2f950ad23759cda8c1f4ed0c703d14bd84ddeaefa6241ad28ced87416e615911
 // Edit the canonical source, never this copy.
 // ═══════════════════════════════════════════════════════════════════════════
 // DOES THIS COORDINATE STILL NEED AN arm64 SUPPLEMENT?
@@ -78,6 +78,111 @@ function assertNonEmpty(value, label) {
   return value;
 }
 
+// ── REGISTRY TRANSPORT ──────────────────────────────────────────────────────
+//
+// Self-contained on purpose (this runs before any install): the same posture as
+// `@xemahq/repo-build-tooling`'s `registry-fetch`. Node's fetch rejects with a
+// bare `TypeError: fetch failed` and keeps the real reason in `error.cause`;
+// one transient network error must neither fail the job nor hide its cause.
+// Only a TRANSPORT failure (the fetch promise rejects) is retried; an abort is
+// rethrown at once, and every HTTP response, whatever its status, is returned
+// as is for the caller's own status handling.
+
+/** Total attempts per request, the first included. */
+export const REGISTRY_MAX_ATTEMPTS = 3;
+/** Fixed wait in milliseconds after failed attempt n (1-based); no jitter. */
+export const REGISTRY_RETRY_BACKOFF_MS = [1000, 3000];
+const MAX_CAUSE_LINKS = 10;
+
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The URL with credentials and every query value removed; query keys remain. */
+export function redactUrl(input) {
+  let url;
+  try {
+    url = new URL(String(input));
+  } catch {
+    return '<unparseable url>';
+  }
+  url.username = '';
+  url.password = '';
+  const keys = [...new Set(url.searchParams.keys())];
+  url.search = '';
+  url.hash = '';
+  return keys.length > 0
+    ? `${url.href}?${keys.map((key) => `${key}=<redacted>`).join('&')}`
+    : url.href;
+}
+
+function describeOne(error) {
+  if (!(error instanceof Error)) return String(error);
+  const details = ['code', 'errno', 'syscall', 'hostname']
+    .filter((key) => error[key] !== undefined)
+    .map((key) => `${key}=${error[key]}`);
+  const head = `${error.name}: ${error.message}`;
+  return details.length > 0 ? `${head} (${details.join(', ')})` : head;
+}
+
+/** One line per link of the `cause` chain, outermost first; bounded, cycle-safe. */
+export function describeErrorChain(error) {
+  const lines = [];
+  const seen = new Set();
+  for (
+    let current = error;
+    current !== undefined &&
+    !seen.has(current) &&
+    lines.length < MAX_CAUSE_LINKS;
+
+  ) {
+    lines.push(describeOne(current));
+    if (!(current instanceof Error)) break;
+    seen.add(current);
+    current = current.cause;
+  }
+  return lines;
+}
+
+function causeCode(error) {
+  for (
+    let current = error, depth = 0;
+    current instanceof Error && depth < MAX_CAUSE_LINKS;
+    current = current.cause, depth += 1
+  ) {
+    if (current.code !== undefined) return String(current.code);
+  }
+  return 'unknown';
+}
+
+/**
+ * Send one registry request through `fetchImpl`, retrying transport failures up
+ * to REGISTRY_MAX_ATTEMPTS with REGISTRY_RETRY_BACKOFF_MS between attempts. The
+ * final failure names the method, the redacted URL and the attempt count, with
+ * the last error as `cause`. Headers are never reported. `sleep` replaces the
+ * real wait (for tests).
+ */
+export async function registryFetch(fetchImpl, url, init, { sleep = realSleep } = {}) {
+  const method = init?.method ?? 'GET';
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fetchImpl(url, init);
+    } catch (error) {
+      if (error?.name === 'AbortError' || init?.signal?.aborted === true) {
+        throw error;
+      }
+      if (attempt >= REGISTRY_MAX_ATTEMPTS) {
+        throw new Error(
+          `${method} ${redactUrl(url)} failed after ${attempt} attempts`,
+          { cause: error },
+        );
+      }
+      process.stderr.write(
+        `registry request failed (attempt ${attempt} of ${REGISTRY_MAX_ATTEMPTS}): ${method} ${redactUrl(url)} cause=${causeCode(error)}; retrying\n`,
+      );
+      await sleep(REGISTRY_RETRY_BACKOFF_MS[attempt - 1]);
+    }
+  }
+}
+
 /**
  * Acquire a pull-only GHCR bearer token for one repository.
  *
@@ -92,6 +197,7 @@ export async function acquireGhcrPullToken({
   user,
   token,
   fetchImpl = fetch,
+  sleep,
 }) {
   if (registry !== 'ghcr.io') {
     throw new Error(
@@ -103,13 +209,18 @@ export async function acquireGhcrPullToken({
   const url = new URL(`https://${registry}/token`);
   url.searchParams.set('service', registry);
   url.searchParams.set('scope', `repository:${repository}:pull`);
-  const response = await fetchImpl(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${user}:${token}`, 'utf8').toString('base64')}`,
-      Accept: 'application/json',
+  const response = await registryFetch(
+    fetchImpl,
+    url,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${user}:${token}`, 'utf8').toString('base64')}`,
+        Accept: 'application/json',
+      },
     },
-  });
+    { sleep },
+  );
   if (response.status !== 200) {
     throw new Error(
       `${registry}: pull-token request for ${repository} returned HTTP ${response.status}`,
@@ -131,13 +242,22 @@ export async function acquireGhcrPullToken({
   return body.token;
 }
 
-async function getJson({ registry, repository, reference, bearer, fetchImpl }) {
-  const response = await fetchImpl(
+async function getJson({
+  registry,
+  repository,
+  reference,
+  bearer,
+  fetchImpl,
+  sleep,
+}) {
+  const response = await registryFetch(
+    fetchImpl,
     `https://${registry}/v2/${repository}/manifests/${reference}`,
     {
       method: 'GET',
       headers: { Authorization: `Bearer ${bearer}`, Accept: MANIFEST_ACCEPT },
     },
+    { sleep },
   );
   if (response.status === 404) return { status: 404, document: undefined };
   if (response.status !== 200) {
@@ -191,6 +311,7 @@ async function childIsArm64({
   digest,
   bearer,
   fetchImpl,
+  sleep,
 }) {
   const { status, document } = await getJson({
     registry,
@@ -198,6 +319,7 @@ async function childIsArm64({
     reference: digest,
     bearer,
     fetchImpl,
+    sleep,
   });
   // A child an index REFERENCES must resolve. A 404 here is a broken index,
   // not an absent supplement — say which, rather than quietly rebuilding.
@@ -212,9 +334,11 @@ async function childIsArm64({
       `${registry}: ${repository}@${digest} declares no usable config digest`,
     );
   }
-  const response = await fetchImpl(
+  const response = await registryFetch(
+    fetchImpl,
     `https://${registry}/v2/${repository}/blobs/${configDigest}`,
     { method: 'GET', headers: { Authorization: `Bearer ${bearer}` } },
+    { sleep },
   );
   if (response.status !== 200) {
     throw new Error(
@@ -252,6 +376,7 @@ export async function arm64SupplementNeeded({
   user,
   token,
   fetchImpl = fetch,
+  sleep,
 }) {
   if (!SHA256_HEX.test(contentHash ?? '')) {
     throw new Error(
@@ -264,6 +389,7 @@ export async function arm64SupplementNeeded({
     user,
     token,
     fetchImpl,
+    sleep,
   });
   const { status, document } = await getJson({
     registry,
@@ -271,6 +397,7 @@ export async function arm64SupplementNeeded({
     reference: contentHash,
     bearer,
     fetchImpl,
+    sleep,
   });
   if (status === 404) {
     return { needed: true, reason: 'the canonical coordinate does not exist' };
@@ -290,7 +417,14 @@ export async function arm64SupplementNeeded({
   }
   for (const digest of candidates) {
     if (
-      await childIsArm64({ registry, repository, digest, bearer, fetchImpl })
+      await childIsArm64({
+        registry,
+        repository,
+        digest,
+        bearer,
+        fetchImpl,
+        sleep,
+      })
     ) {
       return {
         needed: false,
@@ -356,6 +490,7 @@ if (
     console.error(
       `::error title=arm64 supplement probe failed::${error.message}`,
     );
+    for (const line of describeErrorChain(error)) console.error(`  ${line}`);
     process.exit(1);
   });
 }
