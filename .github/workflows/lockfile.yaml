@@ -49,9 +49,10 @@ concurrency:
   # commit then carries no verdict at all. Measured fleet-wide before this
   # posture existed: 40% and 36% `cancelled` rates on main pushes, against
   # 0% in the repositories that had adopted it. A PR still cancels, which is
-  # what the ref test below expresses.
-  group: lockfile-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'shared' }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # what the ref test below expresses. `develop` keys per SHA too (T62 C1): its
+  # run carries the develop image lane, which must never be cancelled mid-push.
+  group: lockfile-${{ github.ref }}-${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.sha || 'shared' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
 jobs:
   lockfile:
@@ -118,3 +119,17 @@ jobs:
       # evidence was a service log in a different repository.
       - name: Every concept page projects
         run: npm run check:concept-frontmatter
+
+  # The develop image lane (T62 C1): only a green push to develop publishes
+  # dev/<svc>:<contentHash> and :<sha>. A local reusable workflow, so it runs
+  # from the develop copy of the repository. `needs: lockfile` is the only
+  # verification this repository has on develop (npm ci, the arm64 probe test,
+  # the keyspace test, the concept-frontmatter check); it does not build.
+  develop-images:
+    name: Develop images
+    needs: [lockfile]
+    if: ${{ !cancelled() && needs.lockfile.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    permissions:
+      packages: write
+      contents: read
+    uses: ./.github/workflows/develop-images.yaml
