@@ -134,11 +134,20 @@ jobs:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node tooling/release/develop-images.mjs probe
 
-      - name: Refuse a commit tag without its contentHash tag
+      # ADOPTED: the commit tag exists but the contentHash tag does not (a previous
+      # run published the first and died before the second). Rebuilding would
+      # only wedge on the pushed commit tag, so ADD the contentHash tag to the
+      # existing digest, but only when that image is provably the build of this
+      # SHA (its revision label equals the SHA). A mismatch refuses.
+      - name: Add the contentHash tag to the existing commit image
+        id: adopt
         if: steps.probe.outputs.content_exists != 'true' && steps.probe.outputs.commit_exists == 'true'
-        run: |
-          echo "::error::${{ steps.probe.outputs.dev_image }}:${{ github.sha }} exists but :${{ steps.img.outputs.content_tag }} does not; refusing to re-point a published tag."
-          exit 1
+        env:
+          DEV_IMAGE: ${{ steps.probe.outputs.dev_image }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
+          SHA: ${{ github.sha }}
+        # Resolves the commit tag to a digest once, verifies and tags THAT digest.
+        run: node tooling/release/develop-images.mjs adopt
 
       # REUSED: the contentHash already exists. Add the commit tag to the
       # existing digest (never a rebuild), unless it is already there.
@@ -160,7 +169,7 @@ jobs:
 
       # BUILT: the contentHash is missing.
       - name: Set up Docker Buildx
-        if: steps.probe.outputs.content_exists != 'true'
+        if: steps.probe.outputs.content_exists != 'true' && steps.probe.outputs.commit_exists != 'true'
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver-opts: image=${{ env.BUILDKIT_IMAGE }}
@@ -170,7 +179,7 @@ jobs:
       # inputs cannot both write the key.
       - name: Build and push the commit tag
         id: build
-        if: steps.probe.outputs.content_exists != 'true'
+        if: steps.probe.outputs.content_exists != 'true' && steps.probe.outputs.commit_exists != 'true'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -189,7 +198,7 @@ jobs:
 
       - name: Add the contentHash tag unless it appeared meanwhile
         id: content
-        if: steps.probe.outputs.content_exists != 'true'
+        if: steps.probe.outputs.content_exists != 'true' && steps.probe.outputs.commit_exists != 'true'
         env:
           SERVICE: ${{ matrix.entry.service }}
           MANIFEST_IMAGE: ${{ matrix.entry.imageRepository }}
@@ -218,11 +227,15 @@ jobs:
           SERVICE: ${{ matrix.entry.service }}
           DEV_IMAGE: ${{ steps.probe.outputs.dev_image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
-          DIGEST: ${{ steps.reuse.outputs.digest || steps.content.outputs.digest }}
+          DIGEST: ${{ steps.reuse.outputs.digest || steps.adopt.outputs.digest || steps.content.outputs.digest }}
           REUSED: ${{ steps.probe.outputs.content_exists }}
+          COMMIT_EXISTS: ${{ steps.probe.outputs.commit_exists }}
         run: |
+          if [ "${REUSED}" = 'true' ]; then RESULT=reused
+          elif [ "${COMMIT_EXISTS}" = 'true' ]; then RESULT=adopted
+          else RESULT=built; fi
           {
             echo "| subject | dev ref | contentHash | digest | result |"
             echo "| --- | --- | --- | --- | --- |"
-            echo "| ${SERVICE} | \`${DEV_IMAGE}\` | \`${CONTENT_TAG}\` | \`${DIGEST:-none}\` | $([ "${REUSED}" = 'true' ] && echo reused || echo built) |"
+            echo "| ${SERVICE} | \`${DEV_IMAGE}\` | \`${CONTENT_TAG}\` | \`${DIGEST:-none}\` | ${RESULT} |"
           } >> "${GITHUB_STEP_SUMMARY}"

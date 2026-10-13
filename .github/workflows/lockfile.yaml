@@ -102,6 +102,10 @@ jobs:
       - name: The arm64 supplement probe answers both directions
         run: npm run check:arm64-supplement-probe
 
+      # The develop image lane's coordinate and adopt rules (T62 C1).
+      - name: The develop image lane rules hold
+        run: npm run check:develop-images
+
       # docs-api writes its own KernelState registry key (no Xema SDK), so it
       # must apply XEMA_KERNEL_STATE_KEYSPACE_PREFIX exactly as the SDK does —
       # a shared etcd fences each deployment to its own range. Node builtins only.

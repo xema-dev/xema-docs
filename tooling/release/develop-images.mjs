@@ -16,6 +16,11 @@
 //   plan    [--commit <sha>]   prints one JSON line per subject
 //                              {service, path, imageRepository, devImage, contentHash}
 //                              (contentHash computed at --commit, default HEAD).
+//   adopt   env: DEV_IMAGE SHA CONTENT_TAG [GITHUB_OUTPUT]
+//           The commit tag exists and the contentHash tag does not (a previous run
+//           pushed the first and died before the second). Resolves the commit tag
+//           to a digest ONCE, verifies that exact digest's revision labels equal
+//           SHA, and adds the contentHash tag to that same digest. A mismatch refuses.
 //   probe   env: SERVICE MANIFEST_IMAGE CONTENT_TAG SHA REGISTRY REGISTRY_ORG
 //                REGISTRY_USER REGISTRY_TOKEN [GITHUB_OUTPUT]
 //           emits dev_image, content_exists, commit_exists.
@@ -136,6 +141,61 @@ export async function probeDevelopCoordinate({
   };
 }
 
+const REVISION_LABEL = 'org.opencontainers.image.revision';
+
+/**
+ * Decide whether an existing `:<sha>` image may have its missing contentHash tag
+ * ADDED to its digest. `inspected` is the parsed `.Image` of
+ * `docker buildx imagetools inspect`: one image config, or a map of platform ->
+ * image config. Adopt only when at least one image config is found and EVERY one
+ * carries the revision label equal to `sha`; anything else refuses.
+ */
+export function decideCommitAdoption(inspected, sha) {
+  if (!COMMIT_SHA.test(sha)) {
+    return { adopt: false, reason: `SHA '${sha}' is not an exact 40-character lowercase commit id` };
+  }
+  if (inspected === null || typeof inspected !== 'object') {
+    return { adopt: false, reason: 'the image inspection is unreadable' };
+  }
+  const configs = 'config' in inspected
+    ? [inspected]
+    : Object.values(inspected).filter((v) => v !== null && typeof v === 'object' && 'config' in v);
+  if (configs.length === 0) {
+    return { adopt: false, reason: 'the inspection carries no image config to read a revision label from' };
+  }
+  for (const image of configs) {
+    const revision = image.config?.Labels?.[REVISION_LABEL];
+    if (revision !== sha) {
+      return {
+        adopt: false,
+        reason: `the existing image's ${REVISION_LABEL} is '${revision ?? 'absent'}', not ${sha}`,
+      };
+    }
+  }
+  return { adopt: true };
+}
+
+/**
+ * Add the contentHash tag to the existing commit image, by DIGEST. The commit
+ * tag is resolved exactly once; everything after addresses `<image>@<digest>`.
+ * `resolveTag`, `inspectImage` and `addTag` are injected (docker in production).
+ */
+export async function adoptCommitImageByDigest({ devImage, sha, contentTag, resolveTag, inspectImage, addTag }) {
+  const digest = await resolveTag(`${devImage}:${sha}`);
+  if (!/^sha256:[a-f0-9]{64}$/.test(digest)) {
+    throw new Error(`refusing to add the contentHash tag: invalid digest '${digest}'`);
+  }
+  const pinned = `${devImage}@${digest}`;
+  const decision = decideCommitAdoption(await inspectImage(pinned), sha);
+  if (!decision.adopt) {
+    throw new Error(`refusing to add the contentHash tag to the existing commit image: ${decision.reason}`);
+  }
+  await addTag(`${devImage}:${contentTag}`, pinned);
+  return { digest };
+}
+
+const imagetools = (args) => execFileSync('docker', ['buildx', 'imagetools', ...args], { encoding: 'utf8' });
+
 function plan(argv) {
   const at = argv.indexOf('--commit');
   const commit = at >= 0 ? argv[at + 1] : execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -181,6 +241,22 @@ async function main() {
   const command = process.argv[2];
   if (command === 'plan') return plan(process.argv.slice(3));
   if (command === 'probe') return probe();
+  if (command === 'adopt') {
+    const { DEV_IMAGE = '', SHA = '', CONTENT_TAG = '' } = process.env;
+    const { digest } = await adoptCommitImageByDigest({
+      devImage: DEV_IMAGE,
+      sha: SHA,
+      contentTag: CONTENT_TAG,
+      resolveTag: (ref) => JSON.parse(imagetools(['inspect', ref, '--format', '{{json .Manifest}}'])).digest,
+      inspectImage: (ref) => JSON.parse(imagetools(['inspect', ref, '--format', '{{json .Image}}'])),
+      addTag: (tagRef, digestRef) => {
+        imagetools(['create', '-t', tagRef, digestRef]);
+      },
+    });
+    console.log(`added ${DEV_IMAGE}:${CONTENT_TAG} to ${digest}, the verified build of ${SHA}`);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `digest=${digest}\n`);
+    return;
+  }
   throw new Error(`unknown command '${command}'`);
 }
 
