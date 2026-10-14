@@ -105,6 +105,9 @@ env:
   REGISTRY: ghcr.io
   REGISTRY_ORG: ${{ github.repository_owner }}
   SERVICE: docs-api
+  # The exact @xemahq/release-policy release whose `xema-select-index-provenance`
+  # proves this lane's image provenance (public npm; no install step, no secret).
+  RELEASE_POLICY_VERSION: 14.2.0
 
   # ─────────────────────────────────────────────────────────────────────────
   # Attestation contract — ONE definition per value, mirroring
@@ -318,6 +321,7 @@ jobs:
           IMAGE: ${{ steps.img.outputs.image }}
           DIGEST: ${{ steps.build.outputs.digest }}
           SOURCE_SHA: ${{ github.sha }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
         run: |
           set -euo pipefail
           SUBJECT="${IMAGE}@${DIGEST}"
@@ -335,18 +339,17 @@ jobs:
           # silently attesting one platform's provenance as if it covered the
           # whole index. (`release-arm64.yaml` merges the index afterwards and
           # is a separate subject.)
-          jq -e 'keys == ["SLSA"]' "${PROVENANCE_RAW}" >/dev/null
-          # SLSA v1.0 field names (`buildDefinition` / `runDetails`), matching
-          # the pinned BuildKit's emitted version. BuildKit records the VCS
-          # revision in its v1 extension field
-          # `runDetails.metadata.buildkit_metadata.vcs` — NOT
-          # `runDetails.metadata.vcs`.
-          jq -e --arg sha "${SOURCE_SHA}" \
-              '.SLSA
-               | select(.buildDefinition.buildType | type == "string")
-               | select(.runDetails.metadata.buildkit_metadata.vcs.revision
-                        == $sha)' \
-            "${PROVENANCE_RAW}" > "${PROVENANCE}"
+          # The verb asserts the single-platform shape itself, and proves the
+          # image was built from content EQUAL to this coordinate: built at
+          # SOURCE_SHA directly, or built at an earlier commit whose content
+          # tag (this repository's own `compute-image-tag.mjs`) equals
+          # CONTENT_TAG. Missing provenance or a different tag fails.
+          npx --yes --package="@xemahq/release-policy@${RELEASE_POLICY_VERSION}" -- \
+            xema-select-index-provenance \
+              --provenance "${PROVENANCE_RAW}" --source-sha "${SOURCE_SHA}" \
+              --content-tag "${CONTENT_TAG}" \
+              --single-platform --out "${PROVENANCE}" \
+              --service "${SERVICE}" --service-path .
 
           docker buildx imagetools inspect "${SUBJECT}" \
             --format '{{json .SBOM}}' \

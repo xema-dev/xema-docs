@@ -64,6 +64,9 @@ env:
   REGISTRY: ghcr.io
   REGISTRY_ORG: ${{ github.repository_owner }}
   SERVICE: docs-api
+  # The exact @xemahq/release-policy release whose `xema-select-index-provenance`
+  # proves this lane's image provenance (public npm; no install step, no secret).
+  RELEASE_POLICY_VERSION: 14.2.0
 
   # Must stay value-identical to `build-image.yaml`'s attestation contract: the
   # two lanes attach attestations to the two halves of ONE index, and a
@@ -397,19 +400,20 @@ jobs:
       # The predicates re-attested are the linux/amd64 platform's, exported
       # from the merged index itself: the amd64 build is the PRIMARY build
       # of this image, and both per-arch predicates record the SAME source
-      # commit — the SLSA predicate's VCS revision is asserted equal to the
-      # built commit below, so the exported predicate describes exactly the
-      # build this index came from.
+      # commit or content-equal ones — the exported predicate is proven below
+      # to describe a build of exactly this coordinate's content.
       # ─────────────────────────────────────────────────────────────────────
       - name: Export the amd64 SLSA provenance and SBOM predicates from the merged index
         id: index_predicates
         env:
           SUBJECT: ${{ steps.sign_index.outputs.subject }}
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
         run: |
           set -euo pipefail
           PROVENANCE_RAW="${RUNNER_TEMP}/docs-api-index.provenance-raw.json"
-          PROVENANCE="${RUNNER_TEMP}/docs-api-index.slsa-provenance.json"
+          PROVENANCE_DIR="${RUNNER_TEMP}/docs-api-index-provenance"
+          PROVENANCE="${PROVENANCE_DIR}/linux-amd64.slsa-provenance.json"
           SBOM_RAW="${RUNNER_TEMP}/docs-api-index.sbom-raw.json"
           SBOM="${RUNNER_TEMP}/docs-api-index.spdx.json"
           docker buildx imagetools inspect "${SUBJECT}" \
@@ -421,12 +425,19 @@ jobs:
           # platform's provenance as if it covered the whole index.
           jq -e '(keys | sort) == ["linux/amd64", "linux/arm64"]' \
             "${PROVENANCE_RAW}" >/dev/null
-          jq -e --arg sha "${SOURCE_SHA}" \
-              '."linux/amd64".SLSA
-               | select(.buildDefinition.buildType | type == "string")
-               | select(.runDetails.metadata.buildkit_metadata.vcs.revision
-                        == $sha)' \
-            "${PROVENANCE_RAW}" > "${PROVENANCE}"
+          # The amd64 predicate must prove the image was built from content
+          # EQUAL to this coordinate: built at SOURCE_SHA directly, or built at
+          # an earlier commit whose content tag (this repository's own
+          # `compute-image-tag.mjs`) equals CONTENT_TAG. Missing provenance or
+          # a different tag fails. It writes
+          # `${PROVENANCE_DIR}/linux-amd64.slsa-provenance.json`.
+          npx --yes --package="@xemahq/release-policy@${RELEASE_POLICY_VERSION}" -- \
+            xema-select-index-provenance \
+              --provenance "${PROVENANCE_RAW}" --source-sha "${SOURCE_SHA}" \
+              --content-tag "${CONTENT_TAG}" \
+              --platform linux/amd64 \
+              --out-dir "${PROVENANCE_DIR}" \
+              --service "${SERVICE}" --service-path .
           docker buildx imagetools inspect "${SUBJECT}" \
             --format '{{json .SBOM}}' > "${SBOM_RAW}"
           jq -e '(keys | sort) == ["linux/amd64", "linux/arm64"]' \
