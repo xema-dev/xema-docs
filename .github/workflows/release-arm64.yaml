@@ -256,9 +256,6 @@ jobs:
           tags: ${{ steps.img.outputs.image }}:${{ steps.img.outputs.content_tag }}-arm64
           build-args: |
             BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
-          # Arch-independent layers (metadata, config) are reused where
-          # BuildKit can; the compiled layers cannot be, by definition.
-          cache-from: type=registry,ref=${{ steps.img.outputs.amd64_source }}
           # Symmetric with the amd64 build, which now attaches provenance and an
           # SBOM so `docs-api` can satisfy the `xema.deploy-service/v3` contract.
           #
