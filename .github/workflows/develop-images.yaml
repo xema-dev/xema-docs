@@ -18,7 +18,7 @@ permissions:
 
 env:
   # Exact @xemahq/release-policy version; raised by hand after each publish.
-  RELEASE_POLICY_VERSION: TODO-release-policy-version
+  RELEASE_POLICY_VERSION: 14.2.0
   REGISTRY: ghcr.io
   REGISTRY_ORG: ${{ github.repository_owner }}
 
