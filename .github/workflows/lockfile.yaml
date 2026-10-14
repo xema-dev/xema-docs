@@ -132,8 +132,9 @@ jobs:
   develop-images:
     name: Develop images
     needs: [lockfile]
-    if: ${{ !cancelled() && needs.lockfile.result == 'success' }}
+    if: ${{ !cancelled() && needs.lockfile.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     permissions:
       packages: write
       contents: read
+      id-token: write
     uses: ./.github/workflows/develop-images.yaml

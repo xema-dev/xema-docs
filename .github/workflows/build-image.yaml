@@ -246,12 +246,30 @@ jobs:
             echo "content_tag=${CONTENT_TAG}"
           } >> "$GITHUB_OUTPUT"
 
+      # ── Main publishes the develop image; it never builds ──
+      # The develop lane (develop-images.yaml@refs/heads/develop) built, signed and attested this
+      # content tag. `xema-promote-image` copies that digest to the release coordinate when develop
+      # PROVED it (signed SLSA v1 provenance, an ancestor of main, the same content tag). A missing or
+      # unproven digest refuses the release: fix the develop lane, never build around it.
+      - name: Install pinned cosign
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+        with:
+          cosign-release: v2.6.3
+
+      - name: Require this commit to be on main before signing
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --quiet origin main
+          if ! git merge-base --is-ancestor "${SOURCE_SHA}" FETCH_HEAD; then
+            echo "::error::${SOURCE_SHA} is not on main (not an ancestor of origin/main). Refusing to sign."
+            exit 1
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
-          # Pin the BuildKit image: it, not cosign, decides which SLSA
-          # provenance predicate version is emitted. See the BUILDKIT_IMAGE
-          # comment in the workflow `env:` block.
           driver-opts: image=${{ env.BUILDKIT_IMAGE }}
 
       - name: Log in to GitHub Container Registry
@@ -262,122 +280,64 @@ jobs:
           # NOT `github.token` — see the credentials note in the file header.
           password: ${{ secrets.GH_PACKAGES_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          images: ${{ steps.img.outputs.image }}
-          tags: |
-            type=raw,value=${{ steps.img.outputs.tag }}
-            # The distribution's deployable coordinate. The job runs on main
-            # only (job-level `if`), which is what keeps this — and `latest`
-            # below — off branch builds: an unreviewed build must never
-            # repoint a coordinate a lock names.
-            type=raw,value=${{ steps.img.outputs.content_tag }}
-            type=raw,value=latest
-
-      - name: Build & push image
-        id: build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          # amd64-only here. `release-arm64.yaml` produces linux/arm64 AFTER
-          # this run and merges both into a multi-arch index on the
-          # `:<contentHash>` coordinate — it never rewrites `:${SHA}`.
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
-          cache-from: type=gha,scope=docs-api
-          cache-to: type=gha,scope=docs-api,mode=max
-          # Was `provenance: false`, which is why this image carried a
-          # signature but no ATTESTATIONS — and a signature proves only "this
-          # workflow pushed it", not how it was built or what is inside. The
-          # `xema.deploy-service/v3` contract requires all three predicates, so
-          # without these two lines `docs-api` could never become a producer.
-          provenance: mode=max,version=${{ env.SLSA_PROVENANCE_VERSION }}
-          sbom: true
-
-      - name: Install pinned cosign
-        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
-        with:
-          cosign-release: v2.6.3
-
-      # The three predicates `xema.deploy-service/v3` requires. Extracted from
-      # the image BuildKit just produced rather than re-derived, so what is
-      # signed is what was actually built.
-      #
-      # Every `jq -e … | select(…)` below is an assertion, not a filter: a
-      # predicate that does not match the expected shape yields empty output and
-      # the following `test -s` fails the step. Silently attesting a
-      # wrong-shaped predicate is worse than not attesting — it produces a
-      # signature over nothing that a verifier accepts.
-      - name: Export exact BuildKit provenance and SBOM predicates
-        id: predicates
+      - name: Promote the develop image
+        id: promote
         env:
           IMAGE: ${{ steps.img.outputs.image }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-          SOURCE_SHA: ${{ github.sha }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
         run: |
           set -euo pipefail
-          SUBJECT="${IMAGE}@${DIGEST}"
-          PROVENANCE_RAW="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.provenance-raw.json"
-          PROVENANCE="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.slsa-provenance.json"
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          npx --yes --package=@xemahq/repo-build-tooling@0.19.0 -- xema-promote-image \
+            --service "${SERVICE}" \
+            --dev-ref "ghcr.io/${OWNER}/dev/${SERVICE}" --release-ref "${IMAGE}" --tag "${CONTENT_TAG}" \
+            --commit "${GITHUB_SHA}" --main-ref FETCH_HEAD --signer-repository "${GITHUB_REPOSITORY}" \
+            --develop-workflow develop-images.yaml \
+            --release-workflow build-image.yaml --release-workflow release-arm64.yaml \
+            --promotion-predicate-out "${RUNNER_TEMP}/image-promotion.json" \
+            -- node tooling/release/compute-image-tag.mjs --service "${SERVICE}" --path .
+
+      - name: Refuse a missing develop image
+        if: steps.promote.outputs.result != 'copied' && steps.promote.outputs.result != 'reused'
+        env:
+          RESULT: ${{ steps.promote.outputs.result }}
+        run: |
+          echo "::error::no proven develop image for this commit (promotion result '${RESULT}'); main does not rebuild. Re-run the develop lane for this sha."
+          exit 1
+
+      # release-arm64.yaml merges onto `:${SHA}` and distributions resolve `latest`; the content tag is
+      # written by the promote verb.
+      - name: Tag the promoted digest
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          DIGEST: ${{ steps.promote.outputs.digest }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for t in "${SHA}" latest; do
+            docker buildx imagetools create --tag "${IMAGE}:${t}" "${IMAGE}@${DIGEST}"
+          done
+
+      # The promoted image keeps the SBOM and SLSA provenance BuildKit attached when develop built it;
+      # the source binding is this commit's own claim, so it is written here for main's signature.
+      - name: Export the SBOM and source binding of the promoted image
+        id: promoted
+        env:
+          IMAGE: ${{ steps.img.outputs.image }}
+          DIGEST: ${{ steps.promote.outputs.digest }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SUBJECT_REF="${IMAGE}@${DIGEST}"
           SBOM="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.spdx.json"
           SOURCE_BINDING="${RUNNER_TEMP}/${SERVICE}-${SOURCE_SHA}.xema-source-binding.json"
-
-          docker buildx imagetools inspect "${SUBJECT}" \
-            --format '{{json .Provenance}}' > "${PROVENANCE_RAW}"
-          # `--format '{{json .Provenance}}'` renders `{"SLSA": <predicate>}`
-          # for a SINGLE-platform subject and `{"<platform>": {"SLSA": …}}` once
-          # the subject is a multi-platform index. Assert the single-platform
-          # shape so adding a second platform to THIS job fails here instead of
-          # silently attesting one platform's provenance as if it covered the
-          # whole index. (`release-arm64.yaml` merges the index afterwards and
-          # is a separate subject.)
-          # The verb asserts the single-platform shape itself, and proves the
-          # image was built from content EQUAL to this coordinate: built at
-          # SOURCE_SHA directly, or built at an earlier commit whose content
-          # tag (this repository's own `compute-image-tag.mjs`) equals
-          # CONTENT_TAG. Missing provenance or a different tag fails.
-          npx --yes --package="@xemahq/release-policy@${RELEASE_POLICY_VERSION}" -- \
-            xema-select-index-provenance \
-              --provenance "${PROVENANCE_RAW}" --source-sha "${SOURCE_SHA}" \
-              --content-tag "${CONTENT_TAG}" \
-              --single-platform --out "${PROVENANCE}" \
-              --service "${SERVICE}" --service-path .
-
-          docker buildx imagetools inspect "${SUBJECT}" \
-            --format '{{json .SBOM}}' \
+          docker buildx imagetools inspect "${SUBJECT_REF}" --format '{{json .SBOM}}' \
             | jq -e \
                 '.SPDX
                  | select(.spdxVersion | startswith("SPDX-"))
                  | select(.packages | type == "array")' \
             > "${SBOM}"
-
-          test -s "${PROVENANCE}"
           test -s "${SBOM}"
-
-          # The Xema source binding — the only signed statement tying the
-          # dispatch payload's own claims to the image digest.
-          #
-          # `deployServicesManifestSha256` hashes THE FILE, exactly as xema-base
-          # hashes its generated one. An earlier revision hashed an equivalent
-          # declaration assembled inline here, on the reasoning that this repo
-          # had no manifest and the verifier treats the field opaquely. Both
-          # halves were true and the result was still wrong: it created a SECOND
-          # notion of "this repo's deploy-services manifest" that no checker
-          # compared to the first, so the moment the real file landed for
-          # xema-deploy's producer contract, the signed binding would have gone
-          # on attesting a hash of something else. One file, one hash.
-          #
-          # `sha256sum` over the bytes on disk — not a canonicalised re-render —
-          # so what is attested is what a reviewer reads and what the producer
-          # contract is checked against.
           MANIFEST_SHA256="$(sha256sum tooling/release/deploy-services-manifest.json | cut -d' ' -f1)"
           jq -n \
             --arg service "${SERVICE}" \
@@ -385,7 +345,7 @@ jobs:
             --arg sourceRef "${GITHUB_REF}" \
             --arg sourceSha "${SOURCE_SHA}" \
             --arg deployServicesManifestSha256 "${MANIFEST_SHA256}" \
-            --arg imageSubject "${SUBJECT}" \
+            --arg imageSubject "${SUBJECT_REF}" \
             '{
               service: $service,
               sourceRepository: $sourceRepository,
@@ -395,13 +355,12 @@ jobs:
               imageSubject: $imageSubject
             }' > "${SOURCE_BINDING}"
           test -s "${SOURCE_BINDING}"
-
           {
-            echo "provenance=${PROVENANCE}"
             echo "sbom=${SBOM}"
             echo "source_binding=${SOURCE_BINDING}"
             echo "manifest_sha256=${MANIFEST_SHA256}"
           } >> "$GITHUB_OUTPUT"
+
 
       # `docs-api` is a subject in the appliance distribution locks, and the
       # fleet's ClusterImagePolicy
@@ -420,10 +379,11 @@ jobs:
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-          PROVENANCE: ${{ steps.predicates.outputs.provenance }}
-          SBOM: ${{ steps.predicates.outputs.sbom }}
-          SOURCE_BINDING: ${{ steps.predicates.outputs.source_binding }}
+          DIGEST: ${{ steps.promote.outputs.digest }}
+          PROMOTION_PREDICATE: ${{ steps.promote.outputs.promotion_predicate }}
+          PROMOTION_PREDICATE_TYPE: ${{ steps.promote.outputs.promotion_predicate_type }}
+          SBOM: ${{ steps.promoted.outputs.sbom }}
+          SOURCE_BINDING: ${{ steps.promoted.outputs.source_binding }}
           OIDC_ISSUER: ${{ env.ATTESTATION_OIDC_ISSUER }}
         run: |
           set -euo pipefail
@@ -439,8 +399,8 @@ jobs:
           # in it, and the Xema source binding is the only signed statement
           # tying a dispatch payload's claims to this digest.
           cosign attest --yes \
-            --type "${COSIGN_SLSA_PREDICATE_FLAG}" \
-            --predicate "${PROVENANCE}" \
+            --type "${PROMOTION_PREDICATE_TYPE}" \
+            --predicate "${PROMOTION_PREDICATE}" \
             "${SUBJECT}"
           cosign attest --yes \
             --type "${COSIGN_SBOM_PREDICATE_FLAG}" \
@@ -463,7 +423,7 @@ jobs:
             --certificate-github-workflow-sha "${GITHUB_SHA}" \
             "${SUBJECT}" >/dev/null
           for PREDICATE_TYPE in \
-            "${COSIGN_SLSA_PREDICATE_FLAG}" \
+            "${PROMOTION_PREDICATE_TYPE}" \
             "${COSIGN_SBOM_PREDICATE_FLAG}" \
             "${SOURCE_BINDING_PREDICATE_TYPE}"; do
             cosign verify-attestation \
@@ -497,7 +457,7 @@ jobs:
       - name: Bind the immutable deployment digest
         env:
           IMAGE: ${{ steps.img.outputs.image }}
-          DIGEST: ${{ steps.build.outputs.digest }}
+          DIGEST: ${{ steps.promote.outputs.digest }}
         id: bind
         run: |
           set -euo pipefail
@@ -513,7 +473,7 @@ jobs:
         env:
           IMAGE: ${{ steps.img.outputs.image }}
           CONTENT_TAG: ${{ steps.img.outputs.content_tag }}
-          DIGEST: ${{ steps.build.outputs.digest }}
+          DIGEST: ${{ steps.promote.outputs.digest }}
         run: |
           set -euo pipefail
           echo "::notice::${IMAGE}:${CONTENT_TAG} published (${DIGEST}) — the coordinate every distribution lock names."
@@ -558,7 +518,7 @@ jobs:
           client-payload: |
             {
               "payloadVersion": "${{ env.IMAGE_SET_ANNOUNCEMENT_PAYLOAD_VERSION }}",
-              "deployServicesManifestSha256": "${{ steps.predicates.outputs.manifest_sha256 }}",
+              "deployServicesManifestSha256": "${{ steps.promoted.outputs.manifest_sha256 }}",
               "source": {
                 "repository": "${{ github.repository }}",
                 "ref": "${{ github.ref }}",

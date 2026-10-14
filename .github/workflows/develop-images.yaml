@@ -18,7 +18,7 @@ permissions:
 
 env:
   # Exact @xemahq/release-policy version; raised by hand after each publish.
-  RELEASE_POLICY_VERSION: 14.2.0
+  RELEASE_POLICY_VERSION: 14.3.0
   REGISTRY: ghcr.io
   REGISTRY_ORG: ${{ github.repository_owner }}
 
@@ -63,6 +63,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # keyless cosign sign / attest under the develop identity below.
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +94,7 @@ jobs:
           driver-opts: image=moby/buildkit:v0.31.2
 
       - name: Develop image
+        id: image
         env:
           SUBJECT: ${{ toJson(matrix.entry) }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,3 +103,53 @@ jobs:
           xema-develop-images image
           --subject "${SUBJECT}"
           --coordinate-command 'node tooling/release/compute-image-tag.mjs --service "$SERVICE" --path "$SERVICE_PATH" --commit "$SHA"'
+          --attestations
+
+      # Sign and attest under this workflow's own identity
+      # (`develop-images.yaml@refs/heads/develop`); main's `xema-promote-image` accepts a
+      # develop digest only on that signature and its SLSA v1 provenance. A reused or adopted
+      # image built without attestations is left unattested on purpose: main misses on it.
+      - name: Install pinned cosign
+        if: steps.image.outputs.attestations != 'absent-on-reused'
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+        with:
+          cosign-release: v2.6.3
+
+      - name: Sign the develop image and attest its provenance and SBOM
+        if: steps.image.outputs.attestations != 'absent-on-reused'
+        env:
+          DEV_REF: ${{ steps.image.outputs.ref }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+          CONTENT_TAG: ${{ steps.image.outputs.content_tag }}
+          SERVICE: ${{ matrix.entry.service }}
+          SERVICE_PATH: ${{ matrix.entry.path }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::invalid develop image digest '${DIGEST}'"
+            exit 1
+          fi
+          SUBJECT="${DEV_REF}@${DIGEST}"
+          PROVENANCE_RAW="${RUNNER_TEMP}/${SERVICE}.provenance-raw.json"
+          PROVENANCE="${RUNNER_TEMP}/${SERVICE}.slsa-provenance.json"
+          SBOM="${RUNNER_TEMP}/${SERVICE}.spdx.json"
+          docker buildx imagetools inspect "${SUBJECT}" --format '{{json .Provenance}}' > "${PROVENANCE_RAW}"
+          npx --yes --package="@xemahq/release-policy@${RELEASE_POLICY_VERSION}" -- \
+            xema-select-index-provenance \
+              --provenance "${PROVENANCE_RAW}" --source-sha "${SOURCE_SHA}" \
+              --content-tag "${CONTENT_TAG}" \
+              --single-platform --out "${PROVENANCE}" \
+              --service "${SERVICE}" --service-path "${SERVICE_PATH}"
+          docker buildx imagetools inspect "${SUBJECT}" --format '{{json .SBOM}}' \
+            | jq -e '.SPDX | select(.spdxVersion | startswith("SPDX-")) | select(.packages | type == "array")' \
+            > "${SBOM}"
+          test -s "${PROVENANCE}"
+          test -s "${SBOM}"
+          cosign sign --yes "${SUBJECT}"
+          cosign attest --yes --type slsaprovenance1 --predicate "${PROVENANCE}" "${SUBJECT}"
+          cosign attest --yes --type spdxjson --predicate "${SBOM}" "${SUBJECT}"
+          cosign verify \
+            --certificate-identity "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/develop-images.yaml@refs/heads/develop" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "${SUBJECT}" >/dev/null
