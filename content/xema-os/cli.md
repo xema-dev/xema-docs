@@ -50,9 +50,11 @@ Every command takes `--help`.
 
 Boot the platform with one command. Resolves the distribution lock plus `xema.config.yaml` into an effective roster, brings up managed infrastructure, and supervises the service waves over the configured substrate (container or native). Foreground by default.
 
+The edition is always named, in `xema.config.yaml` (`edition:`) or with `--edition`; there is no default edition.
+
 ```bash
 xema up
-xema up --edition oss
+xema up --edition appliance-base
 xema up --only workflow-engine-api      # plus that service's hard prerequisites
 xema up --dry-run                       # print the resolved roster, waves and ports; boot nothing
 ```
