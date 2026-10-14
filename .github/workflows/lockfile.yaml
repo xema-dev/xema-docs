@@ -49,9 +49,12 @@ concurrency:
   # commit then carries no verdict at all. Measured fleet-wide before this
   # posture existed: 40% and 36% `cancelled` rates on main pushes, against
   # 0% in the repositories that had adopted it. A PR still cancels, which is
-  # what the ref test below expresses. `develop` keys per SHA too (T62 C1): its
-  # run carries the develop image lane, which must never be cancelled mid-push.
-  group: lockfile-${{ github.ref }}-${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.sha || 'shared' }}
+  # what the ref test below expresses.
+  #
+  # develop shares one group per ref, like a PR branch: at most one run executes and
+  # one waits, a skipped commit is covered by the next run's tree, and
+  # `cancel-in-progress` stays false on develop so a verdict always arrives.
+  group: lockfile-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'shared' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
 jobs:
