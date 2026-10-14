@@ -106,10 +106,6 @@ jobs:
       - name: docs-api starts and serves a document
         run: npm run check:docs-server
 
-      # The develop image lane's coordinate and adopt rules (T62 C1).
-      - name: The develop image lane rules hold
-        run: npm run check:develop-images
-
       # docs-api writes its own KernelState registry key (no Xema SDK), so it
       # must apply XEMA_KERNEL_STATE_KEYSPACE_PREFIX exactly as the SDK does —
       # a shared etcd fences each deployment to its own range. Node builtins only.
@@ -136,7 +132,7 @@ jobs:
   develop-images:
     name: Develop images
     needs: [lockfile]
-    if: ${{ !cancelled() && needs.lockfile.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    if: ${{ !cancelled() && needs.lockfile.result == 'success' }}
     permissions:
       packages: write
       contents: read

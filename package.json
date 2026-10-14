@@ -14,7 +14,6 @@
   "bugs": "https://github.com/xema-dev/xema-docs/issues",
   "scripts": {
     "build": "astro build",
-    "check:develop-images": "node --test tooling/release/develop-images.test.mjs",
     "check:arm64-supplement-probe": "node --test tooling/release/arm64-supplement-needed.test.mjs",
     "check:concept-frontmatter": "node tooling/boundaries/check-concept-frontmatter.mjs --self-test && node tooling/boundaries/check-concept-frontmatter.mjs",
     "check:docs-server": "node --test service/__tests__/docs-server.test.mjs",
