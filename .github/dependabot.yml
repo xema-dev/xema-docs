@@ -11,7 +11,7 @@
 # control sustainable — Dependabot resolves the new SHA and rewrites the trailing
 # `# v4` comment, so upgrading is reviewing a diff rather than chasing digests.
 #
-# ── WHY MAJORS ARE SPLIT OUT, AND ARE NOT GROUPED ──
+# ── WHY MAJORS ARE IN THEIR OWN GROUP ──
 #
 # The first version of this file grouped EVERY update into one monthly pull
 # request. Dependabot's first run proposed twelve bumps in a single PR, and
@@ -30,12 +30,13 @@
 #                                       contract pins.
 #
 # Any of those can pass CI and still break signing or delivery later, and rolled
-# into a twelve-item PR none of them would get read. So:
+# into a twelve-item PR none of them would get read. So there are two groups:
 #
-#   * minor/patch — GROUPED into one monthly PR. Safe by semver, boring to review,
-#     and the whole point of the automation.
-#   * major — one PR per action, ungrouped, on purpose. A major here is a
-#     contract change and deserves to be looked at alone.
+#   * `github-actions` — minor/patch updates, one monthly PR. Safe by semver,
+#     boring to review, and the whole point of the automation.
+#   * `github-actions-major` — major updates, one separate monthly PR holding
+#     only majors, so they are never mixed into the minor/patch PR. Review it
+#     action by action: a major here is a contract change.
 #
 # Scoped to `github-actions`: these are the pins that execute code with access to
 # this repository's secrets. Package ecosystems are governed by each repo's own

@@ -188,7 +188,7 @@ xema_capabilities_search({ domain: "connector" })
 // → {
 //     "capabilities": [
 //       { "ref": "connector:scm.create-pull-request@1", "biome": "software-dev", ... },
-//       { "ref": "connector:channel.send-message@1", "biome": "conversation-channels", ... }
+//       { "ref": "connector:channel.send-message@1", "biome": "slack", ... }  // also provided by the Telegram connector
 //     ],
 //     "anchor": { "resourceType": null, "source": "none" },
 //     "consideredCount": 2
