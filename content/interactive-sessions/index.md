@@ -200,6 +200,28 @@ The event ledger is the canonical audit record of everything that happened.
 
 ---
 
+## Attaching and Detaching Skills
+
+You can attach a skill to a running session with `POST /sessions/:id/skills`, and detach it with `DELETE /sessions/:id/skills/...`. Both operations are asynchronous. They return `202 Accepted` with the attachment, whose `status` is `pending` (or `detach_pending` for a detach). The skill is not live yet when the call returns.
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | The attach was accepted and is not yet live |
+| `bound` | The skill is live in the session's runtime |
+| `failed` | The skill could not be bound |
+| `detach_pending` | The detach was accepted and is not yet complete |
+| `removed` | The skill is no longer attached |
+
+An attachment moves from `pending` to `bound` or `failed`, and a detach moves from `detach_pending` to `removed`.
+
+The change applies between turns. If a turn is running, the change takes effect after that turn ends.
+
+A `failed` attachment carries a `failure` with a typed `code` and a human-readable `message`. For `skill_content_mismatch`, the skill changed after it was resolved: attach it again, which resolves it afresh.
+
+Do not poll. Follow progress through the session event stream's skill attachment changed event, whose payload is `{attachmentId, skillSlug, status, failure?}`.
+
+---
+
 ## Quick Start
 
 ### Start a Session
