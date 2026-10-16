@@ -190,7 +190,7 @@ Every action in a session is recorded as an immutable event:
 | Files | `file_created`, `file_edited`, `file_deleted` |
 | Git | `git_branch_created`, `git_committed`, `git_pushed`, `pr_created` |
 | Lifecycle | `status_changed`, `session_paused`, `session_resumed` |
-| Attachments | `attachment_added`, `skill_attached`, `skill_detached` |
+| Attachments | `attachment_added`, `skill_attachment_changed` |
 | Human | `question_asked`, `question_answered`, `permission_asked`, `permission_replied` |
 | Preview Apps | `preview_detected`, `preview_ready`, `preview_exited` |
 | Budget | `budget_warning` |
@@ -210,15 +210,15 @@ You can attach a skill to a running session with `POST /sessions/:id/skills`, an
 | `bound` | The skill is live in the session's runtime |
 | `failed` | The skill could not be bound |
 | `detach_pending` | The detach was accepted and is not yet complete |
-| `removed` | The skill is no longer attached |
+| `detached` | The skill is no longer attached |
 
-An attachment moves from `pending` to `bound` or `failed`, and a detach moves from `detach_pending` to `removed`.
+An attachment moves from `pending` to `bound` or `failed`, and a detach moves from `detach_pending` to `detached`.
 
 The change applies between turns. If a turn is running, the change takes effect after that turn ends.
 
-A `failed` attachment carries a `failure` with a typed `code` and a human-readable `message`. For `skill_content_mismatch`, the skill changed after it was resolved: attach it again, which resolves it afresh.
+A `failed` attachment carries a failure with a typed code and a human-readable message. For `skill_content_mismatch`, the skill changed after it was resolved: attach it again, which resolves it afresh.
 
-Do not poll. Follow progress through the session event stream's skill attachment changed event, whose payload is `{attachmentId, skillSlug, status, failure?}`.
+Do not poll. Follow progress through the `skill_attachment_changed` event in the [Event Ledger](#event-ledger) and on the session event stream. Its payload is `{attachmentId, skillSlug, status, failureCode?}`, where `status` is one of `pending`, `bound`, `failed`, `detach_pending` or `detached`, and `failureCode` is present only when `status` is `failed`.
 
 ---
 
