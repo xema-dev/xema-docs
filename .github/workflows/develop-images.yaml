@@ -111,9 +111,8 @@ jobs:
       # image built without attestations is left unattested on purpose: main misses on it.
       - name: Install pinned cosign
         if: steps.image.outputs.attestations != 'absent-on-reused'
-        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
-        with:
-          cosign-release: v2.6.3
+        shell: bash
+        run: scripts/install-cosign.sh
 
       - name: Sign the develop image and attest its provenance and SBOM
         if: steps.image.outputs.attestations != 'absent-on-reused'

@@ -252,9 +252,8 @@ jobs:
       # PROVED it (signed SLSA v1 provenance, an ancestor of main, the same content tag). A missing or
       # unproven digest refuses the release: fix the develop lane, never build around it.
       - name: Install pinned cosign
-        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
-        with:
-          cosign-release: v2.6.3
+        shell: bash
+        run: scripts/install-cosign.sh
 
       - name: Require this commit to be on main before signing
         env:

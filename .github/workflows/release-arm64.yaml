@@ -270,9 +270,8 @@ jobs:
           sbom: true
 
       - name: Install pinned cosign
-        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
-        with:
-          cosign-release: v2.6.3
+        shell: bash
+        run: scripts/install-cosign.sh
 
       # Gated on the SAME probe as the build above, and that pairing is the
       # invariant: this is the only step that republishes `:<contentHash>`, so
