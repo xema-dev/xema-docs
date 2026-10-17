@@ -147,7 +147,7 @@ jobs:
           test -s "${PROVENANCE}"
           test -s "${SBOM}"
           cosign sign --yes "${SUBJECT}"
-          cosign attest --yes --type slsaprovenance1 --predicate "${PROVENANCE}" "${SUBJECT}"
+          cosign attest --yes --replace --type https://slsa.dev/provenance/v1 --predicate "${PROVENANCE}" "${SUBJECT}"
           cosign attest --yes --type spdxjson --predicate "${SBOM}" "${SUBJECT}"
           cosign verify \
             --certificate-identity "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/develop-images.yaml@refs/heads/develop" \

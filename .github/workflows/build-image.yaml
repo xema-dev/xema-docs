@@ -124,10 +124,10 @@ env:
   # explicitly on the build so the pin's default can never become load-bearing.
   BUILDKIT_IMAGE: moby/buildkit:v0.31.2
   SLSA_PROVENANCE_VERSION: v1
-  # `slsaprovenance1` is cosign's v1.0 alias. Plain `slsaprovenance` maps to
-  # SLSA v0.2, which would unmarshal a v1 predicate into the v0.2 struct and
-  # drop every field — an attestation that claims v0.2 and contains nothing.
-  COSIGN_SLSA_PREDICATE_FLAG: slsaprovenance1
+  # The URI type passes the predicate through unchanged. The `slsaprovenance1` alias
+  # re-encodes it through cosign's SLSA v1 struct and drops
+  # runDetails.metadata.buildkit_metadata (vcs.revision); plain `slsaprovenance` maps to v0.2.
+  COSIGN_SLSA_PREDICATE_FLAG: https://slsa.dev/provenance/v1
   COSIGN_SBOM_PREDICATE_FLAG: spdxjson
   SOURCE_BINDING_PREDICATE_TYPE: https://xema.dev/attestations/deploy-source/v1
   ATTESTATION_OIDC_ISSUER: https://token.actions.githubusercontent.com
