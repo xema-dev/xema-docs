@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // GENERATED from tooling/ci/git-hooks/install-git-hooks.mjs
-// source-sha256: 34314ce26086e45a81bfb0e563b9e73cd796adf8e44ba9e7f57795f7ef060805
+// source-sha256: 2c254d34b063ca9bf2b9ecc959987a13a8f819f51db3de308d945266f13e9437
 // ═══════════════════════════════════════════════════════════════════════════
 // `prepare` — install the lefthook git hooks, but only where hooks can exist.
 //
@@ -192,6 +192,11 @@ const SENTINEL = '# xema:lefthook-unresolved-is-fatal';
  */
 const REFUSAL = [
   `      ${SENTINEL}`,
+  // A push whose refs are all tags grades nothing (the commit was graded when its branch was pushed),
+  // so a CI tag step in a tree without lefthook must pass. Only a pre-push with piped stdin is read.
+  '      if [ "$(basename "$0")" = pre-push ] && [ ! -t 0 ] && cat | awk \'NF { n++; if ($3 !~ /^refs\\/tags\\//) bad = 1 } END { exit (n == 0 || bad) }\'; then',
+  '        exit 0',
+  '      fi',
   "      echo 'lefthook is installed as a git hook here, but its binary cannot' >&2",
   "      echo 'be found — so THIS HOOK JUST VERIFIED NOTHING.' >&2",
   "      echo '' >&2",

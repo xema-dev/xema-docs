@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // GENERATED from tooling/ci/git-hooks/pre-push.mjs
-// source-sha256: a7d0736e4d2b5a5805d52138396e1466c7170c9f93a8ee6fc5e85b860c819004
+// source-sha256: 8b76066885df38248e23f8dc2cf20f7e062cd7485b05d58e8fd3765aed566d0c
 // The one pre-push hook of every Xema repository (generated into each repo from the aggregator's
 // tooling/ci/git-hooks/pre-push.mjs; edit the source, never a copy).
 //
@@ -54,13 +54,13 @@ export function hookEnv(base = process.env) {
   return env;
 }
 
-/** `<local ref> <local sha> <remote ref> <remote sha>` per line. Deletions and session parks are not graded. */
+/** `<local ref> <local sha> <remote ref> <remote sha>` per line. Deletions, session parks and tags are not graded: a tag names a commit already graded when its branch was pushed. */
 export function parseRefs(stdin) {
   const refs = [];
   for (const line of stdin.split('\n')) {
     const [localRef, sha, remoteRef, remoteSha] = line.trim().split(/\s+/);
     if (!sha || !/^[0-9a-f]{40,64}$/.test(sha) || ZERO_SHA.test(sha)) continue;
-    if (remoteRef?.startsWith(PARK_PREFIX)) continue;
+    if (remoteRef?.startsWith(PARK_PREFIX) || remoteRef?.startsWith('refs/tags/')) continue;
     refs.push({ localRef, sha, remoteRef, remoteSha });
   }
   return refs;
