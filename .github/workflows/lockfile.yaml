@@ -81,51 +81,9 @@ jobs:
       # writes only to the per-user npx cache.
       - name: Install from the committed lockfile
         run: node tooling/ci/npm-toolchain.mjs ci
-      # `node` directly, not `npm run`: the gate is self-contained (node
-      # builtins only) and must stay runnable from a bare checkout with no
-      # install, so it can never become a check that only runs once something
-      # else has already succeeded.
-      - name: Every tracked source file is readable by search
-        run: node tooling/boundaries/lib/source-readability.mjs
-
-      # The arm64 supplement probe decides whether `release-arm64.yaml`
-      # REBUILDS and RE-MERGES `:<contentHash>`. A wrong answer is expensive in
-      # both directions and NEITHER shows up as a failure — wrongly `true`
-      # republishes the coordinate under a new digest and moves any seal that
-      # names it; wrongly `false` strands it amd64-only forever, because the
-      # amd64 matrix is content-addressed and never re-selects a coordinate
-      # that already exists. So the probe is graded here, in the repository's
-      # one verification workflow, rather than only in the release lane that
-      # cannot fail safely.
-      #
-      # `npm run` rather than a second `node --test` spelling: package.json
-      # holds the one declaration of the command, so this step and a developer
-      # running it by hand cannot diverge. The test itself imports only node
-      # builtins, so it needs nothing the install provides.
-      - name: The arm64 supplement probe answers both directions
-        run: npm run check:arm64-supplement-probe
-
-      # The shipped server must boot and serve a document (it is the whole image).
-      - name: docs-api starts and serves a document
-        run: npm run check:docs-server
-
-      # docs-api writes its own KernelState registry key (no Xema SDK), so it
-      # must apply XEMA_KERNEL_STATE_KEYSPACE_PREFIX exactly as the SDK does —
-      # a shared etcd fences each deployment to its own range. Node builtins only.
-      - name: docs-api registers under the deployment keyspace
-        run: npm run check:service-registry-keyspace
-
-      # AFTER the install, unlike the gate above, because this one parses YAML
-      # and `js-yaml` is a declared devDependency rather than a node builtin.
-      #
-      # It exists because one unquoted `: ` in one concept's frontmatter emptied
-      # the entire concept list in production on 2026-08-26: the registry loads
-      # every concept as ONE set, so a single unparseable file fails the whole
-      # projection, and the object registry it feeds is an in-memory cache with
-      # no durable store. The page kept returning 200 throughout — the only
-      # evidence was a service log in a different repository.
-      - name: Every concept page projects
-        run: npm run check:concept-frontmatter
+      # The whole gate is `npm run check`; the pre-push hook runs the same script, so CI and the push check one list.
+      - name: Check
+        run: npm run check
 
   # The develop image lane (T62 C1): only a green push to develop publishes
   # dev/<svc>:<contentHash> and :<sha>. A local reusable workflow, so it runs

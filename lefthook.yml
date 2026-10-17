@@ -1,0 +1,7 @@
+# Pre-push: the shared hook (generated from the aggregator's tooling/ci/git-hooks) grades the
+# pushed commit: lockfile derivable, then `npm run check`, which is the whole gate.
+pre-push:
+  commands:
+    check:
+      use_stdin: true
+      run: node tooling/ci/generated/git-hooks/pre-push.mjs

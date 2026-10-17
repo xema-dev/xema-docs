@@ -13,6 +13,8 @@
   },
   "bugs": "https://github.com/xema-dev/xema-docs/issues",
   "scripts": {
+    "prepare": "node -e \"require('fs').existsSync('.git')&&require('child_process').execFileSync('node',['tooling/ci/generated/git-hooks/install-git-hooks.mjs'],{stdio:'inherit'})\"",
+    "check": "node tooling/boundaries/lib/source-readability.mjs && npm run check:arm64-supplement-probe && npm run check:docs-server && npm run check:service-registry-keyspace && npm run check:concept-frontmatter",
     "build": "astro build",
     "check:arm64-supplement-probe": "node --test tooling/release/arm64-supplement-needed.test.mjs",
     "check:concept-frontmatter": "node tooling/boundaries/check-concept-frontmatter.mjs --self-test && node tooling/boundaries/check-concept-frontmatter.mjs",
@@ -24,7 +26,8 @@
   },
   "devDependencies": {
     "astro": "^7.2.2",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "lefthook": "^2.1.10"
   },
   "overrides": {
     "sharp": "^0.35.0",
